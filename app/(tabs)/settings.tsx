@@ -45,6 +45,7 @@ export default function SettingsScreen() {
         { shouldPlay: false }
       );
       setSound(sound);
+      console.log('Sound loaded successfully in settings');
       console.log('Sound loaded successfully');
     } catch (error) {
       console.error('Error loading sound:', error);

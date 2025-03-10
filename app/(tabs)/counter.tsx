@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { StyleSheet, TouchableOpacity, Alert, Platform, ScrollView, Dimensions, View } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
-import { BlurView } from 'expo-blur';
 import { ThemedView } from '@/components/ThemedView';
-import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Audio } from 'expo-av';
 
@@ -129,8 +129,12 @@ export default function TabTwoScreen() {
           const { sound: newSound } = await Audio.Sound.createAsync(
             require('../../assets/sounds/click.mp3')
           );
-          setSound(newSound);
-          await newSound.playAsync();
+          if (newSound) {
+            setSound(newSound);
+            await newSound.playAsync();
+          } else {
+            console.error('Failed to load sound');
+          }
         }
       } catch (error) {
         console.error('Error playing sound:', error);
@@ -351,6 +355,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     letterSpacing: -0.5,
+    color: 'black', //Improved contrast
   },
   subheader: {
     fontSize: 17,
@@ -392,7 +397,7 @@ const styles = StyleSheet.create({
   counterTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: 'black', //Improved contrast
     letterSpacing: 0.5,
   },
   resetButtonSmall: {
@@ -426,7 +431,7 @@ const styles = StyleSheet.create({
   },
   counterDescription: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: 'black', //Improved contrast
     textAlign: 'center',
     fontWeight: '500',
     marginTop: 4,
@@ -460,7 +465,7 @@ const styles = StyleSheet.create({
   streakLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: 'black', //Improved contrast
     marginBottom: 6,
   },
   streakValueContainer: {
@@ -475,7 +480,7 @@ const styles = StyleSheet.create({
   streakUnit: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: 'black', //Improved contrast
     marginLeft: 4,
   },
   countButton: {
@@ -539,7 +544,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     marginBottom: 20,
-    color: '#1d1d1f',
+    color: 'black', //Improved contrast
   },
   tipItem: {
     flexDirection: 'row',
@@ -558,7 +563,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     lineHeight: 22,
-    color: '#3A3A3C',
+    color: 'black', //Improved contrast
   },
   dismissButton: {
     alignSelf: 'flex-end',
