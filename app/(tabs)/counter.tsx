@@ -315,7 +315,7 @@ export default function TabTwoScreen() {
           </View>
 
           <TouchableOpacity 
-            style={styles.countButton} 
+            style={[styles.countButton, {backgroundColor: '#FF9500'}]} 
             onPress={incrementCount}
             activeOpacity={0.8}
           >
