@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, TouchableOpacity, Alert, Platform, ScrollView, Dimensions } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
@@ -85,7 +84,17 @@ export default function CounterScreen() {
   };
 
   const resetDailyCount = () => {
-    try {
+    // For web platform, use confirm instead of Alert
+    if (Platform.OS === 'web') {
+      const confirmed = confirm("Are you sure you want to reset your daily count to zero?");
+      if (confirmed) {
+        setDailyCount(0);
+        AsyncStorage.setItem('dailyCount', '0')
+          .then(() => console.log('Daily count reset successfully'))
+          .catch(error => console.error('Error resetting daily count:', error));
+      }
+    } else {
+      // For native platforms, use Alert
       Alert.alert(
         "Reset Daily Count",
         "Are you sure you want to reset your daily count to zero?",
@@ -93,23 +102,31 @@ export default function CounterScreen() {
           { text: "Cancel", style: "cancel" },
           { 
             text: "Reset", 
-            onPress: async () => {
-              if (Platform.OS !== 'web') {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-              }
+            onPress: () => {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
               setDailyCount(0);
-              await AsyncStorage.setItem('dailyCount', '0');
+              AsyncStorage.setItem('dailyCount', '0')
+                .then(() => console.log('Daily count reset successfully'))
+                .catch(error => console.error('Error resetting daily count:', error));
             }
           }
         ]
       );
-    } catch (error) {
-      console.error("Error resetting daily count:", error);
     }
   };
 
   const resetTotalCount = () => {
-    try {
+    // For web platform, use confirm instead of Alert
+    if (Platform.OS === 'web') {
+      const confirmed = confirm("Are you sure you want to reset your all-time total count to zero?");
+      if (confirmed) {
+        setTotalCount(0);
+        AsyncStorage.setItem('totalCount', '0')
+          .then(() => console.log('Total count reset successfully'))
+          .catch(error => console.error('Error resetting total count:', error));
+      }
+    } else {
+      // For native platforms, use Alert
       Alert.alert(
         "Reset Total Count",
         "Are you sure you want to reset your all-time total count to zero?",
@@ -117,18 +134,16 @@ export default function CounterScreen() {
           { text: "Cancel", style: "cancel" },
           { 
             text: "Reset", 
-            onPress: async () => {
-              if (Platform.OS !== 'web') {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-              }
+            onPress: () => {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
               setTotalCount(0);
-              await AsyncStorage.setItem('totalCount', '0');
+              AsyncStorage.setItem('totalCount', '0')
+                .then(() => console.log('Total count reset successfully'))
+                .catch(error => console.error('Error resetting total count:', error));
             }
           }
         ]
       );
-    } catch (error) {
-      console.error("Error resetting total count:", error);
     }
   };
 
@@ -144,7 +159,7 @@ export default function CounterScreen() {
         <ThemedText style={styles.subheader}>
           Count your daily declarations to track your progress
         </ThemedText>
-        
+
         <ThemedView style={styles.counterContainer}>
           <ThemedView style={styles.counterCard}>
             <ThemedText style={styles.counterTitle}>TODAY'S COUNT</ThemedText>
