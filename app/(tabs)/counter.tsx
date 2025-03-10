@@ -127,7 +127,7 @@ export default function TabTwoScreen() {
         } else {
           console.log('Loading sound on demand');
           const { sound: newSound } = await Audio.Sound.createAsync(
-            require('./click.mp3')
+            require('../../assets/sounds/click.mp3')
           );
           setSound(newSound);
           await newSound.playAsync();

@@ -41,7 +41,7 @@ export default function SettingsScreen() {
   const loadSound = async () => {
     try {
       const { sound } = await Audio.Sound.createAsync(
-        require('../assets/click.mp3'), // Path to your sound file
+        require('../../assets/sounds/click.mp3'), // Path to your sound file
         { shouldPlay: false }
       );
       setSound(sound);
