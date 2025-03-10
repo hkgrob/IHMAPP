@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, Switch, TouchableOpacity, Alert, Linking } from 'react-native';
+import { StyleSheet, ScrollView, Switch, TouchableOpacity, Alert, Linking, Platform } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +7,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { BlurView } from 'expo-blur';
 import { StatusBar } from 'expo-status-bar';
-import { Audio } from 'expo-av'; // Import Audio
+import { Audio } from 'expo-av';
+import * as Notifications from 'expo-notifications';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
 export default function SettingsScreen() {
   const colorScheme = useColorScheme();
@@ -15,11 +17,14 @@ export default function SettingsScreen() {
   const [reminderTime, setReminderTime] = useState('8:00 AM');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [hapticEnabled, setHapticEnabled] = useState(true);
-  const [sound, setSound] = useState(null); // Add sound state
+  const [sound, setSound] = useState(null);
+  const [isTimePickerVisible, setTimePickerVisible] = useState(false);
+  const [reminderDate, setReminderDate] = useState(new Date());
 
   useEffect(() => {
     loadSettings();
-    loadSound(); // Load sound effect
+    loadSound();
+    registerForPushNotificationsAsync();
   }, []);
 
   const loadSettings = async () => {
@@ -69,14 +74,149 @@ export default function SettingsScreen() {
     }
   };
 
+  const registerForPushNotificationsAsync = async () => {
+    if (Platform.OS === 'web') {
+      console.log('Notifications not supported on web');
+      return;
+    }
+
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      
+      if (finalStatus !== 'granted') {
+        console.log('Permission not granted for notifications');
+        return;
+      }
+
+      // Configure notification handler
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+        }),
+      });
+
+      console.log('Notification permissions granted');
+    } catch (error) {
+      console.error('Error setting up notifications:', error);
+    }
+  };
+
+  const scheduleNotification = async () => {
+    if (Platform.OS === 'web' || !notificationsEnabled) {
+      return;
+    }
+
+    try {
+      // Cancel any existing notifications
+      await Notifications.cancelAllScheduledNotificationsAsync();
+
+      if (notificationsEnabled) {
+        // Parse hours and minutes from reminderTime
+        const timePattern = /(\d+):(\d+)\s*(AM|PM)/i;
+        const match = reminderTime.match(timePattern);
+        
+        if (!match) {
+          console.error('Invalid time format');
+          return;
+        }
+
+        let hours = parseInt(match[1], 10);
+        const minutes = parseInt(match[2], 10);
+        const period = match[3].toUpperCase();
+
+        // Convert to 24-hour format
+        if (period === 'PM' && hours < 12) {
+          hours += 12;
+        } else if (period === 'AM' && hours === 12) {
+          hours = 0;
+        }
+
+        // Create a date object for today with the specified time
+        const now = new Date();
+        const scheduledTime = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+          hours,
+          minutes
+        );
+
+        // If the time has already passed today, schedule for tomorrow
+        if (scheduledTime <= now) {
+          scheduledTime.setDate(scheduledTime.getDate() + 1);
+        }
+
+        const secondsUntilReminder = Math.floor((scheduledTime.getTime() - now.getTime()) / 1000);
+
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Declaration Reminder',
+            body: 'Remember to make your daily declarations!',
+            sound: true,
+          },
+          trigger: {
+            seconds: secondsUntilReminder,
+            repeats: true,
+          },
+        });
+
+        console.log(`Notification scheduled for ${reminderTime}`);
+      }
+    } catch (error) {
+      console.error('Error scheduling notification:', error);
+    }
+  };
+
   const toggleNotifications = (value) => {
     setNotificationsEnabled(value);
     saveSettings('notificationsEnabled', value);
+    
+    // Schedule or cancel notifications based on the toggle
+    if (value) {
+      scheduleNotification();
+    } else {
+      Notifications.cancelAllScheduledNotificationsAsync();
+    }
   };
 
   const toggleSound = (value) => {
     setSoundEnabled(value);
     saveSettings('soundEnabled', value);
+  };
+  
+  const showTimePicker = () => {
+    setTimePickerVisible(true);
+  };
+
+  const hideTimePicker = () => {
+    setTimePickerVisible(false);
+  };
+
+  const handleTimeConfirm = (date) => {
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const formattedHours = hours % 12 === 0 ? 12 : hours % 12;
+    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+    const formattedTime = `${formattedHours}:${formattedMinutes} ${period}`;
+    
+    setReminderTime(formattedTime);
+    setReminderDate(date);
+    saveSettings('reminderTime', formattedTime);
+    hideTimePicker();
+    
+    // Reschedule notification with new time
+    if (notificationsEnabled) {
+      scheduleNotification();
+    }
   };
 
   const toggleHaptic = (value) => {
@@ -146,10 +286,22 @@ export default function SettingsScreen() {
                 thumbColor="#f4f3f4"
               />
             </ThemedView>
-            <ThemedView style={styles.settingRow}>
-              <ThemedText>Reminder Time</ThemedText>
-              <ThemedText>{reminderTime}</ThemedText>
-            </ThemedView>
+            <TouchableOpacity onPress={showTimePicker}>
+              <ThemedView style={styles.settingRow}>
+                <ThemedText>Reminder Time</ThemedText>
+                <ThemedText>{reminderTime}</ThemedText>
+              </ThemedView>
+            </TouchableOpacity>
+            
+            {Platform.OS !== 'web' && (
+              <DateTimePickerModal
+                isVisible={isTimePickerVisible}
+                mode="time"
+                onConfirm={handleTimeConfirm}
+                onCancel={hideTimePicker}
+                date={reminderDate}
+              />
+            )}
           </>
         ))}
 
