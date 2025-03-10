@@ -1,60 +1,13 @@
-
 import React, { useState } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
+import { DECLARATION_CATEGORIES } from '@/constants/DeclarationsData';
 
 export default function DeclarationsScreen() {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
-  
-  const declarationCategories = [
-    {
-      id: 'identity',
-      title: 'Identity Declarations',
-      declarations: [
-        "I am loved unconditionally by God.",
-        "I am created with purpose and destiny.",
-        "I am empowered to fulfill my calling.",
-        "I have the mind of Christ.",
-        "I am renewed daily in my thinking."
-      ]
-    },
-    {
-      id: 'faith',
-      title: 'Faith Declarations',
-      declarations: [
-        "My faith is growing stronger every day.",
-        "I believe God's promises for my life.",
-        "I walk by faith, not by sight.",
-        "My faith activates God's power in my life.",
-        "I trust God's timing in all things."
-      ]
-    },
-    {
-      id: 'mindset',
-      title: 'Mindset Declarations',
-      declarations: [
-        "I choose thoughts that empower me.",
-        "My mind is being renewed daily.",
-        "I focus on what is true, noble, and good.",
-        "I have clarity of thought and purpose.",
-        "My beliefs align with God's Word."
-      ]
-    },
-    {
-      id: 'health',
-      title: 'Health Declarations',
-      declarations: [
-        "I am whole in body, mind, and spirit.",
-        "My body is the temple of the Holy Spirit.",
-        "I am getting stronger and healthier every day.",
-        "I make choices that promote health and wellness.",
-        "I sleep well and wake refreshed."
-      ]
-    }
-  ];
-  
+
   const toggleCategory = (categoryId: string) => {
     if (expandedCategory === categoryId) {
       setExpandedCategory(null);
@@ -62,7 +15,7 @@ export default function DeclarationsScreen() {
       setExpandedCategory(categoryId);
     }
   };
-  
+
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -70,21 +23,24 @@ export default function DeclarationsScreen() {
         <ThemedText style={styles.subheader}>
           Speak these declarations daily to renew your mind and transform your beliefs.
         </ThemedText>
-        
-        {declarationCategories.map((category) => (
+
+        {DECLARATION_CATEGORIES.map((category) => (
           <ThemedView key={category.id} style={styles.categoryContainer}>
             <TouchableOpacity 
               style={styles.categoryHeader} 
               onPress={() => toggleCategory(category.id)}
             >
-              <ThemedText style={styles.categoryTitle}>{category.title}</ThemedText>
+              <ThemedView style={styles.categoryTitleContainer}>
+                <ThemedText style={styles.categoryTitle}>{category.title}</ThemedText>
+                <ThemedText style={styles.categorySource}>Source: {category.source}</ThemedText>
+              </ThemedView>
               <Ionicons 
                 name={expandedCategory === category.id ? "chevron-up" : "chevron-down"} 
                 size={24} 
                 color="#4A90E2" 
               />
             </TouchableOpacity>
-            
+
             {expandedCategory === category.id && (
               <ThemedView style={styles.declarationsContainer}>
                 {category.declarations.map((declaration, index) => (
@@ -97,7 +53,7 @@ export default function DeclarationsScreen() {
             )}
           </ThemedView>
         ))}
-        
+
         <ThemedText style={styles.tip}>
           Tip: Speak these declarations out loud. For best results, repeat them at least 3 times daily.
         </ThemedText>
@@ -112,6 +68,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+    paddingBottom: 80,
   },
   header: {
     fontSize: 24,
@@ -141,9 +98,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
   },
+  categoryTitleContainer: {
+    flex: 1,
+  },
   categoryTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  categorySource: {
+    fontSize: 12,
+    opacity: 0.7,
+    marginTop: 4,
   },
   declarationsContainer: {
     padding: 16,

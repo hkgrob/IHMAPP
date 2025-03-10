@@ -81,11 +81,17 @@ export default function CounterScreen() {
   };
 
   const incrementCount = () => {
-    // Only use haptics on native platforms (iOS/Android)
+    // Only use haptics on native platforms where available
     if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      try {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {
+          // Silently fail if haptics aren't available
+        });
+      } catch (error) {
+        // Failsafe in case Haptics aren't available
+        console.log('Haptics not available');
+      }
     }
-
     setDailyCount(prevCount => prevCount + 1);
     setTotalCount(prevTotal => prevTotal + 1);
   };
