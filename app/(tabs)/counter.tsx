@@ -96,33 +96,39 @@ export default function CounterScreen() {
     setTotalCount(prevTotal => prevTotal + 1);
   };
 
-  const resetDailyCount = () => {
-    Alert.alert(
-      "Reset Daily Count",
-      "Are you sure you want to reset your daily count to zero?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Reset", onPress: () => {
-          if (Platform.OS !== 'web') {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-          }
-          setDailyCount(0);
-        }}
-      ]
-    );
+  const resetDailyCount = async () => {
+    try {
+      Alert.alert(
+        "Reset Daily Count",
+        "Are you sure you want to reset your daily count to zero?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Reset", onPress: async () => {
+            if (Platform.OS !== 'web') {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            }
+            setDailyCount(0);
+            await AsyncStorage.setItem('dailyCount', '0');
+          }}
+        ]
+      );
+    } catch (error) {
+      console.error("Error resetting daily count:", error);
+    }
   };
 
-  const resetTotalCount = () => {
+  const resetTotalCount = async () => {
     Alert.alert(
       "Reset Total Count",
       "Are you sure you want to reset your all-time total count to zero?",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Reset", onPress: () => {
+        { text: "Reset", onPress: async () => {
           if (Platform.OS !== 'web') {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           }
           setTotalCount(0);
+          await AsyncStorage.setItem('totalCount', '0');
         }}
       ]
     );
@@ -141,7 +147,7 @@ export default function CounterScreen() {
           <ThemedText style={styles.counterValue}>{dailyCount}</ThemedText>
           <TouchableOpacity 
             style={[styles.resetButton, styles.smallButton]} 
-            onPress={resetDailyCount}
+            onPress={() => resetDailyCount()}
           >
             <Ionicons name="refresh" size={18} color="#fff" />
             <ThemedText style={styles.resetButtonText}>Reset Daily</ThemedText>
@@ -153,7 +159,7 @@ export default function CounterScreen() {
           <ThemedText style={styles.counterValue}>{totalCount}</ThemedText>
           <TouchableOpacity 
             style={[styles.resetButton, styles.smallButton]} 
-            onPress={resetTotalCount}
+            onPress={() => resetTotalCount()}
           >
             <Ionicons name="refresh" size={18} color="#fff" />
             <ThemedText style={styles.resetButtonText}>Reset Total</ThemedText>
