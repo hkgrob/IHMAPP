@@ -22,9 +22,8 @@ export default function DeclarationsScreen() {
   const handleDownload = async (filename: string) => {
     try {
       if (Platform.OS === 'web') {
-        // For web, directly open the PDF in a new tab using the asset path
-        // This is simpler than using an API route
-        const pdfPath = `/attached_assets/${filename}`;
+        // Use our dedicated PDF endpoint
+        const pdfPath = `${window.location.origin}/api/pdf/${filename}`;
         window.open(pdfPath, '_blank');
         console.log('Opening PDF at path:', pdfPath);
       } else {
