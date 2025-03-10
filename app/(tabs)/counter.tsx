@@ -29,6 +29,7 @@ export default function TabTwoScreen() {
       const storedLastDate = await AsyncStorage.getItem('lastDate');
       const storedBestStreak = await AsyncStorage.getItem('bestStreak');
       const storedCurrentStreak = await AsyncStorage.getItem('currentStreak');
+      const storedFirstDate = await AsyncStorage.getItem('firstDate');
 
       if (storedDailyCount) setDailyCount(parseInt(storedDailyCount, 10));
       if (storedTotalCount) setTotalCount(parseInt(storedTotalCount, 10));
@@ -36,8 +37,13 @@ export default function TabTwoScreen() {
       if (storedBestStreak) setBestStreak(parseInt(storedBestStreak, 10));
       if (storedCurrentStreak) setCurrentStreak(parseInt(storedCurrentStreak, 10));
 
-      // Check if it's a new day
+      // Check if this is the first time using the app
       const today = new Date().toDateString();
+      if (!storedFirstDate) {
+        await AsyncStorage.setItem('firstDate', today);
+      }
+
+      // Check if it's a new day
       if (storedLastDate && storedLastDate !== today) {
         setDailyCount(0);
         await AsyncStorage.setItem('dailyCount', '0');

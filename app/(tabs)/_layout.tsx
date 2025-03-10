@@ -16,11 +16,11 @@ export default function TabLayout() {
         headerShown: false,
       }}>
       <Tabs.Screen
-        name="declarations"
+        name="index"
         options={{
-          title: 'Declarations',
-          tabBarIcon: ({ color }) => <Ionicons name="book-outline" size={24} color={color} />,
-          tabBarLabel: ({ color }) => <HapticTab label="Declarations" color={color} />,
+          title: 'Home',
+          tabBarIcon: ({ color }) => <Ionicons name="home-outline" size={24} color={color} />,
+          tabBarLabel: ({ color }) => <HapticTab label="Home" color={color} />,
         }}
       />
       <Tabs.Screen
@@ -29,6 +29,30 @@ export default function TabLayout() {
           title: 'Counter',
           tabBarIcon: ({ color }) => <Ionicons name="calculator-outline" size={24} color={color} />,
           tabBarLabel: ({ color }) => <HapticTab label="Counter" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="declarations"
+        options={{
+          title: 'Declarations',
+          tabBarIcon: ({ color }) => <Ionicons name="book-outline" size={24} color={color} />,
+          tabBarLabel: ({ color }) => <HapticTab label="Declarations" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="stats"
+        options={{
+          title: 'Stats',
+          tabBarIcon: ({ color }) => <Ionicons name="bar-chart-outline" size={24} color={color} />,
+          tabBarLabel: ({ color }) => <HapticTab label="Stats" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <Ionicons name="settings-outline" size={24} color={color} />,
+          tabBarLabel: ({ color }) => <HapticTab label="Settings" color={color} />,
         }}
       />
     </Tabs>
