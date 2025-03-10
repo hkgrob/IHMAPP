@@ -1,74 +1,82 @@
-
-import React from 'react';
-import { StyleSheet, Image, ScrollView, Linking, View } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Image, Linking, Platform } from 'react-native';
 import { Link } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
+import { HelloWave } from '@/components/HelloWave';
+import { BlurView } from 'expo-blur';
 
 export default function HomeScreen() {
-  const dailyThought = {
-    text: "What you believe is what you become. Transform your mind and you'll transform your life.",
-    author: "Igniting Hope Ministries"
-  };
-
   return (
     <ThemedView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.logoContainer}>
-          <ThemedText style={styles.title}>Igniting Hope Ministries</ThemedText>
-          <ThemedText style={styles.subtitle}>Mind Renewal & Beliefs</ThemedText>
-        </View>
-        
-        <ThemedView style={styles.card}>
-          <ThemedText style={styles.cardTitle}>Daily Thought</ThemedText>
-          <ThemedText style={styles.quote}>"{dailyThought.text}"</ThemedText>
-          <ThemedText style={styles.author}>- {dailyThought.author}</ThemedText>
-        </ThemedView>
-        
-        <ThemedView style={styles.featuresContainer}>
-          <Link href="/(tabs)/declarations" asChild>
-            <ThemedView style={styles.featureButton}>
-              <Ionicons name="document-text" size={28} color="#4A90E2" />
-              <ThemedText style={styles.featureText}>Declarations</ThemedText>
-              <ThemedText style={styles.featureDescription}>
-                Daily declarations to renew your mind
-              </ThemedText>
-            </ThemedView>
-          </Link>
-          
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+        <HelloWave />
+        <ThemedText style={styles.title}>
+          Declare Your New Mindset
+        </ThemedText>
+        <ThemedText style={styles.subtitle}>
+          Track your daily declarations
+        </ThemedText>
+
+        <ThemedView style={styles.featureGrid}>
           <Link href="/(tabs)/counter" asChild>
-            <ThemedView style={styles.featureButton}>
-              <Ionicons name="add-circle" size={28} color="#4A90E2" />
-              <ThemedText style={styles.featureText}>Tally Counter</ThemedText>
-              <ThemedText style={styles.featureDescription}>
-                Track your daily declarations
-              </ThemedText>
-            </ThemedView>
+            <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
+              <BlurView intensity={90} style={styles.featureButton} tint="light">
+                <ThemedView style={styles.iconContainer}>
+                  <Ionicons name="add-circle" size={32} color="#34c759" />
+                </ThemedView>
+                <ThemedText style={styles.featureText}>Counter</ThemedText>
+                <ThemedText style={styles.featureDescription}>
+                  Track your declarations
+                </ThemedText>
+                <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+              </BlurView>
+            </TouchableOpacity>
           </Link>
-          
+
+          <Link href="/(tabs)/declarations" asChild>
+            <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
+              <BlurView intensity={90} style={styles.featureButton} tint="light">
+                <ThemedView style={[styles.iconContainer, { backgroundColor: 'rgba(255, 149, 0, 0.2)' }]}>
+                  <Ionicons name="document-text" size={32} color="#FF9500" />
+                </ThemedView>
+                <ThemedText style={styles.featureText}>Declarations</ThemedText>
+                <ThemedText style={styles.featureDescription}>
+                  Find declarations to speak
+                </ThemedText>
+                <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+              </BlurView>
+            </TouchableOpacity>
+          </Link>
+
           <Link href="/(tabs)/stats" asChild>
-            <ThemedView style={styles.featureButton}>
-              <Ionicons name="stats-chart" size={28} color="#4A90E2" />
-              <ThemedText style={styles.featureText}>Statistics</ThemedText>
-              <ThemedText style={styles.featureDescription}>
-                View your progress over time
-              </ThemedText>
-            </ThemedView>
+            <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
+              <BlurView intensity={90} style={styles.featureButton} tint="light">
+                <ThemedView style={[styles.iconContainer, { backgroundColor: 'rgba(74, 144, 226, 0.2)' }]}>
+                  <Ionicons name="stats-chart" size={32} color="#4A90E2" />
+                </ThemedView>
+                <ThemedText style={styles.featureText}>Statistics</ThemedText>
+                <ThemedText style={styles.featureDescription}>
+                  View your progress
+                </ThemedText>
+                <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+              </BlurView>
+            </TouchableOpacity>
           </Link>
         </ThemedView>
-        
-        <ThemedView style={styles.card}>
+
+        <BlurView intensity={80} tint="light" style={styles.card}>
           <ThemedText style={styles.cardTitle}>About Us</ThemedText>
           <ThemedText style={styles.paragraph}>
-            Igniting Hope Ministries focuses on helping people renew their minds and transform their beliefs.
+            Igniting Hope Ministries focuses on helping people renew their minds and transform their beliefs through daily declarations.
           </ThemedText>
-          <ThemedText 
-            style={styles.link}
+          <TouchableOpacity 
+            style={styles.linkButton}
             onPress={() => Linking.openURL('https://ignitinghope.com')}>
-            Visit our website →
-          </ThemedText>
-        </ThemedView>
+            <ThemedText style={styles.linkText}>Visit our website</ThemedText>
+            <Ionicons name="arrow-forward" size={16} color="#007AFF" />
+          </TouchableOpacity>
+        </BlurView>
       </ScrollView>
     </ThemedView>
   );
@@ -78,81 +86,128 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContent: {
-    padding: 16,
+  scrollView: {
+    flex: 1,
   },
-  logoContainer: {
-    alignItems: 'center',
-    marginVertical: 20,
+  contentContainer: {
+    padding: 24,
+    paddingTop: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 34,
     fontWeight: 'bold',
     textAlign: 'center',
+    marginVertical: 10,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    marginTop: 4,
-    opacity: 0.8,
+    fontSize: 17,
     textAlign: 'center',
+    marginBottom: 30,
+    color: '#8E8E93',
+    fontWeight: '500',
   },
-  card: {
-    padding: 16,
-    borderRadius: 12,
-    marginVertical: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+  featureGrid: {
+    flexDirection: 'column',
+    marginBottom: 30,
   },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  quote: {
-    fontSize: 16,
-    fontStyle: 'italic',
-    marginBottom: 8,
-    lineHeight: 24,
-  },
-  author: {
-    fontSize: 14,
-    textAlign: 'right',
-    opacity: 0.8,
-  },
-  featuresContainer: {
-    marginVertical: 12,
+  featureButtonWrapper: {
+    width: '100%',
+    marginBottom: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   featureButton: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
+    width: '100%',
+    borderRadius: 16,
+    padding: 20,
+    paddingRight: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+      web: {
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+      }
+    }),
+  },
+  iconContainer: {
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    backgroundColor: 'rgba(52, 199, 89, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
   },
   featureText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 8,
-    marginBottom: 4,
+    fontWeight: '600',
+    fontSize: 20,
+    marginBottom: 5,
   },
   featureDescription: {
-    fontSize: 14,
-    opacity: 0.8,
+    fontSize: 15,
+    color: '#8E8E93',
+    fontWeight: '400',
+  },
+  chevron: {
+    position: 'absolute',
+    right: 20,
+    alignSelf: 'center',
+  },
+  card: {
+    borderRadius: 20,
+    padding: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 30,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+      web: {
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+      }
+    }),
+  },
+  cardTitle: {
+    fontWeight: '700',
+    fontSize: 20,
+    marginBottom: 12,
+    letterSpacing: -0.5,
   },
   paragraph: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 10,
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#3A3A3C',
+    marginBottom: 16,
   },
-  link: {
-    fontSize: 14,
-    color: '#4A90E2',
-    marginTop: 8,
+  linkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  linkText: {
+    color: '#007AFF',
+    fontWeight: '600',
+    fontSize: 15,
+    marginRight: 6,
   },
 });
