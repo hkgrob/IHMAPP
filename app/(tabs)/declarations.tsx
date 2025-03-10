@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +16,10 @@ export default function DeclarationsScreen() {
     }
   };
 
+  const handleDownload = (url: string) => {
+    Linking.openURL(url);
+  };
+
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -26,19 +30,22 @@ export default function DeclarationsScreen() {
 
         {DECLARATION_CATEGORIES.map((category) => (
           <ThemedView key={category.id} style={styles.categoryContainer}>
-            <TouchableOpacity 
-              style={styles.categoryHeader} 
-              onPress={() => toggleCategory(category.id)}
-            >
-              <ThemedView style={styles.categoryTitleContainer}>
-                <ThemedText style={styles.categoryTitle}>{category.title}</ThemedText>
-                <ThemedText style={styles.categorySource}>Source: {category.source}</ThemedText>
-              </ThemedView>
-              <Ionicons 
-                name={expandedCategory === category.id ? "chevron-up" : "chevron-down"} 
-                size={24} 
-                color="#4A90E2" 
-              />
+            <TouchableOpacity style={styles.categoryHeaderContainer}>
+              <TouchableOpacity style={styles.categoryHeader} onPress={() => toggleCategory(category.id)}>
+                <ThemedView style={styles.categoryTitleContainer}>
+                  <ThemedText style={styles.categoryTitle}>{category.title}</ThemedText>
+                  <ThemedText style={styles.categorySource}>Source: {category.source}</ThemedText>
+                </ThemedView>
+                <Ionicons
+                  name={expandedCategory === category.id ? "chevron-up" : "chevron-down"}
+                  size={24}
+                  color="#4A90E2"
+                />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.downloadButton} onPress={() => handleDownload(`/api/pdf/${category.id}`)}>
+                <Ionicons name="download-outline" size={16} color="#FF9500" />
+                <ThemedText style={styles.downloadText}>Download PDF</ThemedText>
+              </TouchableOpacity>
             </TouchableOpacity>
 
             {expandedCategory === category.id && (
@@ -65,50 +72,75 @@ export default function DeclarationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 20,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 80,
+    paddingBottom: 40,
   },
   header: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 8,
-    textAlign: 'center',
+    marginBottom: 10,
   },
   subheader: {
     fontSize: 16,
-    marginBottom: 24,
-    textAlign: 'center',
+    marginBottom: 20,
     opacity: 0.8,
   },
+  tip: {
+    fontSize: 14,
+    marginTop: 20,
+    marginBottom: 20,
+    fontStyle: 'italic',
+    opacity: 0.7,
+  },
   categoryContainer: {
-    marginBottom: 16,
+    marginBottom: 15,
     borderRadius: 12,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
-  categoryHeader: {
+  categoryHeaderContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  categoryHeader: {
     padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flex: 1,
   },
   categoryTitleContainer: {
     flex: 1,
   },
   categoryTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   categorySource: {
     fontSize: 12,
-    opacity: 0.7,
     marginTop: 4,
+    opacity: 0.7,
+  },
+  downloadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 149, 0, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    marginRight: 16,
+  },
+  downloadText: {
+    fontSize: 12,
+    marginLeft: 4,
+    color: '#FF9500',
+    fontWeight: '600',
   },
   declarationsContainer: {
     padding: 16,
@@ -116,27 +148,18 @@ const styles = StyleSheet.create({
   },
   declarationItem: {
     flexDirection: 'row',
-    marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    marginBottom: 10,
+    paddingTop: 10,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
   declarationNumber: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginRight: 8,
-    width: 24,
+    minWidth: 30,
+    fontWeight: '600',
   },
   declarationText: {
-    fontSize: 16,
     flex: 1,
     lineHeight: 22,
-  },
-  tip: {
-    fontSize: 14,
-    fontStyle: 'italic',
-    marginTop: 16,
-    textAlign: 'center',
-    opacity: 0.8,
   },
 });
