@@ -22,48 +22,33 @@ export default function DeclarationsScreen() {
   const handleDownload = async (filename: string) => {
     try {
       if (Platform.OS === 'web') {
-        // For web, use our API endpoint to serve the file
-        const pdfPath = `/api/static/${filename}`;
-        
-        // Create an anchor element to trigger download
-        const link = document.createElement('a');
-        link.href = pdfPath;
-        link.download = filename; // Suggest a filename to save as
-        link.target = '_blank';
-        
-        // Append to the document, click it, and remove it
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
+        // For web, directly open the PDF in a new tab using the asset path
+        // This is simpler than using an API route
+        const pdfPath = `/attached_assets/${filename}`;
+        window.open(pdfPath, '_blank');
         console.log('Opening PDF at path:', pdfPath);
       } else {
-        // For mobile platforms, download the file and share it
-        const fileUri = `${FileSystem.documentDirectory}${filename}`;
-        const assetUri = `${FileSystem.documentDirectory}attached_assets/${filename}`;
+        // For mobile platforms, use Sharing API
+        const localUri = FileSystem.documentDirectory + filename;
         
-        // First, check if we have permissions and if sharing is available
+        // Check if sharing is available
         const canShare = await Sharing.isAvailableAsync();
-        
         if (!canShare) {
           Alert.alert('Error', 'Sharing is not available on this device');
           return;
         }
         
         try {
-          // For mobile, we'd need to first download the PDF to the local filesystem
-          // This is just a placeholder - in a real app, you'd need to have the PDFs
-          // in your assets and copy them to the file system or download from a server
-          await FileSystem.copyAsync({
-            from: assetUri,
-            to: fileUri
-          });
+          // In a real implementation, you would need to make sure the PDF exists at this location
+          // For example, by copying it from the assets or downloading it
+          // Here we're assuming the file is already at the right location
           
-          // Then share it
-          await Sharing.shareAsync(fileUri);
+          // Share the file
+          await Sharing.shareAsync(localUri);
         } catch (error) {
           console.error('Error handling file:', error);
-          Alert.alert('Error', 'Could not access the PDF file');
+          Alert.alert('Error', 'Could not access the PDF file. Make sure it exists.', 
+            [{ text: 'OK' }]);
         }
       }
     } catch (error) {
