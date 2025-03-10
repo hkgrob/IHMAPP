@@ -29,7 +29,7 @@ export default function TabLayout() {
         options={{
           title: 'Counter',
           tabBarIcon: ({ color }) => (
-            <Ionicons name="add-circle-outline" size={24} color={color} />
+            <Ionicons name="stopwatch-outline" size={24} color={color} />
           ),
           tabBarLabel: ({ color }) => <HapticTab label="Counter" color={color} />,
         }}
