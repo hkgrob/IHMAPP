@@ -29,7 +29,31 @@ export default function TabTwoScreen() {
     loadCounts();
     loadSoundPreferences();
     loadLastDeclarationDate();
-  }, []);
+    //loadHapticPreferences(); //Assuming this function exists elsewhere.  If not, remove this line.
+
+    // Setup midnight reset check
+    const checkMidnightReset = () => {
+      const now = new Date();
+      const today = now.toDateString();
+
+      if (lastDate !== today) {
+        setDailyCount(0);
+        AsyncStorage.setItem('dailyCount', '0')
+          .then(() => console.log('Daily count reset at midnight'))
+          .catch(error => console.error('Error resetting daily count:', error));
+        setLastDate(today);
+        AsyncStorage.setItem('lastDate', today);
+      }
+    };
+
+    // Check every minute if we've crossed midnight
+    const intervalId = setInterval(checkMidnightReset, 60000);
+
+    // Initial check
+    checkMidnightReset();
+
+    return () => clearInterval(intervalId);
+  }, [lastDate]);
 
   const loadCounts = async () => {
     try {
@@ -51,10 +75,11 @@ export default function TabTwoScreen() {
         await AsyncStorage.setItem('firstDate', today);
       }
 
-      if (storedLastDate && storedLastDate !== today) {
-        setDailyCount(0);
-        await AsyncStorage.setItem('dailyCount', '0');
-      }
+      //This section is now handled by the useEffect's midnight check
+      // if (storedLastDate && storedLastDate !== today) {
+      //   setDailyCount(0);
+      //   await AsyncStorage.setItem('dailyCount', '0');
+      // }
     } catch (error) {
       console.error("Error loading counts:", error);
     }
@@ -81,6 +106,12 @@ export default function TabTwoScreen() {
       console.error("Error loading last declaration date:", error);
     }
   };
+
+  //Assuming this function exists elsewhere. If not, remove this function call and the function definition
+  const loadHapticPreferences = async () => {
+    //Implementation for loading haptic preferences
+  }
+
 
   const incrementCount = async () => {
     try {
