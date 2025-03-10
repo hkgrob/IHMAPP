@@ -40,15 +40,23 @@ export default function SettingsScreen() {
 
   const loadSound = async () => {
     try {
+      // Use require directly to ensure proper asset resolution
+      const soundAsset = require('../../assets/sounds/click.mp3');
+      console.log('Loading sound asset in settings:', soundAsset);
+
       const { sound } = await Audio.Sound.createAsync(
-        require('../../assets/sounds/click.mp3'), // Path to your sound file
+        soundAsset,
         { shouldPlay: false }
       );
-      setSound(sound);
-      console.log('Sound loaded successfully in settings');
-      console.log('Sound loaded successfully');
+
+      if (sound) {
+        setSound(sound);
+        console.log('Sound loaded successfully in settings');
+      } else {
+        console.error('Sound object is null or undefined');
+      }
     } catch (error) {
-      console.error('Error loading sound:', error);
+      console.error('Error loading sound in settings:', error);
     }
   };
 

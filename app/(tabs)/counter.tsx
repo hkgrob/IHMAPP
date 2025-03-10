@@ -21,10 +21,14 @@ export default function TabTwoScreen() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [sound, setSound] = useState(null); // Added sound state
   const soundRef = useRef(new Audio.Sound());
+  const [lastDeclarationDate, setLastDeclarationDate] = useState(''); // Added lastDeclarationDate state
+  const hapticEnabled = Platform.OS !== 'web';
+
 
   useEffect(() => {
     loadCounts();
     loadSoundPreferences();
+    loadLastDeclarationDate();
   }, []);
 
   const loadCounts = async () => {
@@ -67,53 +71,56 @@ export default function TabTwoScreen() {
     }
   };
 
+  const loadLastDeclarationDate = async () => {
+    try {
+      const storedLastDeclarationDate = await AsyncStorage.getItem('lastDeclarationDate');
+      if (storedLastDeclarationDate) {
+        setLastDeclarationDate(storedLastDeclarationDate);
+      }
+    } catch (error) {
+      console.error("Error loading last declaration date:", error);
+    }
+  };
 
   const incrementCount = async () => {
     try {
-      if (Platform.OS !== 'web') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      }
-
-      await playClickSound();
-
-      const today = new Date().toDateString();
-      let newCurrentStreak = currentStreak;
-
-      if (lastDate !== today) {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayString = yesterday.toDateString();
-
-        if (lastDate === yesterdayString) {
-          newCurrentStreak = currentStreak + 1;
-          setCurrentStreak(newCurrentStreak);
-          await AsyncStorage.setItem('currentStreak', newCurrentStreak.toString());
-
-          if (newCurrentStreak > bestStreak) {
-            setBestStreak(newCurrentStreak);
-            await AsyncStorage.setItem('bestStreak', newCurrentStreak.toString());
-          }
-        } else if (lastDate !== '') {
-          newCurrentStreak = 1;
-          setCurrentStreak(1);
-          await AsyncStorage.setItem('currentStreak', '1');
-        }
-      }
-
+      console.log('Increment button pressed');
       const newDailyCount = dailyCount + 1;
       const newTotalCount = totalCount + 1;
 
       setDailyCount(newDailyCount);
       setTotalCount(newTotalCount);
-      setLastDate(today);
 
-      await AsyncStorage.setItem('dailyCount', newDailyCount.toString());
-      await AsyncStorage.setItem('totalCount', newTotalCount.toString());
-      await AsyncStorage.setItem('lastDate', today);
+      // Check if this is the first declaration of the day
+      const today = new Date().toDateString();
+      if (lastDeclarationDate !== today) {
+        // New day, update the streak
+        const newCurrentStreak = currentStreak + 1;
+        setCurrentStreak(newCurrentStreak);
+        if (newCurrentStreak > bestStreak) {
+          setBestStreak(newCurrentStreak);
+          await AsyncStorage.setItem('bestStreak', JSON.stringify(newCurrentStreak));
+        }
+        setLastDeclarationDate(today);
+        await AsyncStorage.setItem('lastDeclarationDate', today);
+      }
 
-      console.log("Counts saved successfully");
+      // Save all data
+      await saveCounts(newDailyCount, newTotalCount);
+
+      if (hapticEnabled) {
+        try {
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        } catch (hapticError) {
+          console.log('Haptic feedback error:', hapticError);
+        }
+      }
+
+      await playClickSound();
+
     } catch (error) {
-      console.error("Error saving counts:", error);
+      console.error('Error incrementing count:', error);
+      Alert.alert('Error', 'Failed to increment count. Please try again.');
     }
   };
 
@@ -126,19 +133,37 @@ export default function TabTwoScreen() {
           console.log('Sound played successfully');
         } else {
           console.log('Loading sound on demand');
+          // Preload sound file to ensure it's cached
+          const soundAsset = require('../../assets/sounds/click.mp3');
           const { sound: newSound } = await Audio.Sound.createAsync(
-            require('../../assets/sounds/click.mp3')
+            soundAsset,
+            { shouldPlay: false }
           );
           if (newSound) {
             setSound(newSound);
-            await newSound.playAsync();
+            try {
+              await newSound.playAsync();
+            } catch (playError) {
+              console.error('Error playing sound:', playError);
+            }
           } else {
             console.error('Failed to load sound');
           }
         }
       } catch (error) {
-        console.error('Error playing sound:', error);
+        console.error('Error loading sound:', error);
       }
+    }
+  };
+
+  const saveCounts = async (newDailyCount, newTotalCount) => {
+    try {
+      await AsyncStorage.setItem('dailyCount', newDailyCount.toString());
+      await AsyncStorage.setItem('totalCount', newTotalCount.toString());
+      await AsyncStorage.setItem('lastDate', new Date().toDateString());
+      console.log("Counts saved successfully");
+    } catch (error) {
+      console.error("Error saving counts:", error);
     }
   };
 
@@ -414,15 +439,20 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   counterDisplay: {
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 100,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
   },
   counterNumber: {
     fontSize: 72,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     fontWeight: 'bold',
-    color: '#ff9f0a', 
+    color: '#000',
     ...Platform.select({
       web: {
         textShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)',
