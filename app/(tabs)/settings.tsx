@@ -15,11 +15,15 @@ export default function SettingsScreen() {
   const colorScheme = useColorScheme();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState('8:00 AM');
+  const [reminderTime2, setReminderTime2] = useState('9:00 AM'); // Added second reminder time
+  const [secondReminderEnabled, setSecondReminderEnabled] = useState(false); // Added flag for second reminder
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [hapticEnabled, setHapticEnabled] = useState(true);
   const [sound, setSound] = useState(null);
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
+  const [isTimePickerVisible2, setTimePickerVisible2] = useState(false); // Added second time picker
   const [reminderDate, setReminderDate] = useState(new Date());
+  const [reminderDate2, setReminderDate2] = useState(new Date()); // Added second reminder date
 
   useEffect(() => {
     loadSettings();
@@ -31,11 +35,15 @@ export default function SettingsScreen() {
     try {
       const storedNotifications = await AsyncStorage.getItem('notificationsEnabled');
       const storedReminderTime = await AsyncStorage.getItem('reminderTime');
+      const storedReminderTime2 = await AsyncStorage.getItem('reminderTime2'); // Added to load second reminder time
+      const storedSecondReminderEnabled = await AsyncStorage.getItem('secondReminderEnabled'); // Added to load second reminder enable flag
       const storedSound = await AsyncStorage.getItem('soundEnabled');
       const storedHaptic = await AsyncStorage.getItem('hapticEnabled');
 
       if (storedNotifications) setNotificationsEnabled(storedNotifications === 'true');
       if (storedReminderTime) setReminderTime(storedReminderTime);
+      if (storedReminderTime2) setReminderTime2(storedReminderTime2); // Added to set second reminder time
+      if (storedSecondReminderEnabled) setSecondReminderEnabled(storedSecondReminderEnabled === 'true'); // Added to set second reminder enable flag
       if (storedSound) setSoundEnabled(storedSound === 'true');
       if (storedHaptic) setHapticEnabled(storedHaptic === 'true');
     } catch (error) {
@@ -83,12 +91,12 @@ export default function SettingsScreen() {
     try {
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
-      
+
       if (existingStatus !== 'granted') {
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
       }
-      
+
       if (finalStatus !== 'granted') {
         console.log('Permission not granted for notifications');
         return;
@@ -119,66 +127,77 @@ export default function SettingsScreen() {
       await Notifications.cancelAllScheduledNotificationsAsync();
 
       if (notificationsEnabled) {
-        // Parse hours and minutes from reminderTime
-        const timePattern = /(\d+):(\d+)\s*(AM|PM)/i;
-        const match = reminderTime.match(timePattern);
-        
-        if (!match) {
-          console.error('Invalid time format');
-          return;
+        // Schedule first reminder
+        await scheduleReminderAtTime(reminderTime, 'first-reminder');
+
+        // Schedule second reminder if enabled
+        if (secondReminderEnabled) {
+          await scheduleReminderAtTime(reminderTime2, 'second-reminder');
         }
-
-        let hours = parseInt(match[1], 10);
-        const minutes = parseInt(match[2], 10);
-        const period = match[3].toUpperCase();
-
-        // Convert to 24-hour format
-        if (period === 'PM' && hours < 12) {
-          hours += 12;
-        } else if (period === 'AM' && hours === 12) {
-          hours = 0;
-        }
-
-        // Create a date object for today with the specified time
-        const now = new Date();
-        const scheduledTime = new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          now.getDate(),
-          hours,
-          minutes
-        );
-
-        // If the time has already passed today, schedule for tomorrow
-        if (scheduledTime <= now) {
-          scheduledTime.setDate(scheduledTime.getDate() + 1);
-        }
-
-        const secondsUntilReminder = Math.floor((scheduledTime.getTime() - now.getTime()) / 1000);
-
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'Declaration Reminder',
-            body: 'Remember to make your daily declarations!',
-            sound: true,
-          },
-          trigger: {
-            seconds: secondsUntilReminder,
-            repeats: true,
-          },
-        });
-
-        console.log(`Notification scheduled for ${reminderTime}`);
       }
     } catch (error) {
       console.error('Error scheduling notification:', error);
     }
   };
 
+  const scheduleReminderAtTime = async (timeString, identifier) => {
+    // Parse hours and minutes from time string
+    const timePattern = /(\d+):(\d+)\s*(AM|PM)/i;
+    const match = timeString.match(timePattern);
+
+    if (!match) {
+      console.error('Invalid time format');
+      return;
+    }
+
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const period = match[3].toUpperCase();
+
+    // Convert to 24-hour format
+    if (period === 'PM' && hours < 12) {
+      hours += 12;
+    } else if (period === 'AM' && hours === 12) {
+      hours = 0;
+    }
+
+    // Create a date object for today with the specified time
+    const now = new Date();
+    const scheduledTime = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      hours,
+      minutes
+    );
+
+    // If the time has already passed today, schedule for tomorrow
+    if (scheduledTime <= now) {
+      scheduledTime.setDate(scheduledTime.getDate() + 1);
+    }
+
+    const secondsUntilReminder = Math.floor((scheduledTime.getTime() - now.getTime()) / 1000);
+
+    await Notifications.scheduleNotificationAsync({
+      identifier: identifier,
+      content: {
+        title: 'Declaration Reminder',
+        body: 'Remember to make your daily declarations!',
+        sound: true,
+      },
+      trigger: {
+        seconds: secondsUntilReminder,
+        repeats: true,
+      },
+    });
+
+    console.log(`Notification scheduled for ${timeString} with ID: ${identifier}`);
+  };
+
   const toggleNotifications = (value) => {
     setNotificationsEnabled(value);
     saveSettings('notificationsEnabled', value);
-    
+
     // Schedule or cancel notifications based on the toggle
     if (value) {
       scheduleNotification();
@@ -191,7 +210,7 @@ export default function SettingsScreen() {
     setSoundEnabled(value);
     saveSettings('soundEnabled', value);
   };
-  
+
   const showTimePicker = () => {
     setTimePickerVisible(true);
   };
@@ -207,12 +226,12 @@ export default function SettingsScreen() {
     const formattedHours = hours % 12 === 0 ? 12 : hours % 12;
     const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
     const formattedTime = `${formattedHours}:${formattedMinutes} ${period}`;
-    
+
     setReminderTime(formattedTime);
     setReminderDate(date);
     saveSettings('reminderTime', formattedTime);
     hideTimePicker();
-    
+
     // Reschedule notification with new time
     if (notificationsEnabled) {
       scheduleNotification();
@@ -243,6 +262,8 @@ export default function SettingsScreen() {
               // Reset the state
               setNotificationsEnabled(false);
               setReminderTime('8:00 AM');
+              setReminderTime2('9:00 AM'); // Reset second reminder time
+              setSecondReminderEnabled(false); // Reset second reminder enabled flag
               setSoundEnabled(true);
               setHapticEnabled(true);
             } catch (error) {
@@ -254,6 +275,34 @@ export default function SettingsScreen() {
       ]
     );
   };
+
+  const showTimePicker2 = () => { // Added second time picker show function
+    setTimePickerVisible2(true);
+  };
+
+  const hideTimePicker2 = () => { // Added second time picker hide function
+    setTimePickerVisible2(false);
+  };
+
+  const handleTimeConfirm2 = (date) => { // Added second time picker confirm function
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const formattedHours = hours % 12 === 0 ? 12 : hours % 12;
+    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+    const formattedTime = `${formattedHours}:${formattedMinutes} ${period}`;
+
+    setReminderTime2(formattedTime);
+    setReminderDate2(date);
+    saveSettings('reminderTime2', formattedTime);
+    hideTimePicker2();
+
+    // Reschedule notification with new time
+    if (notificationsEnabled) {
+      scheduleNotification();
+    }
+  };
+
 
   const renderSettingSection = (title, icon, children) => (
     <BlurView 
@@ -288,19 +337,43 @@ export default function SettingsScreen() {
             </ThemedView>
             <TouchableOpacity onPress={showTimePicker}>
               <ThemedView style={styles.settingRow}>
-                <ThemedText>Reminder Time</ThemedText>
+                <ThemedText>Reminder Time 1</ThemedText> {/* Added "1" for clarity */}
                 <ThemedText>{reminderTime}</ThemedText>
               </ThemedView>
             </TouchableOpacity>
-            
-            {Platform.OS !== 'web' && (
-              <DateTimePickerModal
-                isVisible={isTimePickerVisible}
-                mode="time"
-                onConfirm={handleTimeConfirm}
-                onCancel={hideTimePicker}
-                date={reminderDate}
+            <TouchableOpacity onPress={showTimePicker2}> {/* Added second time picker */}
+              <ThemedView style={styles.settingRow}>
+                <ThemedText>Reminder Time 2</ThemedText> {/* Added "2" for clarity */}
+                <ThemedText>{reminderTime2}</ThemedText>
+              </ThemedView>
+            </TouchableOpacity>
+            <ThemedView style={styles.settingRow}>
+              <ThemedText>Enable Reminder 2</ThemedText>
+              <Switch
+                value={secondReminderEnabled}
+                onValueChange={setSecondReminderEnabled}
+                trackColor={{ false: '#767577', true: '#0a7ea4' }}
+                thumbColor="#f4f3f4"
               />
+            </ThemedView>
+
+            {Platform.OS !== 'web' && (
+              <>
+                <DateTimePickerModal
+                  isVisible={isTimePickerVisible}
+                  mode="time"
+                  onConfirm={handleTimeConfirm}
+                  onCancel={hideTimePicker}
+                  date={reminderDate}
+                />
+                <DateTimePickerModal
+                  isVisible={isTimePickerVisible2}
+                  mode="time"
+                  onConfirm={handleTimeConfirm2}
+                  onCancel={hideTimePicker2}
+                  date={reminderDate2}
+                />
+              </>
             )}
           </>
         ))}
