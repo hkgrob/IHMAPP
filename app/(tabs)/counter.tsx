@@ -141,39 +141,47 @@ export default function CounterScreen() {
         Count your daily declarations to track your progress
       </ThemedText>
 
-      <ThemedView style={styles.counterContainer}>
-        <ThemedView style={styles.counterSection}>
+      <ThemedView style={styles.countersWrapper}>
+        <ThemedView style={styles.tallyCounterContainer}>
           <ThemedText style={styles.counterLabel}>Today's Count</ThemedText>
-          <ThemedText style={styles.counterValue}>{dailyCount}</ThemedText>
-          <TouchableOpacity 
-            style={[styles.resetButton, styles.smallButton]} 
-            onPress={() => resetDailyCount()}
-          >
-            <Ionicons name="refresh" size={18} color="#fff" />
-            <ThemedText style={styles.resetButtonText}>Reset Daily</ThemedText>
-          </TouchableOpacity>
+          <ThemedView style={styles.tallyCounter}>
+            <ThemedView style={styles.counterDisplay}>
+              <ThemedView style={styles.displayWindow}>
+                <ThemedText style={styles.counterDigit}>{dailyCount}</ThemedText>
+              </ThemedView>
+            </ThemedView>
+            <TouchableOpacity style={[styles.resetButton, styles.counterButton]} onPress={() => resetDailyCount()}>
+              <ThemedView style={styles.buttonInner}>
+                <Ionicons name="refresh" size={18} color="#fff" />
+                <ThemedText style={styles.buttonText}>Reset Daily</ThemedText>
+              </ThemedView>
+            </TouchableOpacity>
+          </ThemedView>
         </ThemedView>
 
-        <ThemedView style={styles.counterSection}>
+        <ThemedView style={styles.tallyCounterContainer}>
           <ThemedText style={styles.counterLabel}>All-Time Total</ThemedText>
-          <ThemedText style={styles.counterValue}>{totalCount}</ThemedText>
-          <TouchableOpacity 
-            style={[styles.resetButton, styles.smallButton]} 
-            onPress={() => resetTotalCount()}
-          >
-            <Ionicons name="refresh" size={18} color="#fff" />
-            <ThemedText style={styles.resetButtonText}>Reset Total</ThemedText>
-          </TouchableOpacity>
+          <ThemedView style={styles.tallyCounter}>
+            <ThemedView style={styles.counterDisplay}>
+              <ThemedView style={styles.displayWindow}>
+                <ThemedText style={styles.counterDigit}>{totalCount}</ThemedText>
+              </ThemedView>
+            </ThemedView>
+            <TouchableOpacity style={[styles.resetButton, styles.counterButton]} onPress={() => resetTotalCount()}>
+              <ThemedView style={styles.buttonInner}>
+                <Ionicons name="refresh" size={18} color="#fff" />
+                <ThemedText style={styles.buttonText}>Reset Total</ThemedText>
+              </ThemedView>
+            </TouchableOpacity>
+          </ThemedView>
         </ThemedView>
       </ThemedView>
 
-      <TouchableOpacity 
-        style={styles.incrementButton} 
-        onPress={incrementCount}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="add" size={36} color="#fff" />
-        <ThemedText style={styles.incrementButtonText}>Count Declaration</ThemedText>
+      <TouchableOpacity style={styles.bigCountButton} onPress={incrementCount} activeOpacity={0.7}>
+        <ThemedView style={styles.bigCountButtonInner}>
+          <Ionicons name="add" size={48} color="#fff" />
+          <ThemedText style={styles.bigCountButtonText}>Count Declaration</ThemedText>
+        </ThemedView>
       </TouchableOpacity>
 
       <ThemedView style={styles.tipsContainer}>
@@ -201,88 +209,120 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   header: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 8,
     textAlign: 'center',
+    marginTop: 20,
+    marginBottom: 8,
   },
   subheader: {
     fontSize: 16,
-    marginBottom: 24,
     textAlign: 'center',
+    marginBottom: 30,
     opacity: 0.8,
   },
-  counterContainer: {
+  countersWrapper: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 32,
+    justifyContent: 'space-around',
+    marginBottom: 40,
+    flexWrap: 'wrap',
   },
-  counterSection: {
-    flex: 1,
+  tallyCounterContainer: {
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    margin: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    width: '45%',
+    marginBottom: 20,
   },
   counterLabel: {
     fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 12,
+    textAlign: 'center',
+    fontWeight: '500',
   },
-  counterValue: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  incrementButton: {
-    backgroundColor: '#4A90E2',
-    padding: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-    flexDirection: 'row',
+  tallyCounter: {
+    width: '100%',
+    borderRadius: 16,
+    backgroundColor: '#2b2b2b',
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 5,
+    shadowOpacity: 0.27,
+    shadowRadius: 4.65,
+    elevation: 6,
   },
-  incrementButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginLeft: 12,
+  counterDisplay: {
+    backgroundColor: '#262626',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: '#1a1a1a',
   },
-  resetButton: {
-    backgroundColor: '#FF6B6B',
+  displayWindow: {
+    backgroundColor: '#000',
     borderRadius: 8,
     padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#444',
+  },
+  counterDigit: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#e51',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    textShadowColor: 'rgba(229, 51, 17, 0.4)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+  },
+  counterButton: {
+    paddingVertical: 10,
+    backgroundColor: '#444',
+  },
+  buttonInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  smallButton: {
-    paddingHorizontal: 12,
-  },
-  resetButtonText: {
+  buttonText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
-    marginLeft: 4,
+    marginLeft: 6,
+  },
+  bigCountButton: {
+    alignSelf: 'center',
+    width: '80%',
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#e51',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  bigCountButtonInner: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bigCountButtonText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 4,
   },
   tipsContainer: {
+    marginTop: 30,
     padding: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     borderRadius: 12,
-    marginTop: 8,
   },
   tipsHeader: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 12,
   },
