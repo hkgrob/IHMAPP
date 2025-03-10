@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
+import { StyleSheet, View, ScrollView, TouchableOpacity, FlatList, Platform, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import * as Linking from 'expo-linking';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { Ionicons } from '@expo/vector-icons';
 import { DECLARATION_CATEGORIES } from '@/constants/DeclarationsData';
 
 export default function DeclarationsScreen() {
@@ -20,7 +23,7 @@ export default function DeclarationsScreen() {
     // For the web platform, we need to use the actual file path
     const pdfPath = `/attached_assets/${filename}`;
     Linking.openURL(pdfPath);
-    
+
     // Log for debugging
     console.log('Opening PDF at path:', pdfPath);
   };

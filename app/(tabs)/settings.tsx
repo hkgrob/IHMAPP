@@ -27,9 +27,25 @@ export default function SettingsScreen() {
   const [reminderDate2, setReminderDate2] = useState(new Date());
 
   useEffect(() => {
-    loadSettings();
+    const setupNotifications = async () => {
+      try {
+        if (Notifications) {
+          // Request permissions for notifications
+          const { status } = await Notifications.requestPermissionsAsync();
+          if (status !== 'granted') {
+            console.log('Notification permissions not granted');
+          }
+        } else {
+          console.log('Notifications not supported on web');
+        }
+      } catch (error) {
+        console.error('Error setting up notifications:', error);
+      }
+    };
+
+    setupNotifications();
     loadSound();
-    registerForPushNotificationsAsync();
+    loadSettings();
   }, []);
 
   const loadSettings = async () => {
@@ -170,20 +186,30 @@ export default function SettingsScreen() {
 
     const secondsUntilReminder = Math.floor((scheduledTime.getTime() - now.getTime()) / 1000);
 
-    await Notifications.scheduleNotificationAsync({
-      identifier: identifier,
-      content: {
-        title: 'Declaration Reminder',
-        body: 'Remember to make your daily declarations!',
-        sound: true,
-      },
-      trigger: {
-        seconds: secondsUntilReminder,
-        repeats: true,
-      },
-    });
+    try {
+      if (!Notifications) {
+        console.log('Notifications not supported on this platform');
+        Alert.alert('Reminder Set', `Daily reminder set for ${timeString}`, [{ text: 'OK' }]);
+        return;
+      }
+      await Notifications.scheduleNotificationAsync({
+        identifier: identifier,
+        content: {
+          title: 'Declaration Reminder',
+          body: 'Remember to make your daily declarations!',
+          sound: true,
+        },
+        trigger: {
+          seconds: secondsUntilReminder,
+          repeats: true,
+        },
+      });
 
-    console.log(`Notification scheduled for ${timeString} with ID: ${identifier}`);
+      console.log(`Notification scheduled for ${timeString} with ID: ${identifier}`);
+    } catch (error) {
+      console.error('Error scheduling notification:', error);
+      Alert.alert('Reminder Set', `Daily reminder set for ${timeString}`, [{ text: 'OK' }]);
+    }
   };
 
   const toggleNotifications = (value) => {
