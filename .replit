@@ -9,7 +9,7 @@ localPort = 8081
 externalPort = 80
 
 [workflows]
-runButton = "Dev Server"
+runButton = "Run Expo"
 
 [[workflows.workflow]]
 name = "Dev Server"
@@ -50,3 +50,11 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npx eas build --platform android --profile preview"
+
+[[workflows.workflow]]
+name = "Run Expo"
+author = 39982925
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx expo start"
