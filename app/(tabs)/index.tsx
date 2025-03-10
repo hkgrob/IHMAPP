@@ -1,74 +1,134 @@
-import { Image, StyleSheet, Platform } from 'react-native';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
+import React from 'react';
+import { StyleSheet, Image, ScrollView } from 'react-native';
+import { Link } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen() {
+  const dailyVerse = {
+    text: "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.",
+    reference: "John 3:16"
+  };
+
+  const recentReadings = [
+    { book: "Psalms", chapter: 23 },
+    { book: "Matthew", chapter: 5 },
+    { book: "Romans", chapter: 8 }
+  ];
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome to Expo on Replit!</ThemedText>
-        <HelloWave />
+    <ScrollView style={styles.container}>
+      <ThemedView style={styles.header}>
+        <ThemedText type="title">Bible Study App</ThemedText>
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
+      
+      <ThemedView style={styles.card}>
+        <ThemedText type="defaultSemiBold" style={styles.cardTitle}>Daily Verse</ThemedText>
+        <ThemedText style={styles.verseText}>"{dailyVerse.text}"</ThemedText>
+        <ThemedText style={styles.reference}>{dailyVerse.reference}</ThemedText>
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
+      
+      <ThemedView style={styles.card}>
+        <ThemedText type="defaultSemiBold" style={styles.cardTitle}>Recent Readings</ThemedText>
+        {recentReadings.map((item, index) => (
+          <Link key={index} href={`/bible?book=${item.book}&chapter=${item.chapter}`} asChild>
+            <ThemedView style={styles.recentItem}>
+              <ThemedText>{item.book} {item.chapter}</ThemedText>
+              <Ionicons name="chevron-forward" size={20} color="#666" />
+            </ThemedView>
+          </Link>
+        ))}
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
+      
+      <ThemedView style={styles.quickLinks}>
+        <Link href="/bible" asChild>
+          <ThemedView style={styles.quickLink}>
+            <Ionicons name="book-outline" size={28} color="#4A6572" />
+            <ThemedText>Read Bible</ThemedText>
+          </ThemedView>
+        </Link>
+        <Link href="/search" asChild>
+          <ThemedView style={styles.quickLink}>
+            <Ionicons name="search-outline" size={28} color="#4A6572" />
+            <ThemedText>Search</ThemedText>
+          </ThemedView>
+        </Link>
+        <Link href="/notes" asChild>
+          <ThemedView style={styles.quickLink}>
+            <Ionicons name="journal-outline" size={28} color="#4A6572" />
+            <ThemedText>My Notes</ThemedText>
+          </ThemedView>
+        </Link>
+        <Link href="/bookmarks" asChild>
+          <ThemedView style={styles.quickLink}>
+            <Ionicons name="bookmark-outline" size={28} color="#4A6572" />
+            <ThemedText>Bookmarks</ThemedText>
+          </ThemedView>
+        </Link>
       </ThemedView>
-    </ParallaxScrollView>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    padding: 16,
   },
-  stepContainer: {
-    gap: 8,
+  header: {
+    marginBottom: 20,
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  card: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardTitle: {
+    fontSize: 18,
+    marginBottom: 12,
+  },
+  verseText: {
+    fontSize: 16,
+    lineHeight: 24,
+    fontStyle: 'italic',
     marginBottom: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  reference: {
+    fontSize: 14,
+    textAlign: 'right',
+    fontWeight: 'bold',
+  },
+  recentItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+  },
+  quickLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  quickLink: {
+    width: '48%',
+    alignItems: 'center',
+    padding: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
 });
