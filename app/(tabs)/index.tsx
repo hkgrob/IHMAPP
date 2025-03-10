@@ -23,7 +23,7 @@ export default function HomeScreen() {
             <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
               <BlurView intensity={90} style={styles.featureButton} tint="light">
                 <ThemedView style={styles.iconContainer}>
-                  <Ionicons name="add-circle" size={32} color="#34c759" />
+                  <Ionicons name="stopwatch-outline" size={32} color="#34c759" />
                 </ThemedView>
                 <ThemedText style={styles.featureText}>Counter</ThemedText>
                 <ThemedText style={styles.featureDescription}>
