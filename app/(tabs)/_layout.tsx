@@ -1,8 +1,8 @@
-
 import { Tabs } from 'expo-router';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import Colors from '@/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
+import { HapticTab } from '@/components/HapticTab';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -11,6 +11,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarButton: (props) => <HapticTab {...props} />,
       }}>
       <Tabs.Screen
         name="index"
@@ -20,31 +21,31 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="bible"
+        name="declarations"
         options={{
-          title: 'Bible',
-          tabBarIcon: ({ color }) => <Ionicons name="book" size={24} color={color} />,
+          title: 'Declarations',
+          tabBarIcon: ({ color }) => <Ionicons name="document-text" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="search"
+        name="counter"
         options={{
-          title: 'Search',
-          tabBarIcon: ({ color }) => <Ionicons name="search" size={24} color={color} />,
+          title: 'Counter',
+          tabBarIcon: ({ color }) => <Ionicons name="add-circle" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="bookmarks"
+        name="stats"
         options={{
-          title: 'Bookmarks',
-          tabBarIcon: ({ color }) => <Ionicons name="bookmark" size={24} color={color} />,
+          title: 'Stats',
+          tabBarIcon: ({ color }) => <Ionicons name="stats-chart" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="notes"
+        name="settings"
         options={{
-          title: 'Notes',
-          tabBarIcon: ({ color }) => <Ionicons name="journal" size={24} color={color} />,
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <Ionicons name="settings" size={24} color={color} />,
         }}
       />
     </Tabs>

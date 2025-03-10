@@ -1,91 +1,106 @@
 
 import React from 'react';
-import { StyleSheet, Image, ScrollView } from 'react-native';
+import { StyleSheet, Image, ScrollView, Linking, View } from 'react-native';
 import { Link } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen() {
-  const dailyVerse = {
-    text: "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.",
-    reference: "John 3:16"
+  const dailyThought = {
+    text: "What you believe is what you become. Transform your mind and you'll transform your life.",
+    author: "Igniting Hope Ministries"
   };
 
-  const recentReadings = [
-    { book: "Psalms", chapter: 23 },
-    { book: "Matthew", chapter: 5 },
-    { book: "Romans", chapter: 8 }
-  ];
-
   return (
-    <ScrollView style={styles.container}>
-      <ThemedView style={styles.header}>
-        <ThemedText type="title">Bible Study App</ThemedText>
-      </ThemedView>
-      
-      <ThemedView style={styles.card}>
-        <ThemedText type="defaultSemiBold" style={styles.cardTitle}>Daily Verse</ThemedText>
-        <ThemedText style={styles.verseText}>"{dailyVerse.text}"</ThemedText>
-        <ThemedText style={styles.reference}>{dailyVerse.reference}</ThemedText>
-      </ThemedView>
-      
-      <ThemedView style={styles.card}>
-        <ThemedText type="defaultSemiBold" style={styles.cardTitle}>Recent Readings</ThemedText>
-        {recentReadings.map((item, index) => (
-          <Link key={index} href={`/bible?book=${item.book}&chapter=${item.chapter}`} asChild>
-            <ThemedView style={styles.recentItem}>
-              <ThemedText>{item.book} {item.chapter}</ThemedText>
-              <Ionicons name="chevron-forward" size={20} color="#666" />
+    <ThemedView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.logoContainer}>
+          <ThemedText style={styles.title}>Igniting Hope Ministries</ThemedText>
+          <ThemedText style={styles.subtitle}>Mind Renewal & Beliefs</ThemedText>
+        </View>
+        
+        <ThemedView style={styles.card}>
+          <ThemedText style={styles.cardTitle}>Daily Thought</ThemedText>
+          <ThemedText style={styles.quote}>"{dailyThought.text}"</ThemedText>
+          <ThemedText style={styles.author}>- {dailyThought.author}</ThemedText>
+        </ThemedView>
+        
+        <ThemedView style={styles.featuresContainer}>
+          <Link href="/(tabs)/declarations" asChild>
+            <ThemedView style={styles.featureButton}>
+              <Ionicons name="document-text" size={28} color="#4A90E2" />
+              <ThemedText style={styles.featureText}>Declarations</ThemedText>
+              <ThemedText style={styles.featureDescription}>
+                Daily declarations to renew your mind
+              </ThemedText>
             </ThemedView>
           </Link>
-        ))}
-      </ThemedView>
-      
-      <ThemedView style={styles.quickLinks}>
-        <Link href="/bible" asChild>
-          <ThemedView style={styles.quickLink}>
-            <Ionicons name="book-outline" size={28} color="#4A6572" />
-            <ThemedText>Read Bible</ThemedText>
-          </ThemedView>
-        </Link>
-        <Link href="/search" asChild>
-          <ThemedView style={styles.quickLink}>
-            <Ionicons name="search-outline" size={28} color="#4A6572" />
-            <ThemedText>Search</ThemedText>
-          </ThemedView>
-        </Link>
-        <Link href="/notes" asChild>
-          <ThemedView style={styles.quickLink}>
-            <Ionicons name="journal-outline" size={28} color="#4A6572" />
-            <ThemedText>My Notes</ThemedText>
-          </ThemedView>
-        </Link>
-        <Link href="/bookmarks" asChild>
-          <ThemedView style={styles.quickLink}>
-            <Ionicons name="bookmark-outline" size={28} color="#4A6572" />
-            <ThemedText>Bookmarks</ThemedText>
-          </ThemedView>
-        </Link>
-      </ThemedView>
-    </ScrollView>
+          
+          <Link href="/(tabs)/counter" asChild>
+            <ThemedView style={styles.featureButton}>
+              <Ionicons name="add-circle" size={28} color="#4A90E2" />
+              <ThemedText style={styles.featureText}>Tally Counter</ThemedText>
+              <ThemedText style={styles.featureDescription}>
+                Track your daily declarations
+              </ThemedText>
+            </ThemedView>
+          </Link>
+          
+          <Link href="/(tabs)/stats" asChild>
+            <ThemedView style={styles.featureButton}>
+              <Ionicons name="stats-chart" size={28} color="#4A90E2" />
+              <ThemedText style={styles.featureText}>Statistics</ThemedText>
+              <ThemedText style={styles.featureDescription}>
+                View your progress over time
+              </ThemedText>
+            </ThemedView>
+          </Link>
+        </ThemedView>
+        
+        <ThemedView style={styles.card}>
+          <ThemedText style={styles.cardTitle}>About Us</ThemedText>
+          <ThemedText style={styles.paragraph}>
+            Igniting Hope Ministries focuses on helping people renew their minds and transform their beliefs.
+          </ThemedText>
+          <ThemedText 
+            style={styles.link}
+            onPress={() => Linking.openURL('https://ignitinghope.com')}>
+            Visit our website →
+          </ThemedText>
+        </ThemedView>
+      </ScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 16,
   },
-  header: {
-    marginBottom: 20,
+  logoContainer: {
     alignItems: 'center',
-    paddingVertical: 20,
+    marginVertical: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    marginTop: 4,
+    opacity: 0.8,
+    textAlign: 'center',
   },
   card: {
-    borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
+    borderRadius: 12,
+    marginVertical: 12,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -93,42 +108,51 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 18,
-    marginBottom: 12,
+    fontWeight: 'bold',
+    marginBottom: 10,
   },
-  verseText: {
+  quote: {
     fontSize: 16,
-    lineHeight: 24,
     fontStyle: 'italic',
     marginBottom: 8,
+    lineHeight: 24,
   },
-  reference: {
+  author: {
     fontSize: 14,
     textAlign: 'right',
-    fontWeight: 'bold',
+    opacity: 0.8,
   },
-  recentItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+  featuresContainer: {
+    marginVertical: 12,
   },
-  quickLinks: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  quickLink: {
-    width: '48%',
-    alignItems: 'center',
+  featureButton: {
     padding: 16,
-    marginBottom: 16,
     borderRadius: 12,
-    shadowOffset: { width: 0, height: 2 },
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  featureText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  featureDescription: {
+    fontSize: 14,
+    opacity: 0.8,
+  },
+  paragraph: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 10,
+  },
+  link: {
+    fontSize: 14,
+    color: '#4A90E2',
+    marginTop: 8,
   },
 });
