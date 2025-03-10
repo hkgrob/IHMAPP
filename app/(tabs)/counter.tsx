@@ -1,10 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
+import { StyleSheet, TouchableOpacity, Alert, Platform, ScrollView, Dimensions } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
+
+const { width } = Dimensions.get('window');
 
 export default function CounterScreen() {
   const [dailyCount, setDailyCount] = useState(0);
@@ -38,19 +41,6 @@ export default function CounterScreen() {
       if (storedTotalCount !== null) {
         setTotalCount(parseInt(storedTotalCount, 10));
       }
-
-      // Check if it's a new day
-      if (lastCountDate !== null) {
-        const today = new Date().toDateString();
-        if (lastCountDate !== today) {
-          // It's a new day, reset the daily count
-          setDailyCount(0);
-          await AsyncStorage.setItem('lastCountDate', today);
-        }
-      } else {
-        // First time using the app, set the date
-        await AsyncStorage.setItem('lastCountDate', new Date().toDateString());
-      }
     } catch (error) {
       console.error('Error loading counts:', error);
     }
@@ -76,9 +66,9 @@ export default function CounterScreen() {
       const lastCountDate = await AsyncStorage.getItem('lastCountDate');
       const today = new Date().toDateString();
 
-      if (lastCountDate !== null && lastCountDate !== today) {
-        // It's a new day, reset the daily count
+      if (lastCountDate && lastCountDate !== today) {
         setDailyCount(0);
+        await AsyncStorage.setItem('dailyCount', '0');
         await AsyncStorage.setItem('lastCountDate', today);
       }
     } catch (error) {
@@ -87,35 +77,30 @@ export default function CounterScreen() {
   };
 
   const incrementCount = () => {
-    // Only use haptics on native platforms where available
     if (Platform.OS !== 'web') {
-      try {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {
-          // Silently fail if haptics aren't available
-        });
-      } catch (error) {
-        // Failsafe in case Haptics aren't available
-        console.log('Haptics not available');
-      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
     setDailyCount(prevCount => prevCount + 1);
     setTotalCount(prevTotal => prevTotal + 1);
   };
 
-  const resetDailyCount = async () => {
+  const resetDailyCount = () => {
     try {
       Alert.alert(
         "Reset Daily Count",
         "Are you sure you want to reset your daily count to zero?",
         [
           { text: "Cancel", style: "cancel" },
-          { text: "Reset", onPress: async () => {
-            if (Platform.OS !== 'web') {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          { 
+            text: "Reset", 
+            onPress: async () => {
+              if (Platform.OS !== 'web') {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              }
+              setDailyCount(0);
+              await AsyncStorage.setItem('dailyCount', '0');
             }
-            setDailyCount(0);
-            await AsyncStorage.setItem('dailyCount', '0');
-          }}
+          }
         ]
       );
     } catch (error) {
@@ -123,88 +108,110 @@ export default function CounterScreen() {
     }
   };
 
-  const resetTotalCount = async () => {
-    Alert.alert(
-      "Reset Total Count",
-      "Are you sure you want to reset your all-time total count to zero?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Reset", onPress: async () => {
-          if (Platform.OS !== 'web') {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+  const resetTotalCount = () => {
+    try {
+      Alert.alert(
+        "Reset Total Count",
+        "Are you sure you want to reset your all-time total count to zero?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { 
+            text: "Reset", 
+            onPress: async () => {
+              if (Platform.OS !== 'web') {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              }
+              setTotalCount(0);
+              await AsyncStorage.setItem('totalCount', '0');
+            }
           }
-          setTotalCount(0);
-          await AsyncStorage.setItem('totalCount', '0');
-        }}
-      ]
-    );
+        ]
+      );
+    } catch (error) {
+      console.error("Error resetting total count:", error);
+    }
+  };
+
+  // Create padded digits for mechanical counter effect
+  const formatCounterValue = (value) => {
+    return value.toString().padStart(5, '0');
   };
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText style={styles.header}>Declaration Counter</ThemedText>
-      <ThemedText style={styles.subheader}>
-        Count your daily declarations to track your progress
-      </ThemedText>
-
-      <ThemedView style={styles.countersWrapper}>
-        <ThemedView style={styles.tallyCounterContainer}>
-          <ThemedText style={styles.counterLabel}>Today's Count</ThemedText>
-          <ThemedView style={styles.tallyCounter}>
-            <ThemedView style={styles.counterDisplay}>
-              <ThemedView style={styles.displayWindow}>
-                <ThemedText style={styles.counterDigit}>{dailyCount}</ThemedText>
-              </ThemedView>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <ThemedText style={styles.header}>Declaration Counter</ThemedText>
+        <ThemedText style={styles.subheader}>
+          Count your daily declarations to track your progress
+        </ThemedText>
+        
+        <ThemedView style={styles.counterContainer}>
+          <ThemedView style={styles.counterCard}>
+            <ThemedText style={styles.counterTitle}>TODAY'S COUNT</ThemedText>
+            <ThemedView style={styles.mechanicalCounter}>
+              {formatCounterValue(dailyCount).split('').map((digit, index) => (
+                <ThemedView key={index} style={styles.digitContainer}>
+                  <ThemedText style={styles.digit}>{digit}</ThemedText>
+                </ThemedView>
+              ))}
             </ThemedView>
-            <TouchableOpacity style={[styles.resetButton, styles.counterButton]} onPress={() => resetDailyCount()}>
-              <ThemedView style={styles.buttonInner}>
-                <Ionicons name="refresh" size={18} color="#fff" />
-                <ThemedText style={styles.buttonText}>Reset Daily</ThemedText>
-              </ThemedView>
+            <TouchableOpacity 
+              style={styles.resetButton} 
+              onPress={resetDailyCount}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="refresh" size={16} color="#fff" />
+              <ThemedText style={styles.resetText}>Reset Daily</ThemedText>
+            </TouchableOpacity>
+          </ThemedView>
+
+          <ThemedView style={styles.counterCard}>
+            <ThemedText style={styles.counterTitle}>ALL-TIME TOTAL</ThemedText>
+            <ThemedView style={styles.mechanicalCounter}>
+              {formatCounterValue(totalCount).split('').map((digit, index) => (
+                <ThemedView key={index} style={styles.digitContainer}>
+                  <ThemedText style={styles.digit}>{digit}</ThemedText>
+                </ThemedView>
+              ))}
+            </ThemedView>
+            <TouchableOpacity 
+              style={styles.resetButton} 
+              onPress={resetTotalCount}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="refresh" size={16} color="#fff" />
+              <ThemedText style={styles.resetText}>Reset Total</ThemedText>
             </TouchableOpacity>
           </ThemedView>
         </ThemedView>
 
-        <ThemedView style={styles.tallyCounterContainer}>
-          <ThemedText style={styles.counterLabel}>All-Time Total</ThemedText>
-          <ThemedView style={styles.tallyCounter}>
-            <ThemedView style={styles.counterDisplay}>
-              <ThemedView style={styles.displayWindow}>
-                <ThemedText style={styles.counterDigit}>{totalCount}</ThemedText>
-              </ThemedView>
-            </ThemedView>
-            <TouchableOpacity style={[styles.resetButton, styles.counterButton]} onPress={() => resetTotalCount()}>
-              <ThemedView style={styles.buttonInner}>
-                <Ionicons name="refresh" size={18} color="#fff" />
-                <ThemedText style={styles.buttonText}>Reset Total</ThemedText>
-              </ThemedView>
-            </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.countButton} 
+          onPress={incrementCount}
+          activeOpacity={0.7}
+        >
+          <ThemedView style={styles.countButtonInner}>
+            <Ionicons name="add-circle-outline" size={32} color="#fff" />
+            <ThemedText style={styles.countButtonText}>Count Declaration</ThemedText>
           </ThemedView>
-        </ThemedView>
-      </ThemedView>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.bigCountButton} onPress={incrementCount} activeOpacity={0.7}>
-        <ThemedView style={styles.bigCountButtonInner}>
-          <Ionicons name="add" size={48} color="#fff" />
-          <ThemedText style={styles.bigCountButtonText}>Count Declaration</ThemedText>
+        <ThemedView style={styles.tipsContainer}>
+          <ThemedText style={styles.tipsHeader}>How to use the counter:</ThemedText>
+          <ThemedText style={styles.tipText}>
+            1. Each time you speak a declaration, tap the "Count Declaration" button
+          </ThemedText>
+          <ThemedText style={styles.tipText}>
+            2. Your daily count resets automatically at midnight
+          </ThemedText>
+          <ThemedText style={styles.tipText}>
+            3. Your all-time total continues to grow with each declaration
+          </ThemedText>
+          <ThemedText style={styles.tipText}>
+            4. Use the reset buttons if you need to start over
+          </ThemedText>
         </ThemedView>
-      </TouchableOpacity>
-
-      <ThemedView style={styles.tipsContainer}>
-        <ThemedText style={styles.tipsHeader}>How to use the counter:</ThemedText>
-        <ThemedText style={styles.tipText}>
-          1. Each time you speak a declaration, tap the "Count Declaration" button
-        </ThemedText>
-        <ThemedText style={styles.tipText}>
-          2. Your daily count resets automatically at midnight
-        </ThemedText>
-        <ThemedText style={styles.tipText}>
-          3. Your all-time total continues to grow with each declaration
-        </ThemedText>
-        <ThemedText style={styles.tipText}>
-          4. Use the reset buttons if you need to start over
-        </ThemedText>
-      </ThemedView>
+      </ScrollView>
     </ThemedView>
   );
 }
@@ -212,7 +219,7 @@ export default function CounterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: 20,
   },
   header: {
     fontSize: 28,
@@ -227,114 +234,112 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     opacity: 0.8,
   },
-  countersWrapper: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 40,
-    flexWrap: 'wrap',
+  counterContainer: {
+    marginBottom: 30,
   },
-  tallyCounterContainer: {
-    alignItems: 'center',
-    width: '45%',
-    marginBottom: 20,
-  },
-  counterLabel: {
-    fontSize: 16,
-    marginBottom: 12,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  tallyCounter: {
-    width: '100%',
+  counterCard: {
+    marginBottom: 25,
     borderRadius: 16,
-    backgroundColor: '#2b2b2b',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.27,
-    shadowRadius: 4.65,
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
     elevation: 6,
+    backgroundColor: '#333',
   },
-  counterDisplay: {
-    backgroundColor: '#262626',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: '#1a1a1a',
+  counterTitle: {
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 14,
+    paddingVertical: 12,
+    backgroundColor: '#444',
+    color: '#fff',
+    letterSpacing: 1,
   },
-  displayWindow: {
-    backgroundColor: '#000',
-    borderRadius: 8,
-    padding: 8,
-    alignItems: 'center',
+  mechanicalCounter: {
+    flexDirection: 'row',
     justifyContent: 'center',
+    backgroundColor: '#222',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#111',
+  },
+  digitContainer: {
+    width: width * 0.13,
+    height: 60,
+    backgroundColor: '#111',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 2,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: '#444',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
   },
-  counterDigit: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#e51',
+  digit: {
+    fontSize: 32,
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    textShadowColor: 'rgba(229, 51, 17, 0.4)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
+    fontWeight: 'bold',
+    color: '#FFA500',
+    textShadow: '0px 0px 5px rgba(255, 165, 0, 0.7)',
   },
-  counterButton: {
+  resetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 10,
-    backgroundColor: '#444',
+    backgroundColor: '#d32f2f',
   },
-  buttonInner: {
+  resetText: {
+    color: '#fff',
+    marginLeft: 6,
+    fontWeight: '500',
+    fontSize: 14,
+  },
+  countButton: {
+    alignSelf: 'center',
+    width: '90%',
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#4CAF50',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
+    marginBottom: 30,
+  },
+  countButtonInner: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonText: {
+  countButtonText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginLeft: 6,
-  },
-  bigCountButton: {
-    alignSelf: 'center',
-    width: '80%',
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: '#e51',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  bigCountButtonInner: {
-    flex: 1,
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bigCountButtonText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 4,
+    marginLeft: 10,
   },
   tipsContainer: {
-    marginTop: 30,
-    padding: 16,
+    padding: 20,
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
     borderRadius: 12,
+    marginBottom: 20,
   },
   tipsHeader: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 15,
   },
   tipText: {
     fontSize: 14,
-    marginBottom: 8,
+    marginBottom: 10,
     lineHeight: 20,
   },
 });
