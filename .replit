@@ -55,10 +55,6 @@ mode = "sequential"
 task = "shell.exec"
 args = "npx eas build --platform android --profile preview"
 
-[[deployment.rewrites]]
-from = "/attached_assets/*"
-to = "/attached_assets/*"
-
 [[workflows.workflow]]
 name = "Run Expo"
 author = 39982925
@@ -66,3 +62,7 @@ author = 39982925
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npx expo start"
+
+[[deployment.rewrites]]
+from = "/attached_assets/*"
+to = "/attached_assets/*"
