@@ -19,13 +19,57 @@ export default function DeclarationsScreen() {
     }
   };
 
-  const handleDownload = (filename: string) => {
-    // For the web platform, we need to use the actual file path
-    const pdfPath = `/attached_assets/${filename}`;
-    Linking.openURL(pdfPath);
-
-    // Log for debugging
-    console.log('Opening PDF at path:', pdfPath);
+  const handleDownload = async (filename: string) => {
+    try {
+      if (Platform.OS === 'web') {
+        // For web, use our API endpoint to serve the file
+        const pdfPath = `/api/static/${filename}`;
+        
+        // Create an anchor element to trigger download
+        const link = document.createElement('a');
+        link.href = pdfPath;
+        link.download = filename; // Suggest a filename to save as
+        link.target = '_blank';
+        
+        // Append to the document, click it, and remove it
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        console.log('Opening PDF at path:', pdfPath);
+      } else {
+        // For mobile platforms, download the file and share it
+        const fileUri = `${FileSystem.documentDirectory}${filename}`;
+        const assetUri = `${FileSystem.documentDirectory}attached_assets/${filename}`;
+        
+        // First, check if we have permissions and if sharing is available
+        const canShare = await Sharing.isAvailableAsync();
+        
+        if (!canShare) {
+          Alert.alert('Error', 'Sharing is not available on this device');
+          return;
+        }
+        
+        try {
+          // For mobile, we'd need to first download the PDF to the local filesystem
+          // This is just a placeholder - in a real app, you'd need to have the PDFs
+          // in your assets and copy them to the file system or download from a server
+          await FileSystem.copyAsync({
+            from: assetUri,
+            to: fileUri
+          });
+          
+          // Then share it
+          await Sharing.shareAsync(fileUri);
+        } catch (error) {
+          console.error('Error handling file:', error);
+          Alert.alert('Error', 'Could not access the PDF file');
+        }
+      }
+    } catch (error) {
+      console.error('Error opening PDF:', error);
+      Alert.alert('Error', 'There was a problem opening the PDF');
+    }
   };
 
   return (
