@@ -2,7 +2,7 @@
 import { Tabs } from 'expo-router';
 import { StyleSheet } from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import Colors from '@/constants/Colors';
+import { Colors } from '@/constants/Colors';
 import { HapticTab } from '@/components/HapticTab';
 import { Ionicons } from '@expo/vector-icons';
 
