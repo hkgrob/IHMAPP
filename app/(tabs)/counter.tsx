@@ -58,8 +58,14 @@ export default function CounterScreen() {
 
   const saveCounts = async () => {
     try {
-      await AsyncStorage.setItem('dailyCount', dailyCount.toString());
-      await AsyncStorage.setItem('totalCount', totalCount.toString());
+      const promises = [
+        AsyncStorage.setItem('dailyCount', dailyCount.toString()),
+        AsyncStorage.setItem('totalCount', totalCount.toString()),
+        AsyncStorage.setItem('lastCountDate', new Date().toDateString())
+      ];
+
+      await Promise.all(promises);
+      console.log('Counts saved successfully');
     } catch (error) {
       console.error('Error saving counts:', error);
     }
