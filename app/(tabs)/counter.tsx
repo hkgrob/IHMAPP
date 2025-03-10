@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { StyleSheet, TouchableOpacity, Alert, Platform, ScrollView, Dimensions, View } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { BlurView } from 'expo-blur';
@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { StatusBar } from 'expo-status-bar';
+import { Audio } from 'expo-av'; // Added import for sound
 
 const { width } = Dimensions.get('window');
 
@@ -17,9 +18,12 @@ export default function TabTwoScreen() {
   const [bestStreak, setBestStreak] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [showTips, setShowTips] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(true); // Added state for sound
+  const soundRef = useRef(new Audio.Sound()); // Added sound ref
 
   useEffect(() => {
     loadCounts();
+    loadSoundPreferences(); // Load sound preferences on mount
   }, []);
 
   const loadCounts = async () => {
@@ -37,13 +41,11 @@ export default function TabTwoScreen() {
       if (storedBestStreak) setBestStreak(parseInt(storedBestStreak, 10));
       if (storedCurrentStreak) setCurrentStreak(parseInt(storedCurrentStreak, 10));
 
-      // Check if this is the first time using the app
       const today = new Date().toDateString();
       if (!storedFirstDate) {
         await AsyncStorage.setItem('firstDate', today);
       }
 
-      // Check if it's a new day
       if (storedLastDate && storedLastDate !== today) {
         setDailyCount(0);
         await AsyncStorage.setItem('dailyCount', '0');
@@ -53,36 +55,45 @@ export default function TabTwoScreen() {
     }
   };
 
+  const loadSoundPreferences = async () => {
+    try {
+      const storedSoundEnabled = await AsyncStorage.getItem('soundEnabled');
+      if (storedSoundEnabled !== null) {
+        setSoundEnabled(JSON.parse(storedSoundEnabled));
+      }
+    } catch (error) {
+      console.error("Error loading sound preferences:", error);
+    }
+  };
+
+
   const incrementCount = async () => {
     try {
-      // Provide haptic feedback
       if (Platform.OS !== 'web') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
 
+      // Play click sound
+      await playClickSound();
+
       const today = new Date().toDateString();
       let newCurrentStreak = currentStreak;
 
-      // If it's a new day, reset daily count and update streak
       if (lastDate !== today) {
-        // Check if it's a consecutive day (for streak)
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         const yesterdayString = yesterday.toDateString();
 
         if (lastDate === yesterdayString) {
-          // Consecutive day, increment streak
           newCurrentStreak = currentStreak + 1;
           setCurrentStreak(newCurrentStreak);
           await AsyncStorage.setItem('currentStreak', newCurrentStreak.toString());
 
-          // Update best streak if needed
           if (newCurrentStreak > bestStreak) {
             setBestStreak(newCurrentStreak);
             await AsyncStorage.setItem('bestStreak', newCurrentStreak.toString());
           }
         } else if (lastDate !== '') {
-          // Streak broken
           newCurrentStreak = 1;
           setCurrentStreak(1);
           await AsyncStorage.setItem('currentStreak', '1');
@@ -106,8 +117,18 @@ export default function TabTwoScreen() {
     }
   };
 
+  const playClickSound = async () => {
+    if (soundEnabled) {
+      try {
+        await soundRef.current.loadAsync(require('./click.mp3')); // Assumes click.mp3 is in the same directory
+        await soundRef.current.playAsync();
+      } catch (error) {
+        console.error("Error playing sound:", error);
+      }
+    }
+  };
+
   const resetDailyCount = () => {
-    // For web platform, use confirm instead of Alert
     if (Platform.OS === 'web') {
       const confirmed = confirm("Are you sure you want to reset your daily count to zero?");
       if (confirmed) {
@@ -117,7 +138,6 @@ export default function TabTwoScreen() {
           .catch(error => console.error('Error resetting daily count:', error));
       }
     } else {
-      // For native platforms, use Alert
       Alert.alert(
         "Reset Daily Count",
         "Are you sure you want to reset your daily count to zero?",
@@ -139,7 +159,6 @@ export default function TabTwoScreen() {
   };
 
   const resetTotalCount = () => {
-    // For web platform, use confirm instead of Alert
     if (Platform.OS === 'web') {
       const confirmed = confirm("Are you sure you want to reset your all-time total count to zero?");
       if (confirmed) {
@@ -149,7 +168,6 @@ export default function TabTwoScreen() {
           .catch(error => console.error('Error resetting total count:', error));
       }
     } else {
-      // For native platforms, use Alert
       Alert.alert(
         "Reset Total Count",
         "Are you sure you want to reset your all-time total count to zero?",
@@ -167,6 +185,21 @@ export default function TabTwoScreen() {
           }
         ]
       );
+    }
+  };
+
+  const toggleTips = () => {
+    setShowTips(!showTips);
+  };
+
+  // Function to toggle sound and save preference
+  const toggleSound = async (value) => {
+    setSoundEnabled(value);
+    try {
+      await AsyncStorage.setItem('soundEnabled', value.toString());
+      console.log('Sound preference saved');
+    } catch (error) {
+      console.error('Error saving sound preference:', error);
     }
   };
 
@@ -281,7 +314,7 @@ export default function TabTwoScreen() {
             </View>
 
             <TouchableOpacity 
-              onPress={() => setShowTips(false)} 
+              onPress={() => toggleTips()} 
               style={styles.dismissButton}
             >
               <ThemedText style={styles.dismissText}>Dismiss</ThemedText>
@@ -375,7 +408,7 @@ const styles = StyleSheet.create({
     fontSize: 72,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     fontWeight: 'bold',
-    color: '#ff9f0a', // Apple orange
+    color: '#ff9f0a', 
     ...Platform.select({
       web: {
         textShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)',
@@ -428,7 +461,7 @@ const styles = StyleSheet.create({
   streakValue: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#5856D6', // Apple purple
+    color: '#5856D6', 
   },
   streakUnit: {
     fontSize: 16,
@@ -464,7 +497,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#34c759', // Apple green
+    backgroundColor: '#34c759', 
   },
   countButtonText: {
     color: '#fff',

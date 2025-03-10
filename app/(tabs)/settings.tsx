@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, ScrollView, Switch, TouchableOpacity, Alert, Linking } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
@@ -8,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { BlurView } from 'expo-blur';
 import { StatusBar } from 'expo-status-bar';
+import { Audio } from 'expo-av'; // Import Audio
 
 export default function SettingsScreen() {
   const colorScheme = useColorScheme();
@@ -15,9 +15,11 @@ export default function SettingsScreen() {
   const [reminderTime, setReminderTime] = useState('8:00 AM');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [hapticEnabled, setHapticEnabled] = useState(true);
+  const [sound, setSound] = useState(null); // Add sound state
 
   useEffect(() => {
     loadSettings();
+    loadSound(); // Load sound effect
   }, []);
 
   const loadSettings = async () => {
@@ -35,6 +37,18 @@ export default function SettingsScreen() {
       console.error("Error loading settings:", error);
     }
   };
+
+  const loadSound = async () => {
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        require('../assets/click.mp3') // Path to your sound file
+      );
+      setSound(sound);
+    } catch (error) {
+      console.error('Error loading sound:', error);
+    }
+  };
+
 
   const saveSettings = async (key, value) => {
     try {
@@ -108,7 +122,7 @@ export default function SettingsScreen() {
     <ThemedView style={styles.container}>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       <ThemedText style={styles.title}>Settings</ThemedText>
-      
+
       <ScrollView style={styles.scrollView}>
         {renderSettingSection("Notifications", "notifications-outline", (
           <>
