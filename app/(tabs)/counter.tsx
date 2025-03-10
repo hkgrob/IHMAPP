@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { StatusBar } from 'expo-status-bar';
-import { Audio } from 'expo-av'; // Added import for sound
+import { Audio } from 'expo-av';
 
 const { width } = Dimensions.get('window');
 
@@ -18,12 +18,13 @@ export default function TabTwoScreen() {
   const [bestStreak, setBestStreak] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [showTips, setShowTips] = useState(true);
-  const [soundEnabled, setSoundEnabled] = useState(true); // Added state for sound
-  const soundRef = useRef(new Audio.Sound()); // Added sound ref
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [sound, setSound] = useState(null); // Added sound state
+  const soundRef = useRef(new Audio.Sound());
 
   useEffect(() => {
     loadCounts();
-    loadSoundPreferences(); // Load sound preferences on mount
+    loadSoundPreferences();
   }, []);
 
   const loadCounts = async () => {
@@ -73,7 +74,6 @@ export default function TabTwoScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
 
-      // Play click sound
       await playClickSound();
 
       const today = new Date().toDateString();
@@ -120,10 +120,20 @@ export default function TabTwoScreen() {
   const playClickSound = async () => {
     if (soundEnabled) {
       try {
-        await soundRef.current.loadAsync(require('./click.mp3')); // Assumes click.mp3 is in the same directory
-        await soundRef.current.playAsync();
+        if (sound) {
+          await sound.setPositionAsync(0);
+          await sound.playAsync();
+          console.log('Sound played successfully');
+        } else {
+          console.log('Loading sound on demand');
+          const { sound: newSound } = await Audio.Sound.createAsync(
+            require('./click.mp3')
+          );
+          setSound(newSound);
+          await newSound.playAsync();
+        }
       } catch (error) {
-        console.error("Error playing sound:", error);
+        console.error('Error playing sound:', error);
       }
     }
   };
@@ -192,7 +202,6 @@ export default function TabTwoScreen() {
     setShowTips(!showTips);
   };
 
-  // Function to toggle sound and save preference
   const toggleSound = async (value) => {
     setSoundEnabled(value);
     try {
