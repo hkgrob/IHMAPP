@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, TouchableOpacity, Alert, Platform, ScrollView, Dimensions } from 'react-native';
+import { StyleSheet, TouchableOpacity, Alert, Platform, ScrollView, Dimensions, View } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
+import { BlurView } from 'expo-blur';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -151,80 +152,109 @@ export default function CounterScreen() {
   const formatCounterValue = (value) => {
     return value.toString().padStart(5, '0');
   };
+  
+  const getFormattedDate = () => {
+    const options = { weekday: 'long', month: 'long', day: 'numeric' };
+    return new Date().toLocaleDateString(undefined, options);
+  };
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <ThemedText style={styles.header}>Declaration Counter</ThemedText>
-        <ThemedText style={styles.subheader}>
-          Count your daily declarations to track your progress
-        </ThemedText>
-
-        <ThemedView style={styles.counterContainer}>
-          <ThemedView style={styles.counterCard}>
-            <ThemedText style={styles.counterTitle}>TODAY'S COUNT</ThemedText>
-            <ThemedView style={styles.mechanicalCounter}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <ThemedView style={styles.header}>
+          <ThemedText style={styles.headerTitle}>Declaration Counter</ThemedText>
+          <ThemedText style={styles.dateText}>{getFormattedDate()}</ThemedText>
+        </ThemedView>
+        
+        {/* Daily Counter Card */}
+        <ThemedView style={styles.counterCard}>
+          <BlurView intensity={80} style={styles.blurContainer} tint="light">
+            <ThemedText style={styles.counterLabel}>Today's Count</ThemedText>
+            <ThemedView style={styles.counterDisplay}>
               {formatCounterValue(dailyCount).split('').map((digit, index) => (
                 <ThemedView key={index} style={styles.digitContainer}>
                   <ThemedText style={styles.digit}>{digit}</ThemedText>
                 </ThemedView>
               ))}
             </ThemedView>
-            <TouchableOpacity 
-              style={styles.resetButton} 
-              onPress={resetDailyCount}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="refresh" size={16} color="#fff" />
-              <ThemedText style={styles.resetText}>Reset Daily</ThemedText>
-            </TouchableOpacity>
-          </ThemedView>
-
-          <ThemedView style={styles.counterCard}>
-            <ThemedText style={styles.counterTitle}>ALL-TIME TOTAL</ThemedText>
-            <ThemedView style={styles.mechanicalCounter}>
+            <ThemedText style={styles.counterDescription}>
+              Declarations made today
+            </ThemedText>
+          </BlurView>
+          <TouchableOpacity 
+            style={styles.resetButton} 
+            onPress={resetDailyCount}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="refresh-outline" size={18} color="#fff" />
+            <ThemedText style={styles.resetText}>Reset</ThemedText>
+          </TouchableOpacity>
+        </ThemedView>
+        
+        {/* Total Counter Card */}
+        <ThemedView style={styles.counterCard}>
+          <BlurView intensity={80} style={styles.blurContainer} tint="light">
+            <ThemedText style={styles.counterLabel}>All-Time Total</ThemedText>
+            <ThemedView style={styles.counterDisplay}>
               {formatCounterValue(totalCount).split('').map((digit, index) => (
                 <ThemedView key={index} style={styles.digitContainer}>
                   <ThemedText style={styles.digit}>{digit}</ThemedText>
                 </ThemedView>
               ))}
             </ThemedView>
-            <TouchableOpacity 
-              style={styles.resetButton} 
-              onPress={resetTotalCount}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="refresh" size={16} color="#fff" />
-              <ThemedText style={styles.resetText}>Reset Total</ThemedText>
-            </TouchableOpacity>
-          </ThemedView>
+            <ThemedText style={styles.counterDescription}>
+              Your declaration journey
+            </ThemedText>
+          </BlurView>
+          <TouchableOpacity 
+            style={styles.resetButton} 
+            onPress={resetTotalCount}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="refresh-outline" size={18} color="#fff" />
+            <ThemedText style={styles.resetText}>Reset</ThemedText>
+          </TouchableOpacity>
         </ThemedView>
-
+        
+        {/* Count Declaration Button */}
         <TouchableOpacity 
           style={styles.countButton} 
           onPress={incrementCount}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
           <ThemedView style={styles.countButtonInner}>
-            <Ionicons name="add-circle-outline" size={32} color="#fff" />
+            <Ionicons name="add-circle" size={30} color="#fff" />
             <ThemedText style={styles.countButtonText}>Count Declaration</ThemedText>
           </ThemedView>
         </TouchableOpacity>
-
-        <ThemedView style={styles.tipsContainer}>
-          <ThemedText style={styles.tipsHeader}>How to use the counter:</ThemedText>
-          <ThemedText style={styles.tipText}>
-            1. Each time you speak a declaration, tap the "Count Declaration" button
-          </ThemedText>
-          <ThemedText style={styles.tipText}>
-            2. Your daily count resets automatically at midnight
-          </ThemedText>
-          <ThemedText style={styles.tipText}>
-            3. Your all-time total continues to grow with each declaration
-          </ThemedText>
-          <ThemedText style={styles.tipText}>
-            4. Use the reset buttons if you need to start over
-          </ThemedText>
+        
+        {/* Tips Card */}
+        <ThemedView style={styles.tipsCard}>
+          <ThemedText style={styles.tipsHeader}>How to use</ThemedText>
+          <View style={styles.tipItem}>
+            <ThemedView style={styles.tipBullet}><ThemedText style={styles.bulletText}>1</ThemedText></ThemedView>
+            <ThemedText style={styles.tipText}>
+              Tap "Count Declaration" each time you speak a declaration
+            </ThemedText>
+          </View>
+          <View style={styles.tipItem}>
+            <ThemedView style={styles.tipBullet}><ThemedText style={styles.bulletText}>2</ThemedText></ThemedView>
+            <ThemedText style={styles.tipText}>
+              Daily count resets automatically at midnight
+            </ThemedText>
+          </View>
+          <View style={styles.tipItem}>
+            <ThemedView style={styles.tipBullet}><ThemedText style={styles.bulletText}>3</ThemedText></ThemedView>
+            <ThemedText style={styles.tipText}>
+              All-time total accumulates your declarations over time
+            </ThemedText>
+          </View>
+          <View style={styles.tipItem}>
+            <ThemedView style={styles.tipBullet}><ThemedText style={styles.bulletText}>4</ThemedText></ThemedView>
+            <ThemedText style={styles.tipText}>
+              Use reset buttons if you need to start over
+            </ThemedText>
+          </View>
         </ThemedView>
       </ScrollView>
     </ThemedView>
@@ -234,100 +264,108 @@ export default function CounterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f5f5f7', // Apple light background color
+  },
+  scrollContent: {
     padding: 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: 40,
   },
   header: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginTop: 20,
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 34,
+    fontWeight: '700',
     marginBottom: 8,
+    letterSpacing: 0.4,
+    color: '#1d1d1f', // Apple dark text color
   },
-  subheader: {
+  dateText: {
     fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 30,
-    opacity: 0.8,
-  },
-  counterContainer: {
-    marginBottom: 30,
+    color: '#86868b', // Apple secondary text color
+    fontWeight: '500',
   },
   counterCard: {
-    marginBottom: 25,
-    borderRadius: 16,
+    marginBottom: 24,
+    borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 6,
-    backgroundColor: '#333',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    backgroundColor: 'transparent',
   },
-  counterTitle: {
+  blurContainer: {
+    padding: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+  },
+  counterLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+    color: '#1d1d1f',
     textAlign: 'center',
-    fontWeight: 'bold',
-    fontSize: 14,
-    paddingVertical: 12,
-    backgroundColor: '#444',
-    color: '#fff',
-    letterSpacing: 1,
   },
-  mechanicalCounter: {
+  counterDisplay: {
     flexDirection: 'row',
     justifyContent: 'center',
-    backgroundColor: '#222',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#111',
+    marginBottom: 16,
   },
   digitContainer: {
-    width: width * 0.13,
-    height: 60,
-    backgroundColor: '#111',
+    width: width * 0.12,
+    height: 70,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 2,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#444',
+    marginHorizontal: 3,
+    borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
   },
   digit: {
-    fontSize: 32,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontSize: 36,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     fontWeight: 'bold',
-    color: '#FFA500',
-    textShadow: '0px 0px 5px rgba(255, 165, 0, 0.7)',
+    color: '#ff9f0a', // Apple orange
+  },
+  counterDescription: {
+    fontSize: 14,
+    color: '#86868b',
+    textAlign: 'center',
+    fontWeight: '500',
   },
   resetButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    backgroundColor: '#d32f2f',
+    paddingVertical: 12,
+    backgroundColor: '#ff3b30', // Apple red
   },
   resetText: {
     color: '#fff',
     marginLeft: 6,
-    fontWeight: '500',
-    fontSize: 14,
+    fontWeight: '600',
+    fontSize: 15,
   },
   countButton: {
     alignSelf: 'center',
-    width: '90%',
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#4CAF50',
+    width: '100%',
+    height: 60,
+    borderRadius: 16,
+    backgroundColor: '#34c759', // Apple green
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
     marginBottom: 30,
+    marginTop: 10,
   },
   countButtonInner: {
     flex: 1,
@@ -337,24 +375,52 @@ const styles = StyleSheet.create({
   },
   countButtonText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 17,
+    fontWeight: '600',
     marginLeft: 10,
   },
-  tipsContainer: {
-    padding: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    borderRadius: 12,
+  tipsCard: {
+    padding: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
     marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 2,
   },
   tipsHeader: {
-    fontSize: 18,
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 20,
+    color: '#1d1d1f',
+  },
+  tipItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  tipBullet: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#0071e3', // Apple blue
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    marginTop: 2,
+  },
+  bulletText: {
+    color: 'white',
+    fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 15,
   },
   tipText: {
-    fontSize: 14,
-    marginBottom: 10,
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#1d1d1f',
+    flex: 1,
+    fontWeight: '400',
   },
 });
