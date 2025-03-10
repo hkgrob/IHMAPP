@@ -16,8 +16,13 @@ export default function DeclarationsScreen() {
     }
   };
 
-  const handleDownload = (url: string) => {
-    Linking.openURL(url);
+  const handleDownload = (filename: string) => {
+    // For the web platform, we need to use the actual file path
+    const pdfPath = `/attached_assets/${filename}`;
+    Linking.openURL(pdfPath);
+    
+    // Log for debugging
+    console.log('Opening PDF at path:', pdfPath);
   };
 
   return (
@@ -42,7 +47,7 @@ export default function DeclarationsScreen() {
                   color="#4A90E2"
                 />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.downloadButton} onPress={() => handleDownload(`/api/pdf/${category.id}`)}>
+              <TouchableOpacity style={styles.downloadButton} onPress={() => handleDownload(category.source)}>
                 <Ionicons name="download-outline" size={16} color="#FF9500" />
                 <ThemedText style={styles.downloadText}>Download PDF</ThemedText>
               </TouchableOpacity>
