@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,36 +9,36 @@ import * as Haptics from 'expo-haptics';
 export default function CounterScreen() {
   const [dailyCount, setDailyCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
-  
+
   // Load counts from storage on component mount
   useEffect(() => {
     loadCounts();
   }, []);
-  
+
   // Save counts to storage whenever they change
   useEffect(() => {
     saveCounts();
   }, [dailyCount, totalCount]);
-  
+
   // Check if we need to reset the daily count (new day)
   useEffect(() => {
     checkDayChange();
   }, []);
-  
+
   const loadCounts = async () => {
     try {
       const storedDailyCount = await AsyncStorage.getItem('dailyCount');
       const storedTotalCount = await AsyncStorage.getItem('totalCount');
       const lastCountDate = await AsyncStorage.getItem('lastCountDate');
-      
+
       if (storedDailyCount !== null) {
         setDailyCount(parseInt(storedDailyCount, 10));
       }
-      
+
       if (storedTotalCount !== null) {
         setTotalCount(parseInt(storedTotalCount, 10));
       }
-      
+
       // Check if it's a new day
       if (lastCountDate !== null) {
         const today = new Date().toDateString();
@@ -56,7 +55,7 @@ export default function CounterScreen() {
       console.error('Error loading counts:', error);
     }
   };
-  
+
   const saveCounts = async () => {
     try {
       await AsyncStorage.setItem('dailyCount', dailyCount.toString());
@@ -65,12 +64,12 @@ export default function CounterScreen() {
       console.error('Error saving counts:', error);
     }
   };
-  
+
   const checkDayChange = async () => {
     try {
       const lastCountDate = await AsyncStorage.getItem('lastCountDate');
       const today = new Date().toDateString();
-      
+
       if (lastCountDate !== null && lastCountDate !== today) {
         // It's a new day, reset the daily count
         setDailyCount(0);
@@ -80,15 +79,17 @@ export default function CounterScreen() {
       console.error('Error checking day change:', error);
     }
   };
-  
+
   const incrementCount = () => {
-    // Provide haptic feedback
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
+    // Only use haptics on native platforms (iOS/Android)
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+
     setDailyCount(prevCount => prevCount + 1);
     setTotalCount(prevTotal => prevTotal + 1);
   };
-  
+
   const resetDailyCount = () => {
     Alert.alert(
       "Reset Daily Count",
@@ -96,13 +97,15 @@ export default function CounterScreen() {
       [
         { text: "Cancel", style: "cancel" },
         { text: "Reset", onPress: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          if (Platform.OS !== 'web') {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          }
           setDailyCount(0);
         }}
       ]
     );
   };
-  
+
   const resetTotalCount = () => {
     Alert.alert(
       "Reset Total Count",
@@ -110,20 +113,22 @@ export default function CounterScreen() {
       [
         { text: "Cancel", style: "cancel" },
         { text: "Reset", onPress: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          if (Platform.OS !== 'web') {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          }
           setTotalCount(0);
         }}
       ]
     );
   };
-  
+
   return (
     <ThemedView style={styles.container}>
       <ThemedText style={styles.header}>Declaration Counter</ThemedText>
       <ThemedText style={styles.subheader}>
         Count your daily declarations to track your progress
       </ThemedText>
-      
+
       <ThemedView style={styles.counterContainer}>
         <ThemedView style={styles.counterSection}>
           <ThemedText style={styles.counterLabel}>Today's Count</ThemedText>
@@ -136,7 +141,7 @@ export default function CounterScreen() {
             <ThemedText style={styles.resetButtonText}>Reset Daily</ThemedText>
           </TouchableOpacity>
         </ThemedView>
-        
+
         <ThemedView style={styles.counterSection}>
           <ThemedText style={styles.counterLabel}>All-Time Total</ThemedText>
           <ThemedText style={styles.counterValue}>{totalCount}</ThemedText>
@@ -149,7 +154,7 @@ export default function CounterScreen() {
           </TouchableOpacity>
         </ThemedView>
       </ThemedView>
-      
+
       <TouchableOpacity 
         style={styles.incrementButton} 
         onPress={incrementCount}
@@ -158,7 +163,7 @@ export default function CounterScreen() {
         <Ionicons name="add" size={36} color="#fff" />
         <ThemedText style={styles.incrementButtonText}>Count Declaration</ThemedText>
       </TouchableOpacity>
-      
+
       <ThemedView style={styles.tipsContainer}>
         <ThemedText style={styles.tipsHeader}>How to use the counter:</ThemedText>
         <ThemedText style={styles.tipText}>
