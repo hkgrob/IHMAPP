@@ -172,7 +172,7 @@ export default function PodcastScreen() {
     >
       <View style={styles.episodeImageContainer}>
         <Image
-          source={item.imageUrl ? { uri: item.imageUrl } : require('../../assets/images/podcast-default.jpg')}
+          source={item.imageUrl ? { uri: item.imageUrl } : { uri: 'https://www.ignitinghope.com/wp-content/uploads/2021/11/podcast.jpg' }}
           style={styles.episodeImage}
         />
       </View>
