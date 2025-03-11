@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Platform, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -102,21 +102,75 @@ export default function CounterScreen() {
 
   const resetDailyCount = async () => {
     try {
+      // Show confirmation dialog
+      if (Platform.OS === 'web') {
+        if (!window.confirm('Are you sure you want to reset your daily count?')) {
+          return; // User canceled
+        }
+      } else {
+        // For native platforms, we'll use Alert
+        Alert.alert(
+          "Reset Daily Count",
+          "Are you sure you want to reset your daily count?",
+          [
+            { text: "Cancel", style: "cancel" },
+            { 
+              text: "Reset", 
+              style: "destructive",
+              onPress: async () => {
+                await AsyncStorage.setItem('dailyCount', '0');
+                setDailyCount(0);
+                console.log('Daily count reset successfully');
+              }
+            }
+          ]
+        );
+        return; // Exit early for native platforms, actual reset happens in Alert callback
+      }
+
+      // For web, continue with reset
       await AsyncStorage.setItem('dailyCount', '0');
       setDailyCount(0);
       console.log('Daily count reset successfully');
     } catch (error) {
-      console.error('Error resetting daily count', error);
+      console.error('Error resetting daily count:', error);
     }
   };
 
   const resetTotalCount = async () => {
     try {
+      // Show confirmation dialog
+      if (Platform.OS === 'web') {
+        if (!window.confirm('Are you sure you want to reset your total count?')) {
+          return; // User canceled
+        }
+      } else {
+        // For native platforms, we'll use Alert
+        Alert.alert(
+          "Reset Total Count",
+          "Are you sure you want to reset your total count? This will clear all your declaration history.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { 
+              text: "Reset", 
+              style: "destructive",
+              onPress: async () => {
+                await AsyncStorage.setItem('totalCount', '0');
+                setTotalCount(0);
+                console.log('Total count reset successfully');
+              }
+            }
+          ]
+        );
+        return; // Exit early for native platforms, actual reset happens in Alert callback
+      }
+
+      // For web, continue with reset
       await AsyncStorage.setItem('totalCount', '0');
       setTotalCount(0);
       console.log('Total count reset successfully');
     } catch (error) {
-      console.error('Error resetting total count', error);
+      console.error('Error resetting total count:', error);
     }
   };
 
