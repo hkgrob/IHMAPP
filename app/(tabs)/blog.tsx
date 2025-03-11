@@ -1,78 +1,30 @@
-
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Linking, RefreshControl } from 'react-native';
+import { StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl, Linking, Image, View } from 'react-native';
 import { Stack } from 'expo-router';
-import { ThemedView } from '@/components/ThemedView';
-import { ThemedText } from '@/components/ThemedText';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from '@/hooks/useColorScheme';
 
-interface BlogPost {
-  id: string;
-  title: string;
-  excerpt: string;
-  date: string;
-  link: string;
-}
+import ThemedView from '../../components/ThemedView';
+import ThemedText from '../../components/ThemedText';
+import { useColorScheme } from '../../hooks/useColorScheme';
+import { fetchWixBlogPosts, BlogPost } from '../../services/wixBlogService';
 
 export default function BlogScreen() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
   const fetchBlogPosts = async () => {
     try {
-      // This is a placeholder - in production we'd need a proper API
-      // or a proxy server to fetch the content from ignitinghope.com/blog
-      // For now, we'll use some sample data
-      
-      // Simulating network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const samplePosts: BlogPost[] = [
-        {
-          id: '1',
-          title: 'Prophetic Breakthrough',
-          excerpt: 'Learning to hear God\'s voice clearly is vital for every believer. In this post, we explore practical steps to enhancing your prophetic gifting.',
-          date: 'May 15, 2023',
-          link: 'https://www.ignitinghope.com/blog/prophetic-breakthrough'
-        },
-        {
-          id: '2',
-          title: 'Kingdom Mindsets',
-          excerpt: 'Discover how shifting your mindset can transform your life, relationships, and spiritual journey.',
-          date: 'April 22, 2023',
-          link: 'https://www.ignitinghope.com/blog/kingdom-mindsets'
-        },
-        {
-          id: '3',
-          title: 'Spirit-Led Leadership',
-          excerpt: 'Effective leadership flows from intimacy with God. Learn how to lead from a place of spiritual authority and wisdom.',
-          date: 'March 10, 2023',
-          link: 'https://www.ignitinghope.com/blog/spirit-led-leadership'
-        },
-        {
-          id: '4',
-          title: 'Identity in Christ',
-          excerpt: 'Understanding who you are in Christ is foundational to walking in freedom and purpose.',
-          date: 'February 5, 2023',
-          link: 'https://www.ignitinghope.com/blog/identity-in-christ'
-        },
-        {
-          id: '5',
-          title: 'Declarations that Transform',
-          excerpt: 'Words have power. Learn how biblical declarations can transform your mind and circumstances.',
-          date: 'January 18, 2023',
-          link: 'https://www.ignitinghope.com/blog/declarations-that-transform'
-        }
-      ];
-      
-      setPosts(samplePosts);
+      setError(null);
+      const blogPosts = await fetchWixBlogPosts();
+      setPosts(blogPosts);
     } catch (error) {
       console.error('Error fetching blog posts:', error);
+      setError('Failed to load blog posts. Please try again later.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -95,7 +47,7 @@ export default function BlogScreen() {
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen options={{ title: 'Igniting Hope Blog' }} />
-      
+
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         refreshControl={
@@ -104,8 +56,10 @@ export default function BlogScreen() {
       >
         <ThemedText style={styles.header}>Igniting Hope Blog</ThemedText>
         <ThemedText style={styles.subheader}>Latest posts from ignitinghope.com</ThemedText>
-        
-        {loading ? (
+
+        {error ? (
+          <ThemedText style={styles.errorText}>{error}</ThemedText>
+        ) : loading ? (
           <ActivityIndicator size="large" color="#FF9500" style={styles.loader} />
         ) : (
           <>
@@ -131,7 +85,7 @@ export default function BlogScreen() {
                 </BlurView>
               </TouchableOpacity>
             ))}
-            
+
             <TouchableOpacity 
               style={styles.visitBlogButton}
               activeOpacity={0.7}
@@ -142,7 +96,7 @@ export default function BlogScreen() {
               </ThemedText>
               <Ionicons name="open-outline" size={18} color="#fff" />
             </TouchableOpacity>
-            
+
             <ThemedText style={styles.disclaimerText}>
               This is a preview of the Igniting Hope blog content. For the complete experience and most recent posts, please visit the official website.
             </ThemedText>
@@ -175,6 +129,11 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginTop: 30,
+  },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 20,
   },
   postContainer: {
     marginBottom: 16,
