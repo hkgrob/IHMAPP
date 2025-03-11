@@ -49,6 +49,7 @@
     "react-native-svg": "^15.11.2",
     "react-native-web": "~0.19.13",
     "react-native-webview": "13.12.5",
+    "string_decoder-browserify": "^0.0.1-security",
     "timers-browserify": "^2.0.12",
     "xml2js": "^0.6.2"
   },
