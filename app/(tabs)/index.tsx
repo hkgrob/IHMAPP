@@ -130,7 +130,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <TouchableOpacity onPress={() => Linking.openURL('https://x.com/BacklundSteve')}>
               <View style={[styles.socialIcon, { backgroundColor: '#000000' }]}>
-                <FontAwesome name="times" size={24} color="white" />
+                <FontAwesome name="twitter" size={24} color="white" />
               </View>
             </TouchableOpacity>
           </View>
