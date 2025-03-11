@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity, FlatList, Platform, Alert } from 'react-native';
+import { StyleSheet, View, ScrollView, TouchableOpacity, FlatList, Platform, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 import * as FileSystem from 'expo-file-system';
@@ -10,6 +10,7 @@ import { DECLARATION_CATEGORIES } from '@/constants/DeclarationsData';
 
 export default function DeclarationsScreen() {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<string | null>(null);
 
   const toggleCategory = (categoryId: string) => {
     if (expandedCategory === categoryId) {
@@ -20,6 +21,7 @@ export default function DeclarationsScreen() {
   };
 
   const handleDownload = async (filename: string) => {
+    setIsLoading(filename);
     try {
       if (Platform.OS === 'web') {
         // Use our custom PDF viewer
@@ -31,30 +33,27 @@ export default function DeclarationsScreen() {
       } else {
         // For mobile platforms, use Sharing API
         const localUri = FileSystem.documentDirectory + filename;
-
-        // Check if sharing is available
-        const canShare = await Sharing.isAvailableAsync();
-        if (!canShare) {
-          Alert.alert('Error', 'Sharing is not available on this device');
-          return;
-        }
-
         try {
-          // In a real implementation, you would need to make sure the PDF exists at this location
-          // For example, by copying it from the assets or downloading it
-          // Here we're assuming the file is already at the right location
+          await FileSystem.downloadAsync(
+            Platform.OS === 'android' ? `file:///android_asset/www/attached_assets/${filename}` : `${FileSystem.documentDirectory}${filename}`,
+            localUri
+          );
 
-          // Share the file
-          await Sharing.shareAsync(localUri);
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(localUri);
+          } else {
+            Alert.alert('Error', 'Sharing is not available on this device');
+          }
         } catch (error) {
-          console.error('Error handling file:', error);
-          Alert.alert('Error', 'Could not access the PDF file. Make sure it exists.', 
-            [{ text: 'OK' }]);
+          console.error('Error downloading PDF for mobile:', error);
+          Alert.alert('Error', 'Failed to download the PDF on your device. Please try again.');
         }
       }
     } catch (error) {
-      console.error('Error opening PDF:', error);
-      Alert.alert('Error', 'There was a problem opening the PDF');
+      console.error('Error handling PDF:', error);
+      Alert.alert('Error', 'Failed to open the PDF. Please try again.');
+    } finally {
+      setIsLoading(null);
     }
   };
 
@@ -69,20 +68,37 @@ export default function DeclarationsScreen() {
         {DECLARATION_CATEGORIES.map((category) => (
           <ThemedView key={category.id} style={styles.categoryContainer}>
             <TouchableOpacity style={styles.categoryHeaderContainer}>
-              <TouchableOpacity style={styles.categoryHeader} onPress={() => toggleCategory(category.id)}>
-                <ThemedView style={styles.categoryTitleContainer}>
-                  <ThemedText style={styles.categoryTitle}>{category.title}</ThemedText>
-                  <ThemedText style={styles.categorySource}>Source: {category.source}</ThemedText>
+              <TouchableOpacity 
+                onPress={() => toggleCategory(category.id)}
+                activeOpacity={0.6}
+              >
+                <ThemedView style={styles.categoryHeader}>
+                  <ThemedView style={styles.categoryTitleContainer}>
+                    <ThemedText style={styles.categoryTitle}>{category.title}</ThemedText>
+                    <ThemedText style={styles.categorySource}>{category.source}</ThemedText>
+                  </ThemedView>
+                  <Ionicons
+                    name={expandedCategory === category.id ? 'chevron-up' : 'chevron-down'}
+                    size={20}
+                    color="#8E8E93"
+                  />
                 </ThemedView>
-                <Ionicons
-                  name={expandedCategory === category.id ? "chevron-up" : "chevron-down"}
-                  size={24}
-                  color="#4A90E2"
-                />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.downloadButton} onPress={() => handleDownload(category.source)}>
-                <Ionicons name="download-outline" size={16} color="#FF9500" />
-                <ThemedText style={styles.downloadText}>Download PDF</ThemedText>
+
+              <TouchableOpacity 
+                style={styles.downloadButton}
+                onPress={() => handleDownload(category.source)}
+                disabled={isLoading === category.source}
+                activeOpacity={0.7}
+              >
+                {isLoading === category.source ? (
+                  <ActivityIndicator size="small" color="#FF9500" />
+                ) : (
+                  <>
+                    <Ionicons name="document-outline" size={14} color="#FF9500" />
+                    <ThemedText style={styles.downloadText}>PDF</ThemedText>
+                  </>
+                )}
               </TouchableOpacity>
             </TouchableOpacity>
 

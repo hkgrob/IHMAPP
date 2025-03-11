@@ -1,0 +1,13 @@
+
+# Proper MIME type for PDF files
+AddType application/pdf .pdf
+
+# Enable CORS
+<IfModule mod_headers.c>
+  <FilesMatch "\.(pdf)$">
+    Header set Access-Control-Allow-Origin "*"
+  </FilesMatch>
+</IfModule>
+
+# Prevent directory listing
+Options -Indexes
