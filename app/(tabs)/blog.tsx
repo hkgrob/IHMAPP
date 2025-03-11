@@ -7,6 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { fetchWixBlogPosts, BlogPost } from '@/services/wixBlogService';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { ResponsiveText } from 'react-native-responsive-text'; // Assuming this import is correct
+
 
 export default function BlogScreen() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -142,7 +144,7 @@ export default function BlogScreen() {
 
         {errorMessage && (
           <View style={styles.errorContainer}>
-            <ThemedText style={styles.errorMessage}>{errorMessage}</ThemedText>
+            <ResponsiveText variant="body" style={styles.errorMessage}>{errorMessage}</ResponsiveText>
             <TouchableOpacity 
               style={styles.retryButton} 
               onPress={handleRefresh}
@@ -157,9 +159,9 @@ export default function BlogScreen() {
         {(loading || refreshing) ? (
           <View style={styles.loaderContainer}>
             <ActivityIndicator size="large" color="#0066cc" />
-            <ThemedText style={styles.loadingText}>
+            <ResponsiveText variant="body" style={styles.loadingText}>
               {refreshing ? 'Refreshing posts...' : 'Loading posts...'}
-            </ThemedText>
+            </ResponsiveText>
           </View>
         ) : (
           <>
@@ -172,9 +174,9 @@ export default function BlogScreen() {
                     resizeMode="cover"
                   />
                 )}
-                <ThemedText style={styles.blogTitle}>{post.title}</ThemedText>
-                <ThemedText style={styles.blogDate}>{post.date}</ThemedText>
-                <ThemedText style={styles.blogExcerpt}>{post.excerpt}</ThemedText>
+                <ResponsiveText variant="h3" style={styles.blogTitle}>{post.title}</ResponsiveText>
+                <ResponsiveText variant="caption" style={styles.blogDate}>{post.date}</ResponsiveText>
+                <ResponsiveText variant="body" style={styles.blogExcerpt}>{post.excerpt}</ResponsiveText>
                 <TouchableOpacity 
                   style={styles.readMoreButton}
                   onPress={() => handleOpenBlog(post.link)}
@@ -185,9 +187,9 @@ export default function BlogScreen() {
               </ThemedView>
             ))}
             {posts.length > 0 && (
-              <ThemedText style={styles.footerText}>
+              <ResponsiveText variant="caption" style={styles.footerText}>
                 Showing {posts.length} posts
-              </ThemedText>
+              </ResponsiveText>
             )}
           </>
         )}
