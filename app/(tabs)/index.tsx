@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, TouchableOpacity, Image, Linking, Platform, View } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Image, Linking, Platform, View, Text } from 'react-native';
 import { Link } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -130,7 +130,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <TouchableOpacity onPress={() => Linking.openURL('https://x.com/BacklundSteve')}>
               <View style={[styles.socialIcon, { backgroundColor: '#000000' }]}>
-                <FontAwesome name="twitter" size={24} color="white" />
+                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 20 }}>X</Text>
               </View>
             </TouchableOpacity>
           </View>
