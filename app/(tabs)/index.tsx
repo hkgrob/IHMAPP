@@ -34,6 +34,21 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </Link>
 
+          <Link href="/(tabs)/blog" asChild>
+            <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
+              <BlurView intensity={90} style={styles.featureButton} tint="light">
+                <ThemedView style={styles.iconContainer}>
+                  <Ionicons name="newspaper-outline" size={32} color="#5856D6" />
+                </ThemedView>
+                <ThemedText style={styles.featureText}>Blog</ThemedText>
+                <ThemedText style={styles.featureDescription}>
+                  Inspiration for your journey
+                </ThemedText>
+                <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+              </BlurView>
+            </TouchableOpacity>
+          </Link>
+
           <Link href="/(tabs)/declarations" asChild>
             <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
               <BlurView intensity={90} style={styles.featureButton} tint="light">
