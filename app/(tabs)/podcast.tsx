@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl } from 'react-native';
+import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ import { fetchPodcastEpisodes, PodcastEpisode } from '@/services/podcastService'
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
+import { Header } from '@/components/Header';
 
 export default function PodcastScreen() {
   const colorScheme = useColorScheme();
@@ -111,8 +112,9 @@ export default function PodcastScreen() {
   );
 
   return (
-    <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
+    <ThemedView style={styles.container}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
+      <Header />
       
       <View style={styles.headerContainer}>
         <ThemedText style={styles.header}>
@@ -202,6 +204,7 @@ export default function PodcastScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: 0,
   },
   headerContainer: {
     padding: 20,
