@@ -26,6 +26,11 @@ const SwipeableDeclaration = ({ item, onDelete, tintColor }: { item: CustomDecla
     );
   };
 
+  // Make sure item exists before rendering
+  if (!item) {
+    return null;
+  }
+
   return (
     <Swipeable renderRightActions={renderRightActions}>
       <View style={styles.declarationItem}>
@@ -86,6 +91,21 @@ export default function DeclarationsScreen() {
     setExpandedCategory(expandedCategory === categoryId ? null : categoryId);
   };
 
+  const deleteCustomDeclaration = async (id: string) => {
+    try {
+      const updatedDeclarations = customDeclarations.filter(
+        (declaration) => declaration.id !== id
+      );
+      setCustomDeclarations(updatedDeclarations);
+      await AsyncStorage.setItem('customDeclarations', JSON.stringify(updatedDeclarations));
+      if (Platform.OS === 'ios') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (error) {
+      console.error('Error deleting declaration:', error);
+    }
+  };
+  
   const addCustomDeclaration = async () => {
     if (newDeclaration.trim() !== '') {
       const newDeclarations = [...customDeclarations, { id: Date.now().toString(), text: newDeclaration }];
@@ -277,8 +297,15 @@ export default function DeclarationsScreen() {
                     Add your personal declarations here to speak them regularly.
                   </ThemedText>
                 ) : (
-                  customDeclarations.map((declaration) => (
-                    <SwipeableDeclaration key={declaration.id} item={declaration} onDelete={deleteCustomDeclaration} tintColor={tintColor} />
+                  customDeclarations && customDeclarations.map((declaration) => (
+                    declaration ? (
+                      <SwipeableDeclaration 
+                        key={declaration.id} 
+                        item={declaration} 
+                        onDelete={deleteCustomDeclaration} 
+                        tintColor={tintColor} 
+                      />
+                    ) : null
                   ))
                 )}
 
@@ -372,6 +399,13 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
     marginBottom: 24,
+  },
+  deleteButton: {
+    backgroundColor: 'red',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    height: '100%',
   },
   incrementButtonText: {
     color: 'white',
