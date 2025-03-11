@@ -119,6 +119,7 @@ export default function PodcastScreen() {
           <ThemedText style={styles.headerTitle}>Igniting Hope Podcast</ThemedText>
           <ThemedText style={styles.headerSubtitle}>Inspiration for your journey</ThemedText>
         </View>
+      </ScrollView>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
