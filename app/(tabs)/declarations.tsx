@@ -279,30 +279,7 @@ export default function DeclarationsScreen() {
           ))}
         </View>
         
-        {/* Custom Declarations Section */}
-        <View style={styles.categoryContainer}>
-          <BlurView
-            intensity={80}
-            tint={colorScheme === 'dark' ? 'dark' : 'light'}
-            style={styles.blurContainer}
-          >
-            <View style={styles.headerContent}>
-              <ThemedText style={styles.categoryTitle}>My Custom Declarations</ThemedText>
-            </View>
-          </BlurView>
-          
-          {customDeclarations.length > 0 ? (
-            <View style={styles.declarationsList}>
-              {customDeclarations.map((declaration) => (
-                <SwipeableDeclaration 
-                  key={declaration.id} 
-                  item={declaration} 
-                  onDelete={deleteCustomDeclaration}
-                  tintColor={tintColor}
-                />
-              ))}
-              <ThemedText style={styles.swipeHint}>Swipe left to delete</ThemedText>
-            </View>
+        
           ) : (
             <ThemedText style={styles.emptyText}>
               No custom declarations yet. Add your own below.
