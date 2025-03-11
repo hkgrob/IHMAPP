@@ -1,8 +1,12 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { parseString } from 'xml2js';
 
 // Cache expiration time (10 minutes)
 const CACHE_EXPIRATION = 10 * 60 * 1000;
+
+// Podbean RSS feed URL
+const PODCAST_RSS_URL = 'https://podcast.ignitinghope.com/feed.xml';
 
 export interface PodcastEpisode {
   id: string;
@@ -30,9 +34,23 @@ export const fetchPodcastEpisodes = async (): Promise<PodcastEpisode[]> => {
       }
     }
 
-    // For now, return fallback data
-    // In a real implementation, this would fetch from the Podbean RSS feed
-    return getFallbackPodcastEpisodes();
+    // Fetch the RSS feed
+    const response = await fetch(PODCAST_RSS_URL);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch podcast RSS feed');
+    }
+    
+    const xmlData = await response.text();
+    
+    // Parse the XML
+    const episodes = await parseRssFeed(xmlData);
+    
+    // Cache the data
+    await AsyncStorage.setItem('podcast_episodes', JSON.stringify(episodes));
+    await AsyncStorage.setItem('podcast_cache_time', Date.now().toString());
+    
+    return episodes;
 
   } catch (error) {
     console.error('Error fetching podcast episodes:', error);
@@ -40,6 +58,78 @@ export const fetchPodcastEpisodes = async (): Promise<PodcastEpisode[]> => {
     // Return fallback data in case of error
     return getFallbackPodcastEpisodes();
   }
+};
+
+// Parse the RSS feed XML to extract podcast episodes
+const parseRssFeed = (xmlData: string): Promise<PodcastEpisode[]> => {
+  return new Promise((resolve, reject) => {
+    parseString(xmlData, (err, result) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      
+      try {
+        const channel = result.rss.channel[0];
+        const items = channel.item;
+        
+        // Get the channel image if available
+        let channelImage = '';
+        if (channel.image && channel.image[0].url) {
+          channelImage = channel.image[0].url[0];
+        }
+        
+        const episodes: PodcastEpisode[] = items.map((item: any, index: number) => {
+          // Extract the enclosure (audio file)
+          const enclosure = item.enclosure ? item.enclosure[0].$: null;
+          
+          // Get item-specific image or fall back to channel image
+          let imageUrl = channelImage;
+          if (item['itunes:image'] && item['itunes:image'][0].$) {
+            imageUrl = item['itunes:image'][0].$.href;
+          }
+          
+          // Get duration
+          let duration = 'Unknown';
+          if (item['itunes:duration']) {
+            duration = item['itunes:duration'][0];
+          }
+          
+          // Format the publish date
+          let publishDate = '';
+          if (item.pubDate) {
+            const date = new Date(item.pubDate[0]);
+            publishDate = date.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            });
+          }
+          
+          // Clean the description (remove HTML tags)
+          let description = '';
+          if (item.description) {
+            description = item.description[0].replace(/<[^>]*>?/gm, '');
+          }
+          
+          return {
+            id: index.toString(),
+            title: item.title[0],
+            description: description,
+            publishDate: publishDate,
+            duration: duration,
+            audioUrl: enclosure ? enclosure.url : '',
+            imageUrl: imageUrl
+          };
+        });
+        
+        resolve(episodes);
+      } catch (error) {
+        console.error('Error parsing RSS feed:', error);
+        reject(error);
+      }
+    });
+  });
 };
 
 // Fallback data in case the API is unavailable
