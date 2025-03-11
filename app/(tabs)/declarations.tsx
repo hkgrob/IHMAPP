@@ -126,9 +126,12 @@ export default function DeclarationsScreen() {
     }
   };
 
-      const confirmDelete = Platform.OS === 'web'
-        ? window.confirm('Are you sure you want to delete this declaration?')
-        : await new Promise((resolve) => {
+      // Use a different approach for confirmation based on platform
+      let confirmDelete = false;
+      if (Platform.OS === 'web') {
+        confirmDelete = window.confirm('Are you sure you want to delete this declaration?');
+      } else {
+        confirmDelete = await new Promise((resolve) =>> {
           Alert.alert(
             'Delete Declaration',
             'Are you sure you want to delete this declaration?',
