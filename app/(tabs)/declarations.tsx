@@ -134,6 +134,7 @@ export default function DeclarationsScreen() {
             ]
           );
         });
+      }
 
       if (confirmDelete) {
         const updatedDeclarations = customDeclarations.filter(
