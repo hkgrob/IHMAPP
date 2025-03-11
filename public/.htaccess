@@ -1,13 +1,15 @@
 
-# Proper MIME type for PDF files
-AddType application/pdf .pdf
-
-# Enable CORS
 <IfModule mod_headers.c>
-  <FilesMatch "\.(pdf)$">
-    Header set Access-Control-Allow-Origin "*"
-  </FilesMatch>
+    # Enable CORS for PDF files
+    <FilesMatch "\.pdf$">
+        Header set Access-Control-Allow-Origin "*"
+        Header set Content-Type "application/pdf"
+        Header set Content-Disposition "inline"
+    </FilesMatch>
 </IfModule>
 
-# Prevent directory listing
-Options -Indexes
+# Redirect PDF requests to the actual files
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^attached_assets/(.+\.pdf)$ /attached_assets/$1 [L]
+</IfModule>
