@@ -11,13 +11,10 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CustomDeclaration } from '@/types/declarations';
 import { Swipeable } from 'react-native-gesture-handler';
-const SwipeableDeclaration = ({ item, onDelete, tintColor }) => {
+const SwipeableDeclaration = ({ item, onDelete, tintColor }: { item: CustomDeclaration, onDelete: (id: string) => void, tintColor: string }) => {
   const renderRightActions = () => {
     return (
-      <TouchableOpacity
-        style={[styles.deleteAction, { backgroundColor: '#FF3B30' }]}
-        onPress={() => onDelete(item.id)}
-      >
+      <TouchableOpacity style={styles.deleteButton} onPress={() => onDelete(item.id)}>
         <Ionicons name="trash-outline" size={24} color="white" />
       </TouchableOpacity>
     );
@@ -25,9 +22,9 @@ const SwipeableDeclaration = ({ item, onDelete, tintColor }) => {
 
   return (
     <Swipeable renderRightActions={renderRightActions}>
-      <View style={styles.customDeclarationItem}>
-        <View style={[styles.bullet, { backgroundColor: tintColor }]} />
-        <ThemedText style={styles.declarationText}>{item.text}</ThemedText>
+      <View style={styles.declarationItem}>
+        <View style={[styles.bullet, {backgroundColor: tintColor}]} />
+        <ThemedText style={styles.declarationText} numberOfLines={0} ellipsizeMode="tail">{item.text}</ThemedText>
       </View>
     </Swipeable>
   );
@@ -40,7 +37,7 @@ export default function DeclarationsScreen() {
   const [newDeclaration, setNewDeclaration] = useState('');
   const colorScheme = useColorScheme();
   const tintColor = Colors[colorScheme].tint;
-  
+
   // Load custom declarations from AsyncStorage
   useEffect(() => {
     const loadCustomDeclarations = async () => {
@@ -53,7 +50,7 @@ export default function DeclarationsScreen() {
         console.error('Error loading custom declarations:', error);
       }
     };
-    
+
     loadCustomDeclarations();
   }, []);
 
@@ -67,13 +64,13 @@ export default function DeclarationsScreen() {
   const addCustomDeclaration = async () => {
     if (newDeclaration.trim() !== '') {
       const newDeclarations = [...customDeclarations, { id: Date.now().toString(), text: newDeclaration }];
-      
+
       try {
         await AsyncStorage.setItem('customDeclarations', JSON.stringify(newDeclarations));
         setCustomDeclarations(newDeclarations);
         setNewDeclaration('');
         setIsAddingNew(false);
-        
+
         if (Platform.OS === 'ios') {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
@@ -83,13 +80,13 @@ export default function DeclarationsScreen() {
       }
     }
   };
-  
+
   const deleteCustomDeclaration = async (id: string) => {
     try {
       if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
-      
+
       const confirmDelete = Platform.OS === 'web' 
         ? window.confirm('Are you sure you want to delete this declaration?')
         : await new Promise((resolve) => {
@@ -102,12 +99,12 @@ export default function DeclarationsScreen() {
               ]
             );
           });
-      
+
       if (confirmDelete) {
         const updatedDeclarations = customDeclarations.filter(
           declaration => declaration.id !== id
         );
-        
+
         await AsyncStorage.setItem('customDeclarations', JSON.stringify(updatedDeclarations));
         setCustomDeclarations(updatedDeclarations);
       }
@@ -278,7 +275,7 @@ export default function DeclarationsScreen() {
             </View>
           ))}
         </View>
-        
+
         {/* End of categories */}
       </ScrollView>
     </ThemedView>
@@ -290,23 +287,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40,
+    padding: 20,
   },
   headerSection: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 16,
+    marginBottom: 20,
   },
   screenTitle: {
-    fontSize: 34,
-    fontWeight: '800',
-    marginBottom: 12,
-    letterSpacing: 0.5,
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    flexWrap: 'wrap',
   },
   description: {
-    marginBottom: 16,
-    lineHeight: 22,
-    opacity: 0.8,
+    fontSize: 16,
+    marginBottom: 20,
+    flexWrap: 'wrap',
   },
   categoriesContainer: {
     paddingHorizontal: 16,
@@ -317,8 +312,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   categoryHeader: {
-    borderRadius: 16,
-    overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    flexWrap: 'wrap',
   },
   blurContainer: {
     width: '100%',
@@ -341,7 +339,10 @@ const styles = StyleSheet.create({
   },
   categoryTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    marginBottom: 5,
+    flexWrap: 'wrap',
+    flex: 1,
   },
   headerActions: {
     flexDirection: 'row',
@@ -381,6 +382,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     lineHeight: 24,
+    flexWrap: 'wrap',
   },
   emptyText: {
     textAlign: 'center',
@@ -430,4 +432,11 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     marginTop: 16,
   },
+  deleteButton:{
+    backgroundColor: '#FF3B30',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 70,
+    height: '100%',
+  }
 });
