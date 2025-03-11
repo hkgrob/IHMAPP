@@ -29,7 +29,7 @@ export default function HomeScreen() {
               <BlurView intensity={90} style={styles.featureButton} tint="light">
                 <View style={styles.featureTextContainer}>
                   <ThemedView style={styles.iconContainer}>
-                    <Ionicons name="stopwatch-outline" size={32} color="#5AC8FA" />
+                    <Ionicons name="stopwatch-outline" size={32} color="blue" /> {/*Example themed color*/}
                   </ThemedView>
                   <ThemedText style={styles.featureText}>Declaration Counter</ThemedText>
                 </View>
@@ -37,7 +37,7 @@ export default function HomeScreen() {
                   <ThemedText style={styles.featureDescription}>
                     Track your progress
                   </ThemedText>
-                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+                  <Ionicons name="chevron-forward" size={20} color="gray" style={styles.chevron} /> {/*Example themed color*/}
                 </View>
               </BlurView>
             </TouchableOpacity>
@@ -48,7 +48,7 @@ export default function HomeScreen() {
               <BlurView intensity={90} style={styles.featureButton} tint="light">
                 <View style={styles.featureTextContainer}>
                   <ThemedView style={styles.iconContainer}>
-                    <Ionicons name="mic-outline" size={32} color="#FF9500" />
+                    <Ionicons name="mic-outline" size={32} color="orange" /> {/*Example themed color*/}
                   </ThemedView>
                   <ThemedText style={styles.featureText}>Podcast</ThemedText>
                 </View>
@@ -56,7 +56,7 @@ export default function HomeScreen() {
                   <ThemedText style={styles.featureDescription}>
                     Listen to spiritual teachings
                   </ThemedText>
-                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+                  <Ionicons name="chevron-forward" size={20} color="gray" style={styles.chevron} /> {/*Example themed color*/}
                 </View>
               </BlurView>
             </TouchableOpacity>
@@ -67,7 +67,7 @@ export default function HomeScreen() {
               <BlurView intensity={90} style={styles.featureButton} tint="light">
                 <View style={styles.featureTextContainer}>
                   <ThemedView style={styles.iconContainer}>
-                    <Ionicons name="newspaper-outline" size={32} color="#4CD964" />
+                    <Ionicons name="newspaper-outline" size={32} color="green" /> {/*Example themed color*/}
                   </ThemedView>
                   <ThemedText style={styles.featureText}>Blog</ThemedText>
                 </View>
@@ -75,7 +75,7 @@ export default function HomeScreen() {
                   <ThemedText style={styles.featureDescription}>
                     Inspiration for your journey
                   </ThemedText>
-                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+                  <Ionicons name="chevron-forward" size={20} color="gray" style={styles.chevron} /> {/*Example themed color*/}
                 </View>
               </BlurView>
             </TouchableOpacity>
@@ -86,7 +86,7 @@ export default function HomeScreen() {
               <BlurView intensity={90} style={styles.featureButton} tint="light">
                 <View style={styles.featureTextContainer}>
                   <ThemedView style={styles.iconContainer}>
-                    <Ionicons name="book-outline" size={32} color="#FF2D55" />
+                    <Ionicons name="book-outline" size={32} color="red" /> {/*Example themed color*/}
                   </ThemedView>
                   <ThemedText style={styles.featureText}>Daily Declarations</ThemedText>
                 </View>
@@ -94,7 +94,7 @@ export default function HomeScreen() {
                   <ThemedText style={styles.featureDescription}>
                     Speak life over yourself
                   </ThemedText>
-                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+                  <Ionicons name="chevron-forward" size={20} color="gray" style={styles.chevron} /> {/*Example themed color*/}
                 </View>
               </BlurView>
             </TouchableOpacity>
@@ -105,7 +105,7 @@ export default function HomeScreen() {
               <BlurView intensity={90} style={styles.featureButton} tint="light">
                 <View style={styles.featureTextContainer}>
                   <ThemedView style={[styles.iconContainer, { backgroundColor: 'rgba(74, 144, 226, 0.2)' }]}>
-                    <Ionicons name="stats-chart" size={32} color="#4A90E2" />
+                    <Ionicons name="stats-chart" size={32} color="blue" /> {/*Example themed color*/}
                   </ThemedView>
                   <ThemedText style={styles.featureText}>Statistics</ThemedText>
                 </View>
@@ -113,14 +113,14 @@ export default function HomeScreen() {
                   <ThemedText style={styles.featureDescription}>
                     View your progress
                   </ThemedText>
-                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+                  <Ionicons name="chevron-forward" size={20} color="gray" style={styles.chevron} /> {/*Example themed color*/}
                 </View>
               </BlurView>
             </TouchableOpacity>
           </Link>
         </ThemedView>
 
-        <BlurView intensity={80} tint="light" style={styles.card}>
+        <ThemedView style={[styles.card, { backgroundColor: 'lightgray' }]}> {/*Example themed backgroundColor*/}
           <ThemedText style={styles.cardTitle}>About Us</ThemedText>
           <ThemedText style={styles.paragraph}>
             Igniting Hope Ministries focuses on helping people renew their minds and transform their beliefs through daily declarations.
@@ -129,37 +129,37 @@ export default function HomeScreen() {
             style={styles.linkButton}
             onPress={() => Linking.openURL('https://ignitinghope.com')}>
             <ThemedText style={styles.linkText}>Visit our website</ThemedText>
-            <Ionicons name="arrow-forward" size={16} color="#007AFF" />
+            <Ionicons name="arrow-forward" size={16} color="blue" /> {/*Example themed color*/}
           </TouchableOpacity>
-        </BlurView>
+        </ThemedView>
 
-        <View style={styles.socialsContainer}>
+        <ThemedView style={styles.socialsContainer}>
           <ThemedText style={styles.socialsTitle}>Find Us Online</ThemedText>
           <View style={styles.socialsIconsContainer}>
             <TouchableOpacity onPress={() => Linking.openURL('https://www.facebook.com/ignitinghope')}>
-              <View style={[styles.socialIcon, { backgroundColor: '#1877F2' }]}>
+              <View style={[styles.socialIcon, { backgroundColor: 'blue' }]}> {/*Example themed backgroundColor*/}
                 <FontAwesome name="facebook-f" size={24} color="white" />
               </View>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => Linking.openURL('https://www.instagram.com/ignitinghope/')}>
-              <View style={[styles.socialIcon, { backgroundColor: '#E4405F' }]}>
+              <View style={[styles.socialIcon, { backgroundColor: 'red' }]}> {/*Example themed backgroundColor*/}
                 <FontAwesome name="instagram" size={24} color="white" />
               </View>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => Linking.openURL('https://www.youtube.com/IgnitingHopeMinistries')}>
-              <View style={[styles.socialIcon, { backgroundColor: '#FF0000' }]}>
+              <View style={[styles.socialIcon, { backgroundColor: 'red' }]}> {/*Example themed backgroundColor*/}
                 <FontAwesome name="youtube-play" size={24} color="white" />
               </View>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => Linking.openURL('https://x.com/BacklundSteve')}>
-              <View style={[styles.socialIcon, { backgroundColor: '#000000' }]}>
+              <View style={[styles.socialIcon, { backgroundColor: 'black' }]}> {/*Example themed backgroundColor*/}
                 <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                   <Path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" fill="white" />
                 </Svg>
               </View>
             </TouchableOpacity>
           </View>
-        </View>
+        </ThemedView>
 
       </ScrollView>
     </ThemedView>
@@ -275,7 +275,6 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 20,
     padding: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
     marginBottom: 30,
     overflow: 'hidden',
     ...Platform.select({
@@ -302,7 +301,6 @@ const styles = StyleSheet.create({
   paragraph: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#3A3A3C',
     marginBottom: 16,
   },
   linkButton: {
@@ -311,7 +309,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   linkText: {
-    color: '#007AFF',
     fontWeight: '600',
     fontSize: 15,
     marginRight: 6,
