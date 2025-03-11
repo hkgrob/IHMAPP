@@ -112,6 +112,10 @@ export default function DeclarationsScreen() {
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        bounces={true}
+        alwaysBounceVertical={Platform.OS === 'ios'}
+        keyboardShouldPersistTaps="handled"
+        scrollIndicatorInsets={{ right: 1 }}
       >
         <ThemedText style={styles.title}>Daily Declarations</ThemedText>
         <ThemedText style={styles.subtitle}>Speak life over yourself</ThemedText>
@@ -244,26 +248,33 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: Platform.OS === 'web' ? 20 : 16,
-    paddingTop: Platform.OS === 'web' ? 60 : 40,
+    paddingTop: Platform.OS === 'ios' ? 60 : Platform.OS === 'web' ? 60 : 40,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
   },
   title: {
     fontSize: Platform.OS === 'web' ? 28 : 24,
     fontWeight: 'bold',
     marginBottom: 5,
+    textAlign: Platform.OS === 'ios' ? 'center' : 'left',
   },
   subtitle: {
     fontSize: Platform.OS === 'web' ? 16 : 14,
     marginBottom: 20,
     opacity: 0.7,
+    textAlign: Platform.OS === 'ios' ? 'center' : 'left',
   },
   categoryContainer: {
     paddingVertical: 12,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: Platform.OS === 'ios' ? 'center' : 'flex-start',
   },
   categoryButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 10,
+    marginBottom: Platform.OS === 'ios' ? 8 : 0,
     backgroundColor: '#F0F0F0',
   },
   selectedCategory: {
@@ -278,6 +289,7 @@ const styles = StyleSheet.create({
   },
   declarationsContainer: {
     marginTop: 20,
+    width: '100%',
   },
   declarationItem: {
     backgroundColor: '#F9F9F9',
@@ -287,15 +299,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    width: '100%',
+    shadowColor: Platform.OS === 'ios' ? '#000' : 'transparent',
+    shadowOffset: Platform.OS === 'ios' ? { width: 0, height: 1 } : { width: 0, height: 0 },
+    shadowOpacity: Platform.OS === 'ios' ? 0.1 : 0,
+    shadowRadius: Platform.OS === 'ios' ? 3 : 0,
+    elevation: Platform.OS === 'android' ? 2 : 0,
   },
   declarationText: {
     fontSize: Platform.OS === 'web' ? 16 : 15,
     lineHeight: Platform.OS === 'web' ? 24 : 22,
     flex: 1,
+    paddingRight: 10,
   },
   deleteButton: {
     marginLeft: 10,
-    padding: 5,
+    padding: 8,
   },
   emptyMessage: {
     textAlign: 'center',

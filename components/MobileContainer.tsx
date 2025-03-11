@@ -18,15 +18,21 @@ export default function MobileContainer({
   padded = true 
 }: MobileContainerProps) {
   const colorScheme = useColorScheme() ?? 'light';
-  const { width } = Dimensions.get('window');
+  const { width, height } = Dimensions.get('window');
   
-  // Adjust padding based on screen size
+  // Adjust padding based on screen size and platform
   const horizontalPadding = width < 360 ? 12 : 16;
+  const paddingTop = Platform.OS === 'ios' ? 20 : 16;
+  const paddingBottom = Platform.OS === 'ios' ? 30 : 16;
 
   const containerStyle = [
     styles.container,
     { backgroundColor: Colors[colorScheme].background },
-    padded && { padding: horizontalPadding },
+    padded && { 
+      padding: horizontalPadding,
+      paddingTop: paddingTop,
+      paddingBottom: paddingBottom
+    },
     style
   ];
 
@@ -42,7 +48,11 @@ export default function MobileContainer({
         <ScrollView 
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { minHeight: Platform.OS === 'ios' ? height * 0.9 : 'auto' }
+          ]}
+          keyboardShouldPersistTaps="handled"
         >
           {content}
         </ScrollView>
