@@ -1,17 +1,55 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { BlurView } from 'expo-blur';
-import { Ionicons } from '@expo/vector-icons';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { fetchPodcastEpisodes, PodcastEpisode } from '@/services/podcastService';
-import * as Haptics from 'expo-haptics';
+import { StyleSheet, View, FlatList, TouchableOpacity, Platform, RefreshControl, Image, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
-import { Platform } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { Audio } from 'expo-av';
+
+import ThemedView from '@/components/ThemedView';
+import ThemedText from '@/components/ThemedText';
+import useColorScheme from '@/hooks/useColorScheme';
+import { PodcastEpisode } from '@/services/podcastService';
+
+// Fallback data that's always available
+const FALLBACK_EPISODES: PodcastEpisode[] = [
+  {
+    id: '1',
+    title: 'Activating Your Prophetic Destiny',
+    description: 'In this episode, we discuss how to discover and step into your prophetic calling and destiny.',
+    publishDate: 'June 15, 2023',
+    duration: '45:22',
+    audioUrl: 'https://mcdn.podbean.com/mf/web/x5p9qe/sample-episode.mp3',
+    imageUrl: 'https://pbcdn1.podbean.com/imglogo/image-logo/11560630/Igniting_Hope_Podcast_Cover_Art.jpg'
+  },
+  {
+    id: '2',
+    title: 'Breakthrough Prayer Strategies',
+    description: 'Learn powerful prayer techniques that can help you break through barriers in your spiritual life.',
+    publishDate: 'May 22, 2023',
+    duration: '38:15',
+    audioUrl: 'https://mcdn.podbean.com/mf/web/x5p9qe/sample-episode.mp3',
+    imageUrl: 'https://pbcdn1.podbean.com/imglogo/image-logo/11560630/Igniting_Hope_Podcast_Cover_Art.jpg'
+  },
+  {
+    id: '3',
+    title: 'Kingdom Mindsets for Success',
+    description: 'Discover how to develop mindsets that align with God\'s kingdom principles for success in every area of life.',
+    publishDate: 'April 10, 2023',
+    duration: '42:50',
+    audioUrl: 'https://mcdn.podbean.com/mf/web/x5p9qe/sample-episode.mp3',
+    imageUrl: 'https://pbcdn1.podbean.com/imglogo/image-logo/11560630/Igniting_Hope_Podcast_Cover_Art.jpg'
+  },
+  {
+    id: '4',
+    title: 'Hearing God\'s Voice Clearly',
+    description: 'Practical steps to enhance your ability to hear and discern God\'s voice in your daily life.',
+    publishDate: 'March 5, 2023',
+    duration: '36:40',
+    audioUrl: 'https://mcdn.podbean.com/mf/web/x5p9qe/sample-episode.mp3',
+    imageUrl: 'https://pbcdn1.podbean.com/imglogo/image-logo/11560630/Igniting_Hope_Podcast_Cover_Art.jpg'
+  }
+];
 
 export default function PodcastScreen() {
   const colorScheme = useColorScheme();
@@ -22,7 +60,21 @@ export default function PodcastScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedEpisode, setSelectedEpisode] = useState<PodcastEpisode | null>(null);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   
+  // Load podcast episodes on component mount
+  useEffect(() => {
+    loadPodcastEpisodes();
+    
+    return () => {
+      // Clean up sound when component unmounts
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, []);
+
   const openEpisode = (episode: PodcastEpisode) => {
     try {
       if (Platform.OS === 'ios') {
@@ -48,110 +100,91 @@ export default function PodcastScreen() {
     }
   };
 
+  // Play or pause the selected episode
+  const togglePlayback = async () => {
+    if (!selectedEpisode) return;
+    
+    try {
+      if (Platform.OS === 'ios') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+      
+      if (sound) {
+        if (isPlaying) {
+          await sound.pauseAsync();
+          setIsPlaying(false);
+        } else {
+          await sound.playAsync();
+          setIsPlaying(true);
+        }
+      } else {
+        // Load and play the sound if it hasn't been loaded yet
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          { uri: selectedEpisode.audioUrl },
+          { shouldPlay: true }
+        );
+        
+        setSound(newSound);
+        setIsPlaying(true);
+        
+        // Set up sound completion handler
+        newSound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded && status.didJustFinish) {
+            setIsPlaying(false);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error playing audio:', error);
+    }
+  };
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadPodcastEpisodes();
+  }, []);
+
   const loadPodcastEpisodes = useCallback(async () => {
     try {
-      console.log('Loading podcast episodes...');
+      console.log('Loading podcast episodes directly from fallback data...');
       setIsLoading(true);
       
       // Use our hardcoded fallback data directly
-      const fallbackData = [
-        {
-          id: '1',
-          title: 'Activating Your Prophetic Destiny',
-          description: 'In this episode, we discuss how to discover and step into your prophetic calling and destiny.',
-          publishDate: 'June 15, 2023',
-          duration: '45:22',
-          audioUrl: 'https://mcdn.podbean.com/mf/web/x5p9qe/sample-episode.mp3',
-          imageUrl: 'https://pbcdn1.podbean.com/imglogo/image-logo/11560630/Igniting_Hope_Podcast_Cover_Art.jpg'
-        },
-        {
-          id: '2',
-          title: 'Breakthrough Prayer Strategies',
-          description: 'Learn powerful prayer techniques that can help you break through barriers in your spiritual life.',
-          publishDate: 'May 22, 2023',
-          duration: '38:15',
-          audioUrl: 'https://mcdn.podbean.com/mf/web/x5p9qe/sample-episode.mp3',
-          imageUrl: 'https://pbcdn1.podbean.com/imglogo/image-logo/11560630/Igniting_Hope_Podcast_Cover_Art.jpg'
-        },
-        {
-          id: '3',
-          title: 'Kingdom Mindsets for Success',
-          description: 'Discover how to develop mindsets that align with God\'s kingdom principles for success in every area of life.',
-          publishDate: 'April 10, 2023',
-          duration: '42:50',
-          audioUrl: 'https://mcdn.podbean.com/mf/web/x5p9qe/sample-episode.mp3',
-          imageUrl: 'https://pbcdn1.podbean.com/imglogo/image-logo/11560630/Igniting_Hope_Podcast_Cover_Art.jpg'
-        },
-        {
-          id: '4',
-          title: 'Hearing God\'s Voice Clearly',
-          description: 'Practical steps to enhance your ability to hear and discern God\'s voice in your daily life.',
-          publishDate: 'March 5, 2023',
-          duration: '36:40',
-          audioUrl: 'https://mcdn.podbean.com/mf/web/x5p9qe/sample-episode.mp3',
-          imageUrl: 'https://pbcdn1.podbean.com/imglogo/image-logo/11560630/Igniting_Hope_Podcast_Cover_Art.jpg'
-        }
-      ];
-      
-      console.log('Setting hardcoded fallback data');
-      setEpisodes(fallbackData);
+      console.log('Setting fallback data - guaranteed to work');
+      setEpisodes(FALLBACK_EPISODES);
       
     } catch (error) {
       console.error('Failed to load podcast episodes:', error);
-      const hardcodedFallback = [
-        {
-          id: '1',
-          title: 'Emergency Fallback Episode',
-          description: 'This is a fallback episode shown when all other methods fail.',
-          publishDate: 'January 1, 2024',
-          duration: '5:00',
-          audioUrl: 'https://example.com/fallback.mp3',
-          imageUrl: 'https://via.placeholder.com/300'
-        }
-      ];
-      setEpisodes(hardcodedFallback);
+      // Set fallback data
+      setEpisodes(FALLBACK_EPISODES);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
   }, []);
 
-  const handleRefresh = useCallback(() => {
-    setRefreshing(true);
-    loadPodcastEpisodes();
-  }, [loadPodcastEpisodes]);
-
-  useEffect(() => {
-    loadPodcastEpisodes();
-  }, [loadPodcastEpisodes]);
-
-  const renderPodcastItem = ({ item }: { item: PodcastEpisode }) => (
-    <TouchableOpacity 
-      style={styles.episodeCard}
-      activeOpacity={0.7}
+  const renderEpisodeItem = ({ item }: { item: PodcastEpisode }) => (
+    <TouchableOpacity
+      style={[
+        styles.episodeItem,
+        selectedEpisode?.id === item.id && styles.selectedEpisodeItem
+      ]}
       onPress={() => openEpisode(item)}
     >
-      <Image 
-        source={{ uri: item.imageUrl || 'https://via.placeholder.com/100' }} 
-        style={styles.episodeImage}
-      />
-      <View style={styles.episodeContent}>
-        <ThemedText style={styles.episodeTitle} numberOfLines={2}>
-          {item.title}
-        </ThemedText>
-        <ThemedText style={styles.episodeDate}>
-          {item.publishDate} • {item.duration}
-        </ThemedText>
-        <ThemedText style={styles.episodeDescription} numberOfLines={2}>
-          {item.description}
-        </ThemedText>
+      <View style={styles.episodeImageContainer}>
+        <Image
+          source={item.imageUrl ? { uri: item.imageUrl } : require('@/assets/images/podcast-default.png')}
+          style={styles.episodeImage}
+          defaultSource={require('@/assets/images/podcast-default.png')}
+        />
       </View>
-      <Ionicons 
-        name="play-circle-outline" 
-        size={28} 
-        color={isDark ? "#fff" : "#000"} 
-        style={styles.playIcon}
-      />
+      <View style={styles.episodeContent}>
+        <ThemedText style={styles.episodeTitle} numberOfLines={2}>{item.title}</ThemedText>
+        <ThemedText style={styles.episodeDate}>{item.publishDate}</ThemedText>
+        <View style={styles.episodeMetadata}>
+          <ThemedText style={styles.episodeDuration}>{item.duration}</ThemedText>
+        </View>
+      </View>
     </TouchableOpacity>
   );
 
@@ -168,101 +201,64 @@ export default function PodcastScreen() {
         </View>
       </View>
 
-      {/* Debug Info */}
-      <View style={styles.debugContainer}>
-        <ThemedText style={styles.debugText}>
-          Episodes: {episodes.length} | Loading: {isLoading ? 'Yes' : 'No'} | Refreshing: {refreshing ? 'Yes' : 'No'}
-        </ThemedText>
-      </View>
-
-      {episodes.length === 0 && !isLoading && (
-        <View style={styles.errorContainer}>
-          <ThemedText style={styles.errorText}>
-            No episodes available. Please pull down to refresh.
-          </ThemedText>
-          <TouchableOpacity 
-            style={styles.retryButton}
-            onPress={handleRefresh}
-          >
-            <ThemedText style={styles.retryText}>
-              Retry Loading
-            </ThemedText>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={isDark ? "#fff" : "#333"} />
-        </View>
-      ) : (
-        <FlatList
-          data={episodes}
-          renderItem={renderPodcastItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          refreshControl={
-            <RefreshControl 
-              refreshing={refreshing} 
-              onRefresh={handleRefresh}
-              tintColor={isDark ? "#fff" : "#333"}
-            />
-          }
-          ListEmptyComponent={() => (
-            <View style={styles.emptyList}>
-              <ThemedText style={styles.emptyText}>
-                No podcast episodes found.
-              </ThemedText>
+      {/* Episode List */}
+      <FlatList
+        data={episodes}
+        renderItem={renderEpisodeItem}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.episodeList}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['#5856D6']}
+            tintColor={isDark ? '#ffffff' : '#5856D6'}
+          />
+        }
+        ListEmptyComponent={
+          !isLoading ? (
+            <View style={styles.emptyContainer}>
+              <ThemedText style={styles.emptyText}>No episodes available</ThemedText>
             </View>
-          )}
-          ListFooterComponent={
-            episodes.length > 0 ? (
-              <TouchableOpacity 
-                style={styles.visitPodcastButton}
-                activeOpacity={0.7}
-                onPress={visitPodcastSite}
-              >
-                <ThemedText style={styles.visitPodcastText}>
-                  Visit Full Podcast Site
-                </ThemedText>
-                <Ionicons name="open-outline" size={18} color={isDark ? "#fff" : "#000"} />
-              </TouchableOpacity>
-            ) : null
-          }
-        />
+          ) : null
+        }
+      />
+      
+      {/* Loading Indicator */}
+      {isLoading && (
+        <View style={styles.loadingContainer}>
+          <ThemedText style={styles.loadingText}>Loading podcast episodes...</ThemedText>
+        </View>
       )}
       
+      {/* Player View */}
       {selectedEpisode && (
-        <BlurView 
-          intensity={90} 
-          tint={isDark ? 'dark' : 'light'} 
-          style={styles.playerContainer}
-        >
-          <View style={styles.playerHeader}>
+        <View style={styles.playerContainer}>
+          <View style={styles.playerContent}>
             <ThemedText style={styles.playerTitle} numberOfLines={1}>
               {selectedEpisode.title}
             </ThemedText>
-            <TouchableOpacity 
-              onPress={() => setSelectedEpisode(null)}
-              style={styles.closeButton}
+            <TouchableOpacity
+              style={styles.playButton}
+              onPress={togglePlayback}
             >
-              <Ionicons name="close-circle" size={24} color={isDark ? "#fff" : "#000"} />
+              <ThemedText style={styles.playButtonText}>
+                {isPlaying ? 'Pause' : 'Play'}
+              </ThemedText>
             </TouchableOpacity>
           </View>
-          
-          <View style={styles.playerControls}>
-            <TouchableOpacity style={styles.controlButton}>
-              <Ionicons name="play-back" size={24} color={isDark ? "#fff" : "#000"} />
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.controlButton, styles.playButton]}>
-              <Ionicons name="play" size={30} color={isDark ? "#000" : "#fff"} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.controlButton}>
-              <Ionicons name="play-forward" size={24} color={isDark ? "#fff" : "#000"} />
-            </TouchableOpacity>
-          </View>
-        </BlurView>
+        </View>
       )}
+      
+      {/* Visit Website Button */}
+      <TouchableOpacity
+        style={styles.websiteButton}
+        onPress={visitPodcastSite}
+      >
+        <ThemedText style={styles.websiteButtonText}>
+          Visit Podcast Website
+        </ThemedText>
+      </TouchableOpacity>
     </ThemedView>
   );
 }
@@ -272,139 +268,150 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerWrapper: {
-    marginBottom: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
   },
   headerContainer: {
-    padding: 15,
     alignItems: 'center',
-    marginTop: 10,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
   },
   headerSubtitle: {
     fontSize: 16,
-    opacity: 0.7,
+    opacity: 0.8,
     marginTop: 5,
     textAlign: 'center',
   },
-  listContent: {
-    paddingHorizontal: 15,
-    paddingBottom: 100, // Extra space for player
+  episodeList: {
+    padding: 15,
   },
-  episodeCard: {
+  episodeItem: {
     flexDirection: 'row',
+    padding: 15,
     marginBottom: 15,
     borderRadius: 12,
-    padding: 12,
-    backgroundColor: 'rgba(150, 150, 150, 0.1)',
-    alignItems: 'center',
+    backgroundColor: 'rgba(200, 200, 200, 0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  selectedEpisodeItem: {
+    backgroundColor: 'rgba(88, 86, 214, 0.1)',
+    borderColor: '#5856D6',
+    borderWidth: 1,
+  },
+  episodeImageContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginRight: 15,
   },
   episodeImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 10,
-    backgroundColor: '#ddd',
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   episodeContent: {
     flex: 1,
-    marginLeft: 12,
-    marginRight: 10,
+    justifyContent: 'space-between',
   },
   episodeTitle: {
-    fontWeight: 'bold',
     fontSize: 16,
-    marginBottom: 4,
+    fontWeight: '600',
+    marginBottom: 5,
   },
   episodeDate: {
-    fontSize: 12,
+    fontSize: 14,
     opacity: 0.7,
-    marginBottom: 4,
   },
-  episodeDescription: {
-    fontSize: 13,
-    opacity: 0.8,
+  episodeMetadata: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
   },
-  playIcon: {
-    marginLeft: 'auto',
+  episodeDuration: {
+    fontSize: 14,
+    opacity: 0.7,
+  },
+  playerContainer: {
+    position: 'absolute',
+    bottom: 60,
+    left: 0,
+    right: 0,
+    padding: 15,
+    backgroundColor: 'rgba(88, 86, 214, 0.9)',
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+  },
+  playerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  playerTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+    marginRight: 10,
+  },
+  playButton: {
+    backgroundColor: '#ffffff',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+  },
+  playButtonText: {
+    color: '#5856D6',
+    fontWeight: '600',
+  },
+  websiteButton: {
+    backgroundColor: '#5856D6',
+    padding: 15,
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 10,
+  },
+  websiteButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 16,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  playerContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 15,
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  playerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  playerTitle: {
-    fontWeight: 'bold',
+  loadingText: {
     fontSize: 16,
-    flex: 1,
-  },
-  closeButton: {
-    padding: 5,
-  },
-  playerControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     marginTop: 10,
   },
-  controlButton: {
-    padding: 10,
-    marginHorizontal: 15,
-  },
-  playButton: {
-    backgroundColor: '#5856D6',
-    borderRadius: 30,
-    width: 60,
-    height: 60,
+  emptyContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
-  visitPodcastButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 15,
-    borderRadius: 10,
-    backgroundColor: 'rgba(150, 150, 150, 0.1)',
-    marginTop: 20,
-    marginBottom: 30,
-  },
-  visitPodcastText: {
-    fontWeight: '600',
-    marginRight: 10,
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
+    opacity: 0.7,
   },
   debugContainer: {
-    padding: 8,
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    marginHorizontal: 15,
-    marginBottom: 10,
-    borderRadius: 5,
+    padding: 10,
+    backgroundColor: 'rgba(255,0,0,0.1)',
   },
   debugText: {
     fontSize: 12,
-    opacity: 0.7,
     textAlign: 'center',
   },
   errorContainer: {
@@ -428,14 +435,5 @@ const styles = StyleSheet.create({
   retryText: {
     color: 'white',
     fontWeight: '600',
-  },
-  emptyList: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    textAlign: 'center',
-    opacity: 0.7,
   },
 });
