@@ -45,7 +45,7 @@ name = "Access-Control-Allow-Origin"
 value = "*"
 
 [workflows]
-runButton = "Run"
+runButton = "EAS Init"
 
 [[workflows.workflow]]
 name = "Dev Server"

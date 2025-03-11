@@ -23,11 +23,16 @@
       "favicon": "./assets/images/favicon.png",
       "build": {
         "babel": {
-          "include": ["attached_assets/**/*"]
+          "include": [
+            "attached_assets/**/*"
+          ]
         }
       },
       "copy": [
-        { "from": "attached_assets", "to": "attached_assets" }
+        {
+          "from": "attached_assets",
+          "to": "attached_assets"
+        }
       ],
       "assetsPath": "./attached_assets"
     },
@@ -49,6 +54,21 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "fcbe5f88-7dba-48d6-98a9-858ccf1c8ee8"
+      }
+    },
+    "owner": "hkgrob",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/fcbe5f88-7dba-48d6-98a9-858ccf1c8ee8"
     }
   }
 }
