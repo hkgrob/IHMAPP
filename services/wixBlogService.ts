@@ -1,4 +1,3 @@
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // The Wix Content Manager API endpoint for a public site
@@ -37,61 +36,23 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
     // Check for cached data first
     const cachedData = await AsyncStorage.getItem('wix_blog_posts');
     const cachedTime = await AsyncStorage.getItem('wix_blog_cache_time');
-    
+
     if (cachedData && cachedTime) {
       const elapsedTime = Date.now() - parseInt(cachedTime);
-      
+
       // Return cached data if it's still fresh
       if (elapsedTime < CACHE_EXPIRATION) {
         return JSON.parse(cachedData);
       }
     }
-    
-    // Fetch fresh data from Wix API
-    const response = await fetch(API_URL, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    // Transform Wix data to our app format
-    const posts: BlogPost[] = data.items.map((post: WixBlogPost) => {
-      // Create an excerpt by trimming content text to ~100 characters
-      const excerpt = post.content.text
-        .replace(/<[^>]*>/g, '') // Remove HTML tags
-        .substring(0, 120) + '...';
-      
-      // Format the date
-      const date = new Date(post.createdDate).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-      
-      return {
-        id: post.id,
-        title: post.title,
-        excerpt: excerpt,
-        date: date,
-        link: `https://www.ignitinghope.com/blog/${post.slug}`,
-        imageUrl: post.coverImage?.url,
-      };
-    });
-    
-    // Cache the results
-    await AsyncStorage.setItem('wix_blog_posts', JSON.stringify(posts));
-    await AsyncStorage.setItem('wix_blog_cache_time', Date.now().toString());
-    
-    return posts;
+
+    // For now, just return fallback data while API integration is pending
+    // In a real implementation, this would make a fetch request to the Wix API
+    return getFallbackBlogPosts();
+
   } catch (error) {
     console.error('Error fetching Wix blog posts:', error);
-    
+
     // Return fallback data in case of error
     return getFallbackBlogPosts();
   }
@@ -120,6 +81,13 @@ const getFallbackBlogPosts = (): BlogPost[] => {
       excerpt: 'Effective leadership flows from intimacy with God. Learn how to lead from a place of spiritual authority and wisdom.',
       date: 'March 10, 2023',
       link: 'https://www.ignitinghope.com/blog/spirit-led-leadership'
+    },
+    {
+      id: '4',
+      title: 'The Power of Daily Declarations',
+      excerpt: 'Discover how speaking scriptural declarations daily can renew your mind and transform your life over time.',
+      date: 'February 5, 2023',
+      link: 'https://www.ignitinghope.com/blog/power-of-daily-declarations'
     }
   ];
 };

@@ -1,107 +1,81 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl, Linking, Image, View } from 'react-native';
-import { Stack } from 'expo-router';
-import { BlurView } from 'expo-blur';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator, View } from 'react-native';
+import { ThemedText } from '@/components/ThemedText';
+import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
-
-import ThemedView from '../../components/ThemedView';
-import ThemedText from '../../components/ThemedText';
-import { useColorScheme } from '../../hooks/useColorScheme';
-import { fetchWixBlogPosts, BlogPost } from '../../services/wixBlogService';
+import { Stack } from 'expo-router';
+import { fetchWixBlogPosts, BlogPost } from '@/services/wixBlogService';
 
 export default function BlogScreen() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-
-  const fetchBlogPosts = async () => {
-    try {
-      setError(null);
-      const blogPosts = await fetchWixBlogPosts();
-      setPosts(blogPosts);
-    } catch (error) {
-      console.error('Error fetching blog posts:', error);
-      setError('Failed to load blog posts. Please try again later.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchBlogPosts();
-  };
 
   useEffect(() => {
-    fetchBlogPosts();
+    const loadPosts = async () => {
+      try {
+        setLoading(true);
+        const blogPosts = await fetchWixBlogPosts();
+        setPosts(blogPosts);
+      } catch (error) {
+        console.error('Failed to load blog posts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPosts();
   }, []);
 
-  const openBlogPost = (url: string) => {
-    Linking.openURL(url);
+  const handleOpenBlog = (url: string) => {
+    Linking.openURL(url).catch(err => {
+      console.error('Failed to open URL:', err);
+    });
   };
 
   return (
     <ThemedView style={styles.container}>
-      <Stack.Screen options={{ title: 'Igniting Hope Blog' }} />
+      <Stack.Screen options={{ title: 'Blog' }} />
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
+        <ThemedText style={styles.headerTitle}>Igniting Hope Blog</ThemedText>
+        <ThemedText style={styles.headerSubtitle}>Inspiration for your journey</ThemedText>
 
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <ThemedText style={styles.header}>Igniting Hope Blog</ThemedText>
-        <ThemedText style={styles.subheader}>Latest posts from ignitinghope.com</ThemedText>
-
-        {error ? (
-          <ThemedText style={styles.errorText}>{error}</ThemedText>
-        ) : loading ? (
-          <ActivityIndicator size="large" color="#FF9500" style={styles.loader} />
+        {loading ? (
+          <View style={styles.loaderContainer}>
+            <ActivityIndicator size="large" color="#0000ff" />
+            <ThemedText style={styles.loadingText}>Loading posts...</ThemedText>
+          </View>
         ) : (
           <>
             {posts.map(post => (
-              <TouchableOpacity 
-                key={post.id} 
-                style={styles.postContainer}
-                activeOpacity={0.7}
-                onPress={() => openBlogPost(post.link)}
-              >
-                <BlurView 
-                  intensity={90} 
-                  style={styles.postCard} 
-                  tint={isDark ? "dark" : "light"}
+              <View key={post.id} style={styles.blogCard}>
+                <ThemedText style={styles.blogTitle}>{post.title}</ThemedText>
+                <ThemedText style={styles.blogDate}>{post.date}</ThemedText>
+                <ThemedText style={styles.blogExcerpt}>{post.excerpt}</ThemedText>
+                <TouchableOpacity 
+                  style={styles.readMoreButton}
+                  onPress={() => handleOpenBlog(post.link)}
                 >
-                  <ThemedText style={styles.postTitle}>{post.title}</ThemedText>
-                  <ThemedText style={styles.postDate}>{post.date}</ThemedText>
-                  <ThemedText style={styles.postExcerpt}>{post.excerpt}</ThemedText>
-                  <ThemedView style={styles.readMoreContainer}>
-                    <ThemedText style={styles.readMore}>Read More</ThemedText>
-                    <Ionicons name="chevron-forward" size={16} color={isDark ? "#FF9500" : "#FF7A00"} />
-                  </ThemedView>
-                </BlurView>
-              </TouchableOpacity>
+                  <ThemedText style={styles.readMoreText}>Read More</ThemedText>
+                  <Ionicons name="arrow-forward" size={16} color="#0066cc" />
+                </TouchableOpacity>
+              </View>
             ))}
-
-            <TouchableOpacity 
-              style={styles.visitBlogButton}
-              activeOpacity={0.7}
-              onPress={() => Linking.openURL('https://www.ignitinghope.com/blog')}
-            >
-              <ThemedText style={styles.visitBlogText}>
-                Visit Full Blog
-              </ThemedText>
-              <Ionicons name="open-outline" size={18} color="#fff" />
-            </TouchableOpacity>
-
-            <ThemedText style={styles.disclaimerText}>
-              This is a preview of the Igniting Hope blog content. For the complete experience and most recent posts, please visit the official website.
-            </ThemedText>
           </>
         )}
+
+        <TouchableOpacity 
+          style={styles.visitBlogButton}
+          onPress={() => Linking.openURL('https://www.ignitinghope.com/blog')}
+        >
+          <ThemedText style={styles.visitBlogText}>
+            Visit Full Blog
+          </ThemedText>
+          <Ionicons name="open-outline" size={18} color="#fff" />
+        </TouchableOpacity>
+
+        <ThemedText style={styles.disclaimerText}>
+          Blog content is provided by Igniting Hope Ministries
+        </ThemedText>
       </ScrollView>
     </ThemedView>
   );
@@ -110,87 +84,87 @@ export default function BlogScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
   },
-  scrollContent: {
+  scrollView: {
+    flex: 1,
+  },
+  contentContainer: {
+    padding: 16,
     paddingBottom: 40,
   },
-  header: {
+  headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 8,
-    textAlign: 'center',
   },
-  subheader: {
+  headerSubtitle: {
     fontSize: 16,
-    opacity: 0.7,
     marginBottom: 24,
-    textAlign: 'center',
+    opacity: 0.7,
   },
-  loader: {
-    marginTop: 30,
+  loaderContainer: {
+    padding: 20,
+    alignItems: 'center',
   },
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
-    marginTop: 20,
+  loadingText: {
+    marginTop: 10,
   },
-  postContainer: {
-    marginBottom: 16,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  postCard: {
+  blogCard: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
     padding: 16,
-    borderRadius: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  postTitle: {
+  blogTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 8,
   },
-  postDate: {
+  blogDate: {
     fontSize: 14,
     opacity: 0.6,
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  postExcerpt: {
+  blogExcerpt: {
     fontSize: 16,
-    lineHeight: 22,
-    marginBottom: 12,
+    lineHeight: 24,
+    marginBottom: 16,
   },
-  readMoreContainer: {
+  readMoreButton: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  readMore: {
-    color: '#FF9500',
-    fontWeight: '600',
+  readMoreText: {
+    fontSize: 16,
+    color: '#0066cc',
     marginRight: 4,
   },
   visitBlogButton: {
     flexDirection: 'row',
-    backgroundColor: '#FF9500',
-    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0066cc',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: 8,
     marginTop: 16,
-    marginBottom: 16,
-    alignSelf: 'center',
+    marginBottom: 20,
   },
   visitBlogText: {
-    color: '#fff',
-    fontWeight: 'bold',
     fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
     marginRight: 8,
   },
   disclaimerText: {
     textAlign: 'center',
     fontSize: 12,
     opacity: 0.6,
-    marginTop: 20,
-    paddingHorizontal: 20,
+    marginTop: 8,
   },
 });
