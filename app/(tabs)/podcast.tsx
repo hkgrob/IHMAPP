@@ -173,9 +173,8 @@ export default function PodcastScreen() {
     >
       <View style={styles.episodeImageContainer}>
         <Image
-          source={item.imageUrl ? { uri: item.imageUrl } : require('@/assets/images/podcast-default.png')}
+          source={item.imageUrl ? { uri: item.imageUrl } : require('../../assets/images/podcast-default.jpg')}
           style={styles.episodeImage}
-          defaultSource={require('@/assets/images/podcast-default.png')}
         />
       </View>
       <View style={styles.episodeContent}>
