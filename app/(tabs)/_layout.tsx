@@ -1,3 +1,4 @@
+
 import { Tabs } from 'expo-router';
 import { StyleSheet } from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -30,7 +31,23 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <Ionicons name="stopwatch-outline" size={24} color={color} />
           ),
-          tabBarLabel: ({ color }) => <HapticTab label="Counter" color={color} />,
+          tabBarLabel: ({ color }) => <HapticTab label="Clicker" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="podcast"
+        options={{
+          title: 'Podcast',
+          tabBarIcon: ({ color }) => <Ionicons name="mic-outline" size={24} color={color} />,
+          tabBarLabel: ({ color }) => <HapticTab label="Podcast" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="blog"
+        options={{
+          title: 'Blog',
+          tabBarIcon: ({ color }) => <Ionicons name="newspaper-outline" size={24} color={color} />,
+          tabBarLabel: ({ color }) => <HapticTab label="Blog" color={color} />,
         }}
       />
       <Tabs.Screen
@@ -47,22 +64,6 @@ export default function TabLayout() {
           title: 'Stats',
           tabBarIcon: ({ color }) => <Ionicons name="bar-chart-outline" size={24} color={color} />,
           tabBarLabel: ({ color }) => <HapticTab label="Stats" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="blog"
-        options={{
-          title: 'Blog',
-          tabBarIcon: ({ color }) => <Ionicons name="newspaper-outline" size={24} color={color} />,
-          tabBarLabel: ({ color }) => <HapticTab label="Blog" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="podcast"
-        options={{
-          title: 'Podcast',
-          tabBarIcon: ({ color }) => <Ionicons name="mic-outline" size={24} color={color} />,
-          tabBarLabel: ({ color }) => <HapticTab label="Podcast" color={color} />,
         }}
       />
       <Tabs.Screen
