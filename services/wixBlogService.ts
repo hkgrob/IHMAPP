@@ -1,9 +1,10 @@
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // The Wix Site ID for your site
 const SITE_ID = '9099b5e6-223e-4f2b-a71d-1ffac8658ea8'; 
-// Using the public content query API instead of the content manager API
-const API_URL = `https://www.wixapis.com/wix-public-v1/content/query?site_id=${SITE_ID}`;
+// Use the blog API endpoint
+const API_URL = `https://www.wixapis.com/blog/v3/blogs/${SITE_ID}/posts`;
 
 // Cache expiration time (5 minutes)
 const CACHE_EXPIRATION = 5 * 60 * 1000;
@@ -48,29 +49,14 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
 
     // Actually fetch from Wix API
     console.log('Attempting to fetch from Wix API:', API_URL);
+    
+    // First approach: direct API request to blog posts
     const response = await fetch(API_URL, {
-      method: 'POST',
-      mode: 'cors',
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        // Query for blog posts specifically
-        query: {
-          paging: {
-            limit: 10,
-            offset: 0
-          },
-          sort: [
-            {
-              fieldName: 'createdDate',
-              order: 'DESC'
-            }
-          ],
-          contentType: 'blog-post'
-        }
-      })
+      }
     });
     
     console.log('Response status:', response.status);
@@ -82,23 +68,23 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
     const data = await response.json();
     console.log('API Response data:', JSON.stringify(data).substring(0, 200) + '...');
     
-    if (!data.results || !Array.isArray(data.results)) {
+    if (!data.posts || !Array.isArray(data.posts)) {
       console.error('Unexpected API response format:', data);
       throw new Error('Invalid API response format');
     }
     
     // Transform the Wix data to our BlogPost format
-    const posts: BlogPost[] = data.results.map((item: any) => ({
+    const posts: BlogPost[] = data.posts.map((item: any) => ({
       id: item.id || `id-${Math.random()}`,
       title: item.title || 'Untitled Post',
-      excerpt: (item.content?.text || item.excerpt || 'No content available').substring(0, 150) + '...',
+      excerpt: (item.excerpt || (item.content?.text ? item.content.text.substring(0, 150) + '...' : 'No content available')),
       date: item.createdDate ? new Date(item.createdDate).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
       }) : 'No date',
       link: item.slug ? `https://www.ignitinghope.com/blog/${item.slug}` : 'https://www.ignitinghope.com/blog',
-      imageUrl: item.coverImage?.url || item.image?.url
+      imageUrl: item.coverMedia?.image?.url || item.coverImage?.url
     }));
     
     console.log(`Processed ${posts.length} blog posts from API`);
@@ -116,11 +102,20 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
       console.error('Error details:', error.message);
     }
     
-    // Try fetching with a different approach if the first one failed
+    // Try a different API endpoint as backup
     try {
       console.log('Attempting alternative API endpoint');
-      const altApiUrl = `https://www.ignitinghope.com/_functions/wixCode/query?collectionName=Blog&limit=10`;
-      const altResponse = await fetch(altApiUrl);
+      const altApiUrl = `https://www.ignitinghope.com/_api/v2/dynamicdata`;
+      const altResponse = await fetch(altApiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          collectionName: 'Blog',
+          limit: 10
+        })
+      });
       
       if (altResponse.ok) {
         const altData = await altResponse.json();
@@ -135,11 +130,41 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
           }));
           
           console.log('Successfully retrieved posts from alternative endpoint');
+          // Cache the data from alternative source
+          await AsyncStorage.setItem('wix_blog_posts', JSON.stringify(posts));
+          await AsyncStorage.setItem('wix_blog_cache_time', Date.now().toString());
+          
           return posts;
         }
       }
     } catch (altError) {
       console.error('Alternative API approach also failed:', altError);
+    }
+    
+    // Last resort - try a third endpoint
+    try {
+      console.log('Attempting third API endpoint');
+      const thirdApiUrl = `https://www.ignitinghope.com/_functions/blogPosts`;
+      const thirdResponse = await fetch(thirdApiUrl);
+      
+      if (thirdResponse.ok) {
+        const thirdData = await thirdResponse.json();
+        if (thirdData && Array.isArray(thirdData)) {
+          const posts = thirdData.map((item: any) => ({
+            id: item.id || `id-${Math.random()}`,
+            title: item.title || 'Untitled',
+            excerpt: (item.description || item.content || 'No content').substring(0, 150) + '...',
+            date: item.date || 'No date',
+            link: item.url || 'https://www.ignitinghope.com/blog',
+            imageUrl: item.image
+          }));
+          
+          console.log('Successfully retrieved posts from third endpoint');
+          return posts;
+        }
+      }
+    } catch (thirdError) {
+      console.error('Third API approach also failed:', thirdError);
     }
 
     console.log('Using fallback blog posts after failed API attempts');

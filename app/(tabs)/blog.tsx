@@ -39,20 +39,31 @@ export default function BlogScreen() {
     try {
       setLoading(true);
       setErrorMessage(null);
+      
       // Clear the cache
+      console.log('Clearing blog cache...');
       await AsyncStorage.removeItem('wix_blog_posts');
       await AsyncStorage.removeItem('wix_blog_cache_time');
+      
       // Reload the posts
       console.log('Refreshing blog posts...');
       const blogPosts = await fetchWixBlogPosts();
       console.log(`Received ${blogPosts.length} posts after refresh`);
-      setPosts(blogPosts);
       
-      // If we're showing fallback data, show a message
-      if (blogPosts.length === 4 && blogPosts[0].id === '1') {
-        setErrorMessage('Could not connect to blog service. Showing fallback content.');
+      if (blogPosts && blogPosts.length > 0) {
+        setPosts(blogPosts);
+        
+        // Check if we're showing fallback data
+        if (blogPosts.length === 4 && blogPosts[0].id === '1') {
+          console.log('Showing fallback content');
+          setErrorMessage('Could not connect to blog service. Showing fallback content.');
+        } else {
+          console.log('Successfully loaded live blog posts');
+          setErrorMessage(null);
+        }
       } else {
-        setErrorMessage(null);
+        console.error('No blog posts returned');
+        setErrorMessage('No blog posts available at this time.');
       }
     } catch (error) {
       console.error('Failed to refresh blog posts:', error);
