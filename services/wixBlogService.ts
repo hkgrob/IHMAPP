@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // The Wix Content Manager API endpoint for a public site
 // You'll need to replace SITE_ID with your actual Wix site ID
-const SITE_ID = 'YOUR_WIX_SITE_ID'; 
+const SITE_ID = '9099b5e6-223e-4f2b-a71d-1ffac8658ea8'; 
 const API_URL = `https://www.wixapis.com/wix-content-manager-api/v1/sites/${SITE_ID}/content/collection/blogs/items`;
 
 // Cache expiration time (5 minutes)
