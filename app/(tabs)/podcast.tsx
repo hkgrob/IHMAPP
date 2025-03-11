@@ -339,8 +339,7 @@ const styles = StyleSheet.create({
   mobilePlayText: {
     fontSize: 16,
     fontWeight: '500',
-    marginLeft: 10,6,
-    fontWeight: '500',
+    marginLeft: 10,
     marginRight: 8,
   },
 });
