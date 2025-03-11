@@ -25,7 +25,7 @@ export default function HomeScreen() {
                 <ThemedView style={styles.iconContainer}>
                   <Ionicons name="stopwatch-outline" size={32} color="#34c759" />
                 </ThemedView>
-                <ThemedText style={styles.featureText}>Counter</ThemedText>
+                <ThemedText style={styles.featureText}>Clicker</ThemedText>
                 <ThemedText style={styles.featureDescription}>
                   Track your declarations
                 </ThemedText>

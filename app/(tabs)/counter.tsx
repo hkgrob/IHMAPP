@@ -281,7 +281,7 @@ export default function TabTwoScreen() {
       >
         <View style={styles.headerContainer}>
           <ThemedText style={styles.header}>
-            Declaration Counter
+            Declaration Clicker
           </ThemedText>
           <ThemedText style={styles.subheader}>
             Track your declarations to build new mindsets
@@ -352,7 +352,7 @@ export default function TabTwoScreen() {
           >
             <BlurView intensity={100} tint="light" style={styles.countButtonInner}>
               <Ionicons name="add-circle" size={28} color="#fff" />
-              <ThemedText style={styles.countButtonText}>Count Declaration</ThemedText>
+              <ThemedText style={styles.countButtonText}>Click Declaration</ThemedText>
             </BlurView>
           </TouchableOpacity>
         </View>
