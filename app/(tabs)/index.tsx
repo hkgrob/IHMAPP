@@ -4,7 +4,6 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import Svg, { Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { HelloWave } from '@/components/HelloWave';
 import { BlurView } from 'expo-blur';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -13,7 +12,6 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
-        <HelloWave />
         <View style={styles.headerSection}>
           <ThemedText style={styles.title}>
             Declare Your New Mindset
