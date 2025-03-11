@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Stack } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { Header } from '@/components/Header';
+import { Audio } from 'expo-av';
+import * as Haptics from 'expo-haptics';
+import { Stack } from 'expo-router';
+import { ScrollView } from 'react-native';
+import { useThemeColor } from '@/hooks/useThemeColor';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import { useThemeColor } from '@/hooks/useThemeColor';
+
 
 export default function CounterScreen() {
   const [count, setCount] = useState(0);
@@ -55,14 +62,42 @@ export default function CounterScreen() {
     }
   };
 
-  const incrementCount = () => {
-    console.log('Increment button pressed');
-    const newDailyCount = dailyCount + 1;
-    const newTotalCount = totalCount + 1;
+  const incrementCount = async () => {
+    try {
+      console.log('Increment button pressed');
 
-    setDailyCount(newDailyCount);
-    setTotalCount(newTotalCount);
-    saveCounts(newDailyCount, newTotalCount);
+      // Play click sound
+      try {
+        const soundAsset = require('../../assets/sounds/click.mp3');
+        const { sound } = await Audio.Sound.createAsync(
+          soundAsset,
+          { shouldPlay: true }
+        );
+        // Unload sound after playing
+        sound.setOnPlaybackStatusUpdate(status => {
+          if (status.didJustFinish) {
+            sound.unloadAsync();
+          }
+        });
+      } catch (soundError) {
+        console.error('Error playing sound:', soundError);
+      }
+
+      // Add haptic feedback on iOS
+      if (Platform.OS === 'ios') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+
+      const newDailyCount = dailyCount + 1;
+      const newTotalCount = totalCount + 1;
+      setDailyCount(newDailyCount);
+      setTotalCount(newTotalCount);
+      await AsyncStorage.setItem('dailyCount', newDailyCount.toString());
+      await AsyncStorage.setItem('totalCount', newTotalCount.toString());
+      console.log('Counts saved successfully');
+    } catch (error) {
+      console.error('Error saving counts:', error);
+    }
   };
 
   const resetDailyCount = async () => {
