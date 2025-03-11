@@ -2,6 +2,7 @@ import { StyleSheet, ScrollView, TouchableOpacity, Image, Linking, Platform, Vie
 import { Link } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import Svg, { Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { HelloWave } from '@/components/HelloWave';
 import { BlurView } from 'expo-blur';
@@ -130,7 +131,9 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <TouchableOpacity onPress={() => Linking.openURL('https://x.com/BacklundSteve')}>
               <View style={[styles.socialIcon, { backgroundColor: '#000000' }]}>
-                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 20 }}>X</Text>
+                <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <Path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" fill="white" />
+                </Svg>
               </View>
             </TouchableOpacity>
           </View>
