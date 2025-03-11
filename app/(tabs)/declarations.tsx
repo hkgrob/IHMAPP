@@ -243,21 +243,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
-    paddingTop: 60,
+    padding: Platform.OS === 'web' ? 20 : 16,
+    paddingTop: Platform.OS === 'web' ? 60 : 40,
   },
   title: {
-    fontSize: 28,
+    fontSize: Platform.OS === 'web' ? 28 : 24,
     fontWeight: 'bold',
     marginBottom: 5,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: Platform.OS === 'web' ? 16 : 14,
     marginBottom: 20,
     opacity: 0.7,
   },
   categoryContainer: {
-    paddingVertical: 15,
+    paddingVertical: 12,
   },
   categoryButton: {
     paddingHorizontal: 16,
@@ -282,15 +282,15 @@ const styles = StyleSheet.create({
   declarationItem: {
     backgroundColor: '#F9F9F9',
     borderRadius: 12,
-    padding: 16,
+    padding: Platform.OS === 'web' ? 16 : 14,
     marginBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   declarationText: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: Platform.OS === 'web' ? 16 : 15,
+    lineHeight: Platform.OS === 'web' ? 24 : 22,
     flex: 1,
   },
   deleteButton: {
