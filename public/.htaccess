@@ -1,15 +1,16 @@
 
-<IfModule mod_headers.c>
-    # Enable CORS for PDF files
-    <FilesMatch "\.pdf$">
-        Header set Access-Control-Allow-Origin "*"
-        Header set Content-Type "application/pdf"
-        Header set Content-Disposition "inline"
-    </FilesMatch>
+# Set correct MIME types for PDF files
+<IfModule mod_mime.c>
+  AddType application/pdf .pdf
 </IfModule>
 
-# Redirect PDF requests to the actual files
+# Enable PDF file download
+<FilesMatch "\.pdf$">
+  Header set Content-Disposition "inline"
+</FilesMatch>
+
+# Fallback for accessing PDF files
 <IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteRule ^attached_assets/(.+\.pdf)$ /attached_assets/$1 [L]
+  RewriteEngine On
+  RewriteRule ^attached_assets/(.+)$ /attached_assets/$1 [L]
 </IfModule>

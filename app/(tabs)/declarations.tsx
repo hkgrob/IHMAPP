@@ -1,30 +1,29 @@
 
-import React, { useState, useCallback } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, Platform, Linking, View, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { StyleSheet, View, Platform, Alert, ScrollView, Pressable } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
-import { BlurView } from 'expo-blur';
 import { DECLARATION_CATEGORIES } from '@/constants/DeclarationsData';
-import * as FileSystem from 'expo-file-system';
+import { Ionicons } from '@expo/vector-icons';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
+import * as Haptics from 'expo-haptics';
 
 export default function DeclarationsScreen() {
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
-  const toggleExpanded = (id: string) => {
-    setExpandedSection(expandedSection === id ? null : id);
+  const toggleCategory = (categoryId: string) => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    setExpandedCategory(expandedCategory === categoryId ? null : categoryId);
   };
 
   const handleDownload = async (filename: string) => {
     try {
       if (Platform.OS === 'web') {
-        // For web, directly open the PDF in a new tab
-        const encodedFilename = encodeURIComponent(filename);
-        const baseUrl = window.location.origin;
-        const fullUrl = `${baseUrl}/attached_assets/${encodedFilename}`;
-        console.log('Opening PDF at path:', fullUrl);
-        window.open(fullUrl, '_blank');
+        // For web, directly open PDF in a new window
+        window.open(`/attached_assets/${encodeURIComponent(filename)}`, '_blank');
       } else {
         // For mobile platforms, use Sharing API
         const fileUri = FileSystem.documentDirectory + filename;
@@ -49,64 +48,64 @@ export default function DeclarationsScreen() {
     }
   };
 
-  const renderCategory = useCallback(({ item }) => {
-    const isExpanded = expandedSection === item.id;
-    
-    return (
-      <View style={styles.categoryContainer}>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => toggleExpanded(item.id)}
-          style={styles.categoryHeader}
-        >
-          <BlurView intensity={80} tint="light" style={styles.categoryHeaderBlur}>
-            <ThemedText style={styles.categoryTitle}>{item.title}</ThemedText>
-            <View style={styles.categoryHeaderRight}>
-              {item.source && (
-                <TouchableOpacity
-                  onPress={() => item.source && handleDownload(item.source)}
-                  style={styles.downloadButton}
-                >
-                  <Ionicons name="document-text-outline" size={20} color="#007AFF" />
-                  <ThemedText style={styles.downloadText}>PDF</ThemedText>
-                </TouchableOpacity>
-              )}
-              <Ionicons
-                name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color="#8E8E93"
-              />
-            </View>
-          </BlurView>
-        </TouchableOpacity>
-
-        {isExpanded && (
-          <View style={styles.declarationsList}>
-            {item.declarations && item.declarations.map((declaration, index) => (
-              <View key={index} style={styles.declarationItem}>
-                <ThemedText style={styles.declarationText}>{declaration}</ThemedText>
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
-    );
-  }, [expandedSection]);
-
   return (
     <ThemedView style={styles.container}>
-      <ThemedText style={styles.header}>Declarations</ThemedText>
-      <ThemedText style={styles.subheader}>
-        Speak these declarations to renew your mind
-      </ThemedText>
-
-      <FlatList
-        data={DECLARATION_CATEGORIES}
-        renderItem={renderCategory}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-      />
+      >
+        <ThemedText type="title" style={styles.screenTitle}>Declarations</ThemedText>
+        <ThemedText style={styles.description}>
+          Daily declarations to strengthen your faith and renew your mind.
+          Tap on a category to view declarations, and tap the PDF icon to access the full document.
+        </ThemedText>
+
+        {DECLARATION_CATEGORIES.map((category) => (
+          <View key={category.id} style={styles.categoryContainer}>
+            <Pressable
+              style={styles.categoryHeader}
+              onPress={() => toggleCategory(category.id)}
+            >
+              <View style={styles.headerContent}>
+                <ThemedText type="subtitle" style={styles.categoryTitle}>
+                  {category.title}
+                </ThemedText>
+                <View style={styles.headerActions}>
+                  <Pressable
+                    onPress={() => handleDownload(category.source)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    style={styles.pdfButton}
+                  >
+                    <Ionicons name="document-text-outline" size={24} color="#007AFF" />
+                  </Pressable>
+                  <Ionicons
+                    name={expandedCategory === category.id ? 'chevron-up' : 'chevron-down'}
+                    size={24}
+                    color="#999"
+                  />
+                </View>
+              </View>
+            </Pressable>
+            
+            {expandedCategory === category.id && (
+              <View style={styles.declarationsList}>
+                {category.declarations.map((declaration, index) => (
+                  <View key={index} style={styles.declarationItem}>
+                    <ThemedText style={styles.bullet}>•</ThemedText>
+                    <ThemedText style={styles.declarationText}>{declaration}</ThemedText>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        ))}
+        
+        <View style={styles.footer}>
+          <ThemedText style={styles.footerText}>
+            Tap on the document icon to view or download the PDF
+          </ThemedText>
+        </View>
+      </ScrollView>
     </ThemedView>
   );
 }
@@ -114,77 +113,75 @@ export default function DeclarationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 60,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
-  header: {
+  scrollContent: {
+    paddingVertical: 24,
+  },
+  screenTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  subheader: {
-    fontSize: 16,
+  description: {
     marginBottom: 24,
-    opacity: 0.7,
-  },
-  listContainer: {
-    paddingBottom: 100,
+    lineHeight: 22,
+    opacity: 0.8,
   },
   categoryContainer: {
     marginBottom: 16,
-    borderRadius: 16,
+    borderRadius: 12,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   categoryHeader: {
-    borderRadius: 16,
-    overflow: 'hidden',
+    padding: 16,
   },
-  categoryHeaderBlur: {
+  headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
   },
   categoryTitle: {
     fontSize: 18,
     fontWeight: '600',
   },
-  categoryHeaderRight: {
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  downloadButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 16,
-    padding: 6,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-  },
-  downloadText: {
-    color: '#007AFF',
-    fontSize: 14,
-    marginLeft: 4,
+  pdfButton: {
+    marginRight: 12,
+    padding: 4,
   },
   declarationsList: {
-    backgroundColor: 'rgba(242, 242, 247, 0.8)',
     padding: 16,
+    paddingTop: 0,
+    backgroundColor: '#f8f8f8',
   },
   declarationItem: {
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+    flexDirection: 'row',
+    marginBottom: 12,
+    paddingLeft: 4,
+  },
+  bullet: {
+    marginRight: 8,
+    fontSize: 16,
   },
   declarationText: {
-    fontSize: 16,
+    flex: 1,
+    fontSize: 15,
     lineHeight: 22,
+  },
+  footer: {
+    marginTop: 24,
+    padding: 16,
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
   },
 });
