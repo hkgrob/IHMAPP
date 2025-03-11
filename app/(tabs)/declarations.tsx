@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, ScrollView, View, Text, TouchableOpacity, Alert, Platform } from 'react-native';
 import { Stack } from 'expo-router';
@@ -118,12 +117,8 @@ export default function DeclarationsScreen() {
         <ThemedText style={styles.subtitle}>Speak life over yourself</ThemedText>
 
         {/* Categories */}
-        <ScrollView 
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryContainer}
-        >
-          {declarationCategories.map((category) => (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryContainer}>
+          {DECLARATION_CATEGORIES.map((category) => (
             <TouchableOpacity
               key={category.id}
               style={[
@@ -142,7 +137,7 @@ export default function DeclarationsScreen() {
               </ThemedText>
             </TouchableOpacity>
           ))}
-          
+
           {/* Custom category button */}
           <TouchableOpacity
             style={[
@@ -186,7 +181,7 @@ export default function DeclarationsScreen() {
                   </View>
                 ))
               )}
-              
+
               {/* Add new declaration button */}
               {!showAddForm ? (
                 <TouchableOpacity
