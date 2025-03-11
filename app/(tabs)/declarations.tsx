@@ -286,8 +286,6 @@ export default function DeclarationsScreen() {
             </ThemedText>
           )}
         </View>
-            </ThemedText>
-          )}
           
           {isAddingNew ? (
             <View style={styles.addNewContainer}>
