@@ -1,30 +1,31 @@
+
 import React from 'react';
-import { StyleSheet, TouchableOpacity, View, Image, ScrollView, Dimensions, Platform } from 'react-native';
+import { StyleSheet, TouchableOpacity, View, Image, ScrollView, Dimensions, Platform, Linking } from 'react-native';
 import { Link, Stack } from 'expo-router';
-import { BlurView } from 'expo-blur';
-import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ThemedView } from '@/components/ThemedView';
+import { ThemedText } from '@/components/ThemedText';
+import ResponsiveText from '@/components/ResponsiveText';
 import Colors from '@/constants/Colors';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
 const { width } = Dimensions.get('window');
-const isSmallScreen = width < 380;
+const isSmallDevice = width < 375;
 
 export default function HomeScreen() {
-  const backgroundColor = useThemeColor({}, 'background');
-  const textColor = useThemeColor({}, 'text');
-  const tintColor = useThemeColor({}, 'tint');
+  const backgroundColor = useThemeColor({ light: Colors.light.background, dark: Colors.dark.background });
+  const cardBackgroundColor = useThemeColor({ light: Colors.light.cardBackground, dark: Colors.dark.cardBackground });
+  const textColor = useThemeColor({ light: Colors.light.text, dark: Colors.dark.text });
 
   return (
-    <ThemedView style={styles.container}>
-      <Stack.Screen options={{ headerShown: false }} />
-
+    <>
+      <Stack.Screen options={{ 
+        headerShown: false,
+      }} />
       <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        style={[styles.container, { backgroundColor }]}
+        contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
         <SafeAreaView style={styles.safeArea}>
@@ -33,101 +34,142 @@ export default function HomeScreen() {
 
           {/* Welcome Banner */}
           <View style={styles.welcomeBanner}>
-            <ThemedText style={styles.welcomeText}>
-              Welcome to your journey of transformation
-            </ThemedText>
+            <ResponsiveText variant="h1" style={styles.welcomeTitle}>
+              Welcome to Igniting Hope
+            </ResponsiveText>
+            <ResponsiveText variant="body" style={styles.welcomeText}>
+              Discover resources to empower your spiritual journey
+            </ResponsiveText>
           </View>
-
-          {/* Feature Grid */}
-          <View style={styles.featureGrid}>
-            <FeatureButton 
-              title="Declarations" 
-              description="Daily affirmations"
-              icon="document-text-outline"
-              route="/(tabs)/declarations"
-              color="#4A90E2"
-            />
-
-            <FeatureButton 
-              title="Counter" 
-              description="Track your progress"
-              icon="stopwatch-outline"
-              route="/(tabs)/counter"
-              color="#50E3C2"
-            />
-
-            <FeatureButton 
-              title="Blog" 
-              description="Latest insights"
-              icon="newspaper-outline"
-              route="/(tabs)/blog"
-              color="#F5A623"
-            />
-
-            <FeatureButton 
-              title="Podcasts" 
-              description="Listen & grow"
-              icon="headset-outline"
-              route="/(tabs)/podcast"
-              color="#D87BFD"
-            />
-          </View>
-
-          {/* Quote of the Day */}
-          <View style={styles.quoteContainer}>
-            <View style={styles.quoteIconContainer}>
-              <Ionicons name="quote" size={24} color={tintColor} />
-            </View>
-            <ThemedText style={styles.quoteText}>
-              "Your beliefs become your thoughts, your thoughts become your words, your words become your actions."
-            </ThemedText>
-            <ThemedText style={styles.quoteAuthor}>
-              — Daily Inspiration
-            </ThemedText>
-          </View>
-
-          {/* Getting Started Section */}
-          <View style={styles.gettingStartedContainer}>
-            <ThemedText style={styles.sectionTitle}>Getting Started</ThemedText>
+          
+          {/* Declarations Section */}
+          <View style={styles.section}>
+            <ResponsiveText variant="h2" style={styles.sectionTitle}>Daily Declarations</ResponsiveText>
             <TouchableOpacity 
-              style={styles.startButton}
-              activeOpacity={0.8}
-              onPress={() => {}}
+              style={[styles.card, { backgroundColor: cardBackgroundColor }]}
+              onPress={() => {
+                Link.push('/declarations');
+              }}
             >
-              <ThemedText style={styles.startButtonText}>
-                Begin Your Journey
-              </ThemedText>
-              <Ionicons name="arrow-forward" size={20} color="#fff" />
+              <View style={styles.cardContent}>
+                <Ionicons name="document-text-outline" size={28} color="#0066cc" />
+                <View style={styles.cardTextContainer}>
+                  <ResponsiveText variant="h3" style={styles.cardTitle}>
+                    Daily Declarations
+                  </ResponsiveText>
+                  <ResponsiveText variant="body" style={styles.cardDescription}>
+                    Start your day with powerful declarations
+                  </ResponsiveText>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#0066cc" />
+              </View>
+            </TouchableOpacity>
+          </View>
+          
+          {/* Blog Section */}
+          <View style={styles.section}>
+            <ResponsiveText variant="h2" style={styles.sectionTitle}>Latest Blog Posts</ResponsiveText>
+            <TouchableOpacity 
+              style={[styles.card, { backgroundColor: cardBackgroundColor }]}
+              onPress={() => {
+                Link.push('/blog');
+              }}
+            >
+              <View style={styles.cardContent}>
+                <Ionicons name="newspaper-outline" size={28} color="#0066cc" />
+                <View style={styles.cardTextContainer}>
+                  <ResponsiveText variant="h3" style={styles.cardTitle}>
+                    Blog
+                  </ResponsiveText>
+                  <ResponsiveText variant="body" style={styles.cardDescription}>
+                    Read the latest articles and updates
+                  </ResponsiveText>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#0066cc" />
+              </View>
+            </TouchableOpacity>
+          </View>
+          
+          {/* Podcast Section */}
+          <View style={styles.section}>
+            <ResponsiveText variant="h2" style={styles.sectionTitle}>Podcast Episodes</ResponsiveText>
+            <TouchableOpacity 
+              style={[styles.card, { backgroundColor: cardBackgroundColor }]}
+              onPress={() => {
+                Link.push('/podcast');
+              }}
+            >
+              <View style={styles.cardContent}>
+                <Ionicons name="mic-outline" size={28} color="#0066cc" />
+                <View style={styles.cardTextContainer}>
+                  <ResponsiveText variant="h3" style={styles.cardTitle}>
+                    Podcast
+                  </ResponsiveText>
+                  <ResponsiveText variant="body" style={styles.cardDescription}>
+                    Listen to our latest podcast episodes
+                  </ResponsiveText>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#0066cc" />
+              </View>
+            </TouchableOpacity>
+          </View>
+          
+          {/* Social Media Section */}
+          <View style={styles.section}>
+            <ResponsiveText variant="h2" style={styles.sectionTitle}>Connect With Us</ResponsiveText>
+            <View style={styles.socialLinksContainer}>
+              <TouchableOpacity 
+                style={[styles.socialButton, { backgroundColor: cardBackgroundColor }]}
+                onPress={() => Linking.openURL('https://facebook.com/ignitinghope')}
+              >
+                <Ionicons name="logo-facebook" size={28} color="#0066cc" />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.socialButton, { backgroundColor: cardBackgroundColor }]}
+                onPress={() => Linking.openURL('https://instagram.com/ignitinghope')}
+              >
+                <Ionicons name="logo-instagram" size={28} color="#0066cc" />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.socialButton, { backgroundColor: cardBackgroundColor }]}
+                onPress={() => Linking.openURL('https://twitter.com/ignitinghope')}
+              >
+                <Ionicons name="logo-twitter" size={28} color="#0066cc" />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.socialButton, { backgroundColor: cardBackgroundColor }]}
+                onPress={() => Linking.openURL('https://youtube.com/ignitinghope')}
+              >
+                <Ionicons name="logo-youtube" size={28} color="#0066cc" />
+              </TouchableOpacity>
+            </View>
+          </View>
+          
+          {/* Settings Section */}
+          <View style={styles.section}>
+            <TouchableOpacity 
+              style={[styles.card, { backgroundColor: cardBackgroundColor }]}
+              onPress={() => {
+                Link.push('/settings');
+              }}
+            >
+              <View style={styles.cardContent}>
+                <Ionicons name="settings-outline" size={28} color="#0066cc" />
+                <View style={styles.cardTextContainer}>
+                  <ResponsiveText variant="h3" style={styles.cardTitle}>
+                    Settings
+                  </ResponsiveText>
+                  <ResponsiveText variant="body" style={styles.cardDescription}>
+                    Customize your app experience
+                  </ResponsiveText>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#0066cc" />
+              </View>
             </TouchableOpacity>
           </View>
         </SafeAreaView>
       </ScrollView>
-
-      <StatusBar style="auto" />
-    </ThemedView>
-  );
-}
-
-// Feature Button Component
-function FeatureButton({ title, description, icon, route, color }) {
-  return (
-    <Link href={route} asChild>
-      <TouchableOpacity 
-        activeOpacity={0.7} 
-        style={styles.featureButtonWrapper}
-      >
-        <BlurView intensity={90} style={styles.featureButton} tint="light">
-          <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
-            <Ionicons name={icon} size={28} color={color} />
-          </View>
-          <View style={styles.featureTextContainer}>
-            <ThemedText style={styles.featureTitle}>{title}</ThemedText>
-            <ThemedText style={styles.featureDescription}>{description}</ThemedText>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="gray" />
-        </BlurView>
-      </TouchableOpacity>
-    </Link>
+    </>
   );
 }
 
@@ -135,10 +177,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
+  contentContainer: {
     paddingBottom: 40,
   },
   safeArea: {
@@ -149,97 +188,66 @@ const styles = StyleSheet.create({
   },
   welcomeBanner: {
     marginHorizontal: 20,
-    marginTop: 10,
-    marginBottom: 25,
+    marginVertical: 20,
     padding: 20,
-    borderRadius: 15,
-    backgroundColor: '#FFA50020',
-    alignItems: 'center',
+    borderRadius: 10,
+    backgroundColor: '#0066cc',
+  },
+  welcomeTitle: {
+    color: '#ffffff',
+    marginBottom: 10,
   },
   welcomeText: {
-    fontSize: 18,
-    fontWeight: '500',
-    textAlign: 'center',
+    color: '#ffffff',
   },
-  featureGrid: {
-    paddingHorizontal: 20,
-    marginBottom: 25,
-  },
-  featureButtonWrapper: {
-    marginBottom: 16,
-    borderRadius: 15,
-    overflow: 'hidden',
-  },
-  featureButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 15,
-    borderRadius: 15,
-    overflow: 'hidden',
-  },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  featureTextContainer: {
-    flex: 1,
-  },
-  featureTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  featureDescription: {
-    fontSize: 14,
-    opacity: 0.7,
-  },
-  quoteContainer: {
-    margin: 20,
-    padding: 20,
-    borderRadius: 15,
-    backgroundColor: '#F8F8F8',
-  },
-  quoteIconContainer: {
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  quoteText: {
-    fontSize: 16,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    marginBottom: 10,
-    lineHeight: 24,
-  },
-  quoteAuthor: {
-    fontSize: 14,
-    textAlign: 'right',
-    opacity: 0.7,
-  },
-  gettingStartedContainer: {
-    margin: 20,
-    alignItems: 'center',
+  section: {
+    marginHorizontal: 20,
+    marginTop: 20,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
+    marginBottom: 10,
+    fontWeight: '600',
   },
-  startButton: {
+  card: {
+    borderRadius: 10,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    marginBottom: 6,
+  },
+  cardContent: {
     flexDirection: 'row',
-    backgroundColor: '#4A90E2',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 25,
     alignItems: 'center',
   },
-  startButtonText: {
-    color: '#fff',
-    fontSize: 16,
+  cardTextContainer: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  cardTitle: {
     fontWeight: '600',
-    marginRight: 8,
-  }
+  },
+  cardDescription: {
+    marginTop: 4,
+    opacity: 0.7,
+  },
+  socialLinksContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  socialButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
 });
