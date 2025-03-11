@@ -121,7 +121,7 @@ export default function PodcastScreen() {
         <ThemedText style={styles.subheader}>
           Inspiration for your spiritual journey
         </ThemedText>
-      </View>
+      </View>w>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
