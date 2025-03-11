@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Platform, ScrollView, Pressable, TouchableOpacity, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Platform, ScrollView, Pressable, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { DECLARATION_CATEGORIES } from '@/constants/DeclarationsData';
@@ -8,17 +8,54 @@ import * as Haptics from 'expo-haptics';
 import { BlurView } from 'expo-blur';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-// Placeholder for SwipeableDeclaration component - needs implementation
-const SwipeableDeclaration = ({item}) => <ThemedText>{item.text}</ThemedText>;
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CustomDeclaration } from '@/types/declarations';
+import { Swipeable } from 'react-native-gesture-handler';
+const SwipeableDeclaration = ({ item, onDelete, tintColor }) => {
+  const renderRightActions = () => {
+    return (
+      <TouchableOpacity
+        style={[styles.deleteAction, { backgroundColor: '#FF3B30' }]}
+        onPress={() => onDelete(item.id)}
+      >
+        <Ionicons name="trash-outline" size={24} color="white" />
+      </TouchableOpacity>
+    );
+  };
 
+  return (
+    <Swipeable renderRightActions={renderRightActions}>
+      <View style={styles.customDeclarationItem}>
+        <View style={[styles.bullet, { backgroundColor: tintColor }]} />
+        <ThemedText style={styles.declarationText}>{item.text}</ThemedText>
+      </View>
+    </Swipeable>
+  );
+};
 
 export default function DeclarationsScreen() {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
-  const [customDeclarations, setCustomDeclarations] = useState([]);
+  const [customDeclarations, setCustomDeclarations] = useState<CustomDeclaration[]>([]);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newDeclaration, setNewDeclaration] = useState('');
   const colorScheme = useColorScheme();
   const tintColor = Colors[colorScheme].tint;
+  
+  // Load custom declarations from AsyncStorage
+  useEffect(() => {
+    const loadCustomDeclarations = async () => {
+      try {
+        const savedDeclarations = await AsyncStorage.getItem('customDeclarations');
+        if (savedDeclarations) {
+          setCustomDeclarations(JSON.parse(savedDeclarations));
+        }
+      } catch (error) {
+        console.error('Error loading custom declarations:', error);
+      }
+    };
+    
+    loadCustomDeclarations();
+  }, []);
 
   const toggleCategory = (categoryId: string) => {
     if (Platform.OS === 'ios') {
@@ -27,11 +64,56 @@ export default function DeclarationsScreen() {
     setExpandedCategory(expandedCategory === categoryId ? null : categoryId);
   };
 
-  const addCustomDeclaration = () => {
+  const addCustomDeclaration = async () => {
     if (newDeclaration.trim() !== '') {
-      setCustomDeclarations([...customDeclarations, { id: Date.now(), text: newDeclaration }]);
-      setNewDeclaration('');
-      setIsAddingNew(false);
+      const newDeclarations = [...customDeclarations, { id: Date.now().toString(), text: newDeclaration }];
+      
+      try {
+        await AsyncStorage.setItem('customDeclarations', JSON.stringify(newDeclarations));
+        setCustomDeclarations(newDeclarations);
+        setNewDeclaration('');
+        setIsAddingNew(false);
+        
+        if (Platform.OS === 'ios') {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      } catch (error) {
+        console.error('Error saving custom declaration:', error);
+        Alert.alert('Error', 'Could not save your declaration. Please try again.');
+      }
+    }
+  };
+  
+  const deleteCustomDeclaration = async (id: string) => {
+    try {
+      if (Platform.OS === 'ios') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+      
+      const confirmDelete = Platform.OS === 'web' 
+        ? window.confirm('Are you sure you want to delete this declaration?')
+        : await new Promise((resolve) => {
+            Alert.alert(
+              'Delete Declaration',
+              'Are you sure you want to delete this declaration?',
+              [
+                { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
+                { text: 'Delete', onPress: () => resolve(true), style: 'destructive' }
+              ]
+            );
+          });
+      
+      if (confirmDelete) {
+        const updatedDeclarations = customDeclarations.filter(
+          declaration => declaration.id !== id
+        );
+        
+        await AsyncStorage.setItem('customDeclarations', JSON.stringify(updatedDeclarations));
+        setCustomDeclarations(updatedDeclarations);
+      }
+    } catch (error) {
+      console.error('Error deleting custom declaration:', error);
+      Alert.alert('Error', 'Could not delete the declaration. Please try again.');
     }
   };
 
@@ -195,6 +277,83 @@ export default function DeclarationsScreen() {
               )}
             </View>
           ))}
+        </View>
+        
+        {/* Custom Declarations Section */}
+        <View style={styles.categoryContainer}>
+          <BlurView
+            intensity={80}
+            tint={colorScheme === 'dark' ? 'dark' : 'light'}
+            style={styles.blurContainer}
+          >
+            <View style={styles.headerContent}>
+              <ThemedText style={styles.categoryTitle}>My Custom Declarations</ThemedText>
+            </View>
+          </BlurView>
+          
+          {customDeclarations.length > 0 ? (
+            <View style={styles.declarationsList}>
+              {customDeclarations.map((declaration) => (
+                <SwipeableDeclaration 
+                  key={declaration.id} 
+                  item={declaration} 
+                  onDelete={deleteCustomDeclaration}
+                  tintColor={tintColor}
+                />
+              ))}
+              <ThemedText style={styles.swipeHint}>Swipe left to delete</ThemedText>
+            </View>
+          ) : (
+            <ThemedText style={styles.emptyText}>
+              No custom declarations yet. Add your own below.
+            </ThemedText>
+          )}
+          
+          {isAddingNew ? (
+            <View style={styles.addNewContainer}>
+              <TextInput
+                style={[
+                  styles.newDeclarationInput,
+                  {
+                    borderColor: tintColor,
+                    color: colorScheme === 'dark' ? '#fff' : '#000'
+                  }
+                ]}
+                placeholder="Type your declaration here..."
+                placeholderTextColor={colorScheme === 'dark' ? '#999' : '#999'}
+                value={newDeclaration}
+                onChangeText={setNewDeclaration}
+                multiline
+              />
+              <View style={styles.addNewActions}>
+                <TouchableOpacity
+                  style={[styles.addNewButton, styles.cancelButton]}
+                  onPress={() => {
+                    setIsAddingNew(false);
+                    setNewDeclaration('');
+                  }}
+                >
+                  <ThemedText style={styles.buttonText}>Cancel</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.addNewButton, { backgroundColor: tintColor }]}
+                  onPress={addCustomDeclaration}
+                >
+                  <ThemedText style={[styles.buttonText, { color: '#fff' }]}>Save</ThemedText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.addButton, { borderColor: tintColor }]}
+              onPress={() => setIsAddingNew(true)}
+            >
+              <Ionicons name="add-circle-outline" size={20} color={tintColor} />
+              <ThemedText style={[styles.addButtonText, { color: tintColor }]}>
+                Add New Declaration
+              </ThemedText>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </ThemedView>
