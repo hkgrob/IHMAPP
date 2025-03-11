@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { StyleSheet, View, Platform, ScrollView, Pressable, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Platform, ScrollView, Pressable, TouchableOpacity, TextInput } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { DECLARATION_CATEGORIES } from '@/constants/DeclarationsData';
@@ -9,9 +8,15 @@ import * as Haptics from 'expo-haptics';
 import { BlurView } from 'expo-blur';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+// Placeholder for SwipeableDeclaration component - needs implementation
+const SwipeableDeclaration = ({item}) => <ThemedText>{item.text}</ThemedText>;
+
 
 export default function DeclarationsScreen() {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [customDeclarations, setCustomDeclarations] = useState([]);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [newDeclaration, setNewDeclaration] = useState('');
   const colorScheme = useColorScheme();
   const tintColor = Colors[colorScheme].tint;
 
@@ -20,6 +25,14 @@ export default function DeclarationsScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     setExpandedCategory(expandedCategory === categoryId ? null : categoryId);
+  };
+
+  const addCustomDeclaration = () => {
+    if (newDeclaration.trim() !== '') {
+      setCustomDeclarations([...customDeclarations, { id: Date.now(), text: newDeclaration }]);
+      setNewDeclaration('');
+      setIsAddingNew(false);
+    }
   };
 
   return (
@@ -37,37 +50,138 @@ export default function DeclarationsScreen() {
         </View>
 
         <View style={styles.categoriesContainer}>
-          {DECLARATION_CATEGORIES.map((category) => (
-            <View key={category.id} style={styles.categoryContainer}>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={[
-                  styles.categoryHeader,
-                  expandedCategory === category.id && styles.activeCategory
-                ]}
-                onPress={() => toggleCategory(category.id)}
+          {/* Custom Declarations Section */}
+          <View 
+            style={[
+              styles.categoryContainer,
+              expandedCategory === 'custom' && styles.activeCategory
+            ]}
+          >
+            <Pressable
+              onPress={() => toggleCategory('custom')}
+              style={styles.categoryHeader}
+            >
+              <BlurView
+                intensity={80}
+                tint={colorScheme === 'dark' ? 'dark' : 'light'}
+                style={styles.blurContainer}
               >
-                <BlurView 
-                  intensity={expandedCategory === category.id ? 90 : 70} 
+                <View style={styles.headerContent}>
+                  <ThemedText style={styles.categoryTitle}>Custom Declarations</ThemedText>
+                  <View style={styles.headerActions}>
+                    <View 
+                      style={[
+                        styles.iconBackground,
+                        { backgroundColor: tintColor }
+                      ]}
+                    >
+                      <Ionicons
+                        name={expandedCategory === 'custom' ? "chevron-up" : "chevron-down"}
+                        size={20}
+                        color="white"
+                      />
+                    </View>
+                  </View>
+                </View>
+              </BlurView>
+            </Pressable>
+
+            {expandedCategory === 'custom' && (
+              <View style={styles.declarationsList}>
+                {customDeclarations.length === 0 && !isAddingNew ? (
+                  <ThemedText style={styles.emptyText}>
+                    Add your personal declarations here to speak them regularly.
+                  </ThemedText>
+                ) : (
+                  customDeclarations.map((declaration) => (
+                    <SwipeableDeclaration key={declaration.id} item={declaration} />
+                  ))
+                )}
+
+                {isAddingNew ? (
+                  <View style={styles.addNewContainer}>
+                    <TextInput
+                      style={[styles.newDeclarationInput, {borderColor: tintColor}]}
+                      value={newDeclaration}
+                      onChangeText={setNewDeclaration}
+                      placeholder="Type your declaration..."
+                      placeholderTextColor="gray"
+                      multiline
+                      autoFocus
+                    />
+                    <View style={styles.addNewActions}>
+                      <TouchableOpacity 
+                        style={[styles.addNewButton, styles.cancelButton]} 
+                        onPress={() => setIsAddingNew(false)}
+                      >
+                        <ThemedText style={styles.buttonText}>Cancel</ThemedText>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={[styles.addNewButton, {backgroundColor: tintColor}]} 
+                        onPress={addCustomDeclaration}
+                      >
+                        <ThemedText style={[styles.buttonText, {color: '#FFFFFF'}]}>Save</ThemedText>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : (
+                  <TouchableOpacity 
+                    style={[styles.addButton, {borderColor: tintColor}]} 
+                    onPress={() => setIsAddingNew(true)}
+                  >
+                    <Ionicons name="add" size={20} color={tintColor} />
+                    <ThemedText style={[styles.addButtonText, {color: tintColor}]}>
+                      Add New Declaration
+                    </ThemedText>
+                  </TouchableOpacity>
+                )}
+
+                {customDeclarations.length > 0 && (
+                  <ThemedText style={styles.swipeHint}>
+                    <Ionicons name="swap-horizontal" size={14} /> Swipe left to delete
+                  </ThemedText>
+                )}
+              </View>
+            )}
+          </View>
+
+          {/* Original Declaration Categories */}
+          {DECLARATION_CATEGORIES.map((category) => (
+            <View 
+              key={category.id} 
+              style={[
+                styles.categoryContainer,
+                expandedCategory === category.id && styles.activeCategory
+              ]}
+            >
+              <Pressable
+                onPress={() => toggleCategory(category.id)}
+                style={styles.categoryHeader}
+              >
+                <BlurView
+                  intensity={80}
                   tint={colorScheme === 'dark' ? 'dark' : 'light'}
                   style={styles.blurContainer}
                 >
                   <View style={styles.headerContent}>
-                    <ThemedText type="subtitle" style={styles.categoryTitle}>
-                      {category.title}
-                    </ThemedText>
+                    <ThemedText style={styles.categoryTitle}>{category.title}</ThemedText>
                     <View style={styles.headerActions}>
-                      <View style={[styles.iconBackground, {backgroundColor: tintColor + '20'}]}>
+                      <View 
+                        style={[
+                          styles.iconBackground,
+                          { backgroundColor: tintColor }
+                        ]}
+                      >
                         <Ionicons
-                          name={expandedCategory === category.id ? 'chevron-up' : 'chevron-down'}
+                          name={expandedCategory === category.id ? "chevron-up" : "chevron-down"}
                           size={20}
-                          color={tintColor}
+                          color="white"
                         />
                       </View>
                     </View>
                   </View>
                 </BlurView>
-              </TouchableOpacity>
+              </Pressable>
 
               {expandedCategory === category.id && (
                 <View style={styles.declarationsList}>
@@ -183,5 +297,53 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     lineHeight: 24,
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 20,
+    opacity: 0.7,
+  },
+  addNewContainer: {
+    marginTop: 20,
+  },
+  newDeclarationInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  addNewActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  addNewButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  cancelButton: {
+    backgroundColor: '#E0E0E0',
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 20,
+  },
+  addButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 12,
+  },
+  swipeHint: {
+    fontSize: 14,
+    opacity: 0.7,
+    marginTop: 16,
   },
 });

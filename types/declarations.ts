@@ -4,4 +4,10 @@ export interface DeclarationCategory {
   title: string;
   source: string;
   declarations: string[];
+
+export interface CustomDeclaration {
+  id: string;
+  text: string;
+}
+
 }
