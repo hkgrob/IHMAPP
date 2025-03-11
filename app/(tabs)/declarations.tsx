@@ -1,12 +1,9 @@
-
 import React, { useState } from 'react';
-import { StyleSheet, View, Platform, Alert, ScrollView, Pressable } from 'react-native';
+import { StyleSheet, View, Platform,  ScrollView, Pressable } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { DECLARATION_CATEGORIES } from '@/constants/DeclarationsData';
 import { Ionicons } from '@expo/vector-icons';
-import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 
 export default function DeclarationsScreen() {
@@ -19,42 +16,6 @@ export default function DeclarationsScreen() {
     setExpandedCategory(expandedCategory === categoryId ? null : categoryId);
   };
 
-  const handleDownload = async (filename: string) => {
-    try {
-      if (Platform.OS === 'web') {
-        // Ensure we're using the underscore version of the filename
-        const normalizedFilename = filename.replace(/\s+/g, '_');
-        
-        // Use our custom PDF viewer page
-        const baseUrl = window.location.origin;
-        const viewerUrl = `${baseUrl}/pdf-viewer.html?file=${encodeURIComponent(normalizedFilename)}`;
-        console.log('Opening PDF viewer with:', normalizedFilename);
-        
-        // Open in new tab
-        window.open(viewerUrl, '_blank');
-      } else {
-        // For mobile platforms, use Sharing API
-        const fileUri = FileSystem.documentDirectory + filename;
-        const downloadResumable = FileSystem.createDownloadResumable(
-          `${FileSystem.documentDirectory}attached_assets/${filename}`,
-          fileUri
-        );
-        
-        try {
-          const { uri } = await downloadResumable.downloadAsync();
-          if (uri) {
-            await Sharing.shareAsync(uri);
-          }
-        } catch (error) {
-          console.error('Error downloading file:', error);
-          Alert.alert('Download Error', 'Failed to download the file. Please try again later.');
-        }
-      }
-    } catch (error) {
-      console.error('Error handling download:', error);
-      Alert.alert('Error', 'An error occurred while trying to open the file.');
-    }
-  };
 
   return (
     <ThemedView style={styles.container}>
@@ -65,7 +26,7 @@ export default function DeclarationsScreen() {
         <ThemedText type="title" style={styles.screenTitle}>Declarations</ThemedText>
         <ThemedText style={styles.description}>
           Daily declarations to strengthen your faith and renew your mind.
-          Tap on a category to view declarations, and tap the PDF icon to access the full document.
+          Tap on a category to view declarations.
         </ThemedText>
 
         {DECLARATION_CATEGORIES.map((category) => (
@@ -79,13 +40,6 @@ export default function DeclarationsScreen() {
                   {category.title}
                 </ThemedText>
                 <View style={styles.headerActions}>
-                  <Pressable
-                    onPress={() => handleDownload(category.source)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    style={styles.pdfButton}
-                  >
-                    <Ionicons name="document-text-outline" size={24} color="#007AFF" />
-                  </Pressable>
                   <Ionicons
                     name={expandedCategory === category.id ? 'chevron-up' : 'chevron-down'}
                     size={24}
@@ -94,7 +48,7 @@ export default function DeclarationsScreen() {
                 </View>
               </View>
             </Pressable>
-            
+
             {expandedCategory === category.id && (
               <View style={styles.declarationsList}>
                 {category.declarations.map((declaration, index) => (
@@ -107,12 +61,8 @@ export default function DeclarationsScreen() {
             )}
           </View>
         ))}
-        
-        <View style={styles.footer}>
-          <ThemedText style={styles.footerText}>
-            Tap on the document icon to view or download the PDF
-          </ThemedText>
-        </View>
+
+
       </ScrollView>
     </ThemedView>
   );
@@ -159,10 +109,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  pdfButton: {
-    marginRight: 12,
-    padding: 4,
-  },
   declarationsList: {
     padding: 16,
     paddingTop: 0,
@@ -182,14 +128,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
-  footer: {
-    marginTop: 24,
-    padding: 16,
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 14,
-    color: '#888',
-    textAlign: 'center',
-  },
+
 });
