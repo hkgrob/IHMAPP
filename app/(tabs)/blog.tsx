@@ -39,20 +39,20 @@ export default function BlogScreen() {
     try {
       setLoading(true);
       setErrorMessage(null);
-      
+
       // Clear the cache
       console.log('Clearing blog cache...');
       await AsyncStorage.removeItem('wix_blog_posts');
       await AsyncStorage.removeItem('wix_blog_cache_time');
-      
+
       // Reload the posts
       console.log('Refreshing blog posts...');
       const blogPosts = await fetchWixBlogPosts();
       console.log(`Received ${blogPosts.length} posts after refresh`);
-      
+
       if (blogPosts && blogPosts.length > 0) {
         setPosts(blogPosts);
-        
+
         // Check if we're showing fallback data
         if (blogPosts.length === 4 && blogPosts[0].id === '1') {
           console.log('Showing fallback content');
@@ -233,15 +233,30 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   refreshButton: {
-    padding: 8,
+    padding: 12,
     marginRight: 8,
-    marginTop: 8,
+  },
+  contentRefreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f0f8ff',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    marginVertical: 15,
+    borderWidth: 1,
+    borderColor: '#0066cc',
+  },
+  refreshButtonText: {
+    color: '#0066cc',
+    marginLeft: 8,
+    fontWeight: '600',
   },
   errorMessage: {
-    color: '#E53935',
+    padding: 10,
+    color: '#e63946',
     textAlign: 'center',
-    marginHorizontal: 20,
     marginBottom: 10,
-    fontSize: 14,
   },
 });
