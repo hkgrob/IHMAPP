@@ -114,23 +114,23 @@ export default function HomeScreen() {
           <ThemedText style={styles.socialsTitle}>Find Us Online</ThemedText>
           <View style={styles.socialsIconsContainer}>
             <TouchableOpacity onPress={() => Linking.openURL('https://www.facebook.com/ignitinghope')}>
-              <View style={styles.socialIcon}>
-                <FontAwesome name="facebook" size={24} color="white" />
+              <View style={[styles.socialIcon, { backgroundColor: '#1877F2' }]}>
+                <FontAwesome name="facebook-f" size={24} color="white" />
               </View>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => Linking.openURL('https://www.instagram.com/ignitinghope/')}>
-              <View style={styles.socialIcon}>
+              <View style={[styles.socialIcon, { backgroundColor: '#E4405F' }]}>
                 <FontAwesome name="instagram" size={24} color="white" />
               </View>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => Linking.openURL('https://www.youtube.com/IgnitingHopeMinistries')}>
-              <View style={styles.socialIcon}>
-                <FontAwesome name="youtube" size={24} color="red" />
+              <View style={[styles.socialIcon, { backgroundColor: '#FF0000' }]}>
+                <FontAwesome name="youtube-play" size={24} color="white" />
               </View>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => Linking.openURL('https://x.com/BacklundSteve')}>
-              <View style={styles.socialIcon}>
-                <FontAwesome name="twitter" size={24} color="skyblue" />
+              <View style={[styles.socialIcon, { backgroundColor: '#000000' }]}>
+                <FontAwesome name="times" size={24} color="white" />
               </View>
             </TouchableOpacity>
           </View>
@@ -292,7 +292,6 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 10,
