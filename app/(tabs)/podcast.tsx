@@ -211,16 +211,21 @@ const styles = StyleSheet.create({
   headerContainer: {
     padding: 20,
     paddingBottom: 10,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 5,
+    textAlign: 'center',
   },
   headerSubtitle: {
     fontSize: 16,
     opacity: 0.7,
     marginBottom: 10,
+    textAlign: 'center',
   },
   loadingContainer: {
     flex: 1,
