@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -17,7 +16,7 @@ export default function PodcastScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
-  
+
   const [episodes, setEpisodes] = useState<PodcastEpisode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -44,13 +43,13 @@ export default function PodcastScreen() {
   }, [loadPodcastEpisodes]);
 
   const [selectedEpisode, setSelectedEpisode] = useState<PodcastEpisode | null>(null);
-  
+
   const openEpisode = (episode: PodcastEpisode) => {
     try {
       if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
-      
+
       // Set the selected episode to display in the embedded player
       setSelectedEpisode(episode);
     } catch (error) {
@@ -63,7 +62,7 @@ export default function PodcastScreen() {
       if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
-      
+
       await WebBrowser.openBrowserAsync('https://podcast.ignitinghope.com');
     } catch (error) {
       console.error('Error opening podcast website:', error);
@@ -88,20 +87,20 @@ export default function PodcastScreen() {
             <Ionicons name="mic" size={32} color={isDark ? "#fff" : "#333"} />
           </View>
         )}
-        
+
         <View style={styles.episodeDetails}>
           <ThemedText style={styles.episodeTitle} numberOfLines={2}>
             {item.title}
           </ThemedText>
-          
+
           <ThemedText style={styles.episodeDate}>
             {item.publishDate} • {item.duration}
           </ThemedText>
-          
+
           <ThemedText style={styles.episodeDescription} numberOfLines={3}>
             {item.description}
           </ThemedText>
-          
+
           <View style={styles.playButtonContainer}>
             <Ionicons name="play-circle" size={20} color={isDark ? "#fff" : "#333"} />
             <ThemedText style={styles.playButtonText}>Play Episode</ThemedText>
@@ -114,12 +113,9 @@ export default function PodcastScreen() {
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      
+
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
-        <View style={styles.headerContainer}>
-          <ThemedText style={styles.headerTitle}>Igniting Hope Podcast</ThemedText>
-          <ThemedText style={styles.headerSubtitle}>Inspiration for your journey</ThemedText>
-        </View>
+        {/* Header removed */}
       </ScrollView>
 
       {isLoading ? (
@@ -153,7 +149,7 @@ export default function PodcastScreen() {
           }
         />
       )}
-      
+
       {selectedEpisode && (
         <BlurView 
           intensity={90} 
@@ -171,7 +167,7 @@ export default function PodcastScreen() {
               <Ionicons name="close" size={24} color={isDark ? "#fff" : "#333"} />
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.audioPlayerWrapper}>
             {Platform.OS === 'web' ? (
               <audio 
@@ -207,25 +203,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 15,
-  },
-  headerContainer: {
-    padding: 20,
-    paddingBottom: 10,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 5,
-    textAlign: 'center',
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    opacity: 0.7,
-    marginBottom: 10,
-    textAlign: 'center',
   },
   loadingContainer: {
     flex: 1,
