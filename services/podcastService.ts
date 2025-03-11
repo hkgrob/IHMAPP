@@ -21,6 +21,7 @@ export interface PodcastEpisode {
 // Fetches podcast episodes from the RSS feed
 export const fetchPodcastEpisodes = async (): Promise<PodcastEpisode[]> => {
   try {
+    console.log("Fetching podcast episodes...");
     // Check for cached data first
     const cachedData = await AsyncStorage.getItem('podcast_episodes');
     const cachedTime = await AsyncStorage.getItem('podcast_cache_time');
@@ -30,9 +31,11 @@ export const fetchPodcastEpisodes = async (): Promise<PodcastEpisode[]> => {
 
       // Return cached data if it's still fresh
       if (elapsedTime < CACHE_EXPIRATION) {
+        console.log("Using cached podcast data");
         return JSON.parse(cachedData);
       }
     }
+    console.log("Cache expired or not available, fetching fresh podcast data");
 
     // Fetch the RSS feed
     const response = await fetch(PODCAST_RSS_URL);
@@ -56,6 +59,7 @@ export const fetchPodcastEpisodes = async (): Promise<PodcastEpisode[]> => {
     console.error('Error fetching podcast episodes:', error);
     
     // Return fallback data in case of error
+    console.log('Using fallback podcast episodes data');
     return getFallbackPodcastEpisodes();
   }
 };
