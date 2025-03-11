@@ -45,7 +45,7 @@ name = "Access-Control-Allow-Origin"
 value = "*"
 
 [workflows]
-runButton = "EAS Publish Preview iOS"
+runButton = "Run"
 
 [[workflows.workflow]]
 name = "Dev Server"
