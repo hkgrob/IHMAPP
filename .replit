@@ -12,8 +12,37 @@ externalPort = 80
 localPort = 8082
 externalPort = 3000
 
+[[deployment.rewrites]]
+from = "/attached_assets/*"
+to = "/attached_assets/*"
+
+[[deployment.responseHeaders]]
+path = "/attached_assets/*.pdf"
+name = "Content-Type"
+value = "application/pdf"
+
+[[deployment.responseHeaders]]
+path = "/attached_assets/*.pdf"
+name = "Content-Disposition"
+value = "inline"
+
+[[deployment.responseHeaders]]
+path = "/attached_assets/*.pdf"
+name = "Content-Type"
+value = "application/pdf"
+
+[[deployment.responseHeaders]]
+path = "/attached_assets/*"
+name = "X-Content-Type-Options"
+value = "nosniff"
+
+[[deployment.responseHeaders]]
+path = "/attached_assets/*"
+name = "Access-Control-Allow-Origin"
+value = "*"
+
 [workflows]
-runButton = "Run Expo"
+runButton = "Run"
 
 [[workflows.workflow]]
 name = "Dev Server"
@@ -63,26 +92,22 @@ author = 39982925
 task = "shell.exec"
 args = "EXPO_PACKAGER_PROXY_URL=https://$REPLIT_DEV_DOMAIN REACT_NATIVE_PACKAGER_HOSTNAME=$REPLIT_DEV_DOMAIN npx expo start"
 
-[[deployment.rewrites]]
-from = "/attached_assets/*"
-to = "/attached_assets/*"
+[[workflows.workflow]]
+name = "Run"
+author = 39982925
 
-[[deployment.responseHeaders]]
-path = "/attached_assets/*.pdf"
-name = "Content-Type"
-value = "application/pdf"
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx expo start --web"
 
-[[deployment.responseHeaders]]
-path = "/attached_assets/*.pdf"
-name = "Content-Disposition"
-value = "inline"
+[[workflows.workflow]]
+name = "Run"
+author = 39982925
 
-[[deployment.responseHeaders]]
-path = "/attached_assets/*"
-name = "X-Content-Type-Options"
-value = "nosniff"
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx expo start --web"
 
-[[deployment.responseHeaders]]
-path = "/attached_assets/*"
-name = "Access-Control-Allow-Origin"
-value = "*"
+[[ports]]
+localPort = 19006
+externalPort = 80

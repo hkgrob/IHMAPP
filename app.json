@@ -28,7 +28,8 @@
       },
       "copy": [
         { "from": "attached_assets", "to": "attached_assets" }
-      ]
+      ],
+      "assetsPath": "./attached_assets"
     },
     "assetBundlePatterns": [
       "assets/**/*",
