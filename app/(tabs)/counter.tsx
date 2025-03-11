@@ -188,7 +188,7 @@ export default function CounterScreen() {
             onPress={incrementCount}
           >
             <ThemedText style={styles.buttonText} lightColor="#000000" darkColor="#FFFFFF">
-              I Made a Declaration
+              Click!
             </ThemedText>
           </TouchableOpacity>
 
