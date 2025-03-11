@@ -22,8 +22,13 @@ export default function DeclarationsScreen() {
   const handleDownload = async (filename: string) => {
     try {
       if (Platform.OS === 'web') {
-        // For web, directly open PDF in a new window
-        window.open(`/attached_assets/${encodeURIComponent(filename)}`, '_blank');
+        // Use our custom PDF viewer page
+        const baseUrl = window.location.origin;
+        const viewerUrl = `${baseUrl}/pdf-viewer.html?file=${encodeURIComponent(filename)}`;
+        console.log('Opening PDF viewer with:', filename);
+        
+        // Open in new tab
+        window.open(viewerUrl, '_blank');
       } else {
         // For mobile platforms, use Sharing API
         const fileUri = FileSystem.documentDirectory + filename;

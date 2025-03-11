@@ -1,0 +1,88 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Viewer</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    #pdf-container {
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+    }
+    #pdf-viewer {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .error-container {
+      padding: 20px;
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto;
+      margin-top: 50px;
+    }
+    .loading-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 18px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="loading-text">Loading PDF...</div>
+  <div id="pdf-container">
+    <iframe id="pdf-viewer" src="" style="display: none;"></iframe>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const pdfFile = urlParams.get('file');
+      
+      if (!pdfFile) {
+        document.body.innerHTML = '<div class="error-container"><h2>Error</h2><p>No PDF file specified.</p></div>';
+        return;
+      }
+
+      const baseUrl = window.location.origin;
+      const pdfUrl = `${baseUrl}/attached_assets/${encodeURIComponent(pdfFile)}`;
+      const iframe = document.getElementById('pdf-viewer');
+      
+      // Set up iframe load event handler
+      iframe.onload = function() {
+        document.getElementById('loading').style.display = 'none';
+        iframe.style.display = 'block';
+      };
+      
+      // Handle error if PDF doesn't load
+      iframe.onerror = function() {
+        document.body.innerHTML = `
+          <div class="error-container">
+            <h2>Error Loading PDF</h2>
+            <p>The PDF could not be loaded. Please try one of these options:</p>
+            <p><a href="${pdfUrl}" target="_blank">Open PDF directly</a></p>
+            <p><a href="${pdfUrl}" download>Download PDF</a></p>
+          </div>
+        `;
+      };
+      
+      // Set the iframe source
+      iframe.src = pdfUrl;
+      document.title = `Viewing: ${pdfFile}`;
+    });
+  </script>
+</body>
+</html>
