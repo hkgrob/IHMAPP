@@ -11,8 +11,14 @@
       },
       "ios": {
         "simulator": true
-      }
+      },
+      "channel": "preview"
     },
+    "production": {
+      "channel": "production"
+    }
+  },
+  "submit": {
     "production": {}
   }
 }
