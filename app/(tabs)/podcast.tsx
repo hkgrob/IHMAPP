@@ -206,16 +206,23 @@ const styles = StyleSheet.create({
   headerContainer: {
     padding: 20,
     paddingBottom: 10,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   header: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 5,
+    textAlign: 'center',
+    width: '100%',
   },
   subheader: {
     fontSize: 16,
     opacity: 0.7,
     marginBottom: 10,
+    textAlign: 'center',
+    width: '100%',
   },
   loadingContainer: {
     flex: 1,
