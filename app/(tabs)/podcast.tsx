@@ -25,99 +25,31 @@ export default function PodcastScreen() {
   const loadPodcastEpisodes = useCallback(async () => {
     try {
       console.log('Loading podcast episodes...');
+      setIsLoading(true);
+      
+      // The fetchPodcastEpisodes function now always returns data
+      // It either returns real data or fallback data
       const data = await fetchPodcastEpisodes();
       console.log(`Received ${data.length} podcast episodes`);
       
-      if (data && data.length > 0) {
-        setEpisodes(data);
-        console.log('Successfully set podcast episodes');
-      } else {
-        console.error('No podcast episodes returned');
-        // Ensure we always show at least the fallback data
-        const fallbackData = [
-          {
-            id: '1',
-            title: 'Activating Your Prophetic Destiny',
-            description: 'In this episode, we discuss how to discover and step into your prophetic calling and destiny.',
-            publishDate: 'June 15, 2023',
-            duration: '45:22',
-            audioUrl: 'https://podcast.ignitinghope.com/episodes/episode1.mp3',
-            imageUrl: 'https://podcast.ignitinghope.com/images/episode1.jpg'
-          },
-          {
-            id: '2',
-            title: 'Breakthrough Prayer Strategies',
-            description: 'Learn powerful prayer techniques that can help you break through barriers in your spiritual life.',
-            publishDate: 'May 22, 2023',
-            duration: '38:15',
-            audioUrl: 'https://podcast.ignitinghope.com/episodes/episode2.mp3',
-            imageUrl: 'https://podcast.ignitinghope.com/images/episode2.jpg'
-          },
-          {
-            id: '3',
-            title: 'Kingdom Mindsets for Success',
-            description: 'Discover how to develop mindsets that align with God\'s kingdom principles for success in every area of life.',
-            publishDate: 'April 10, 2023',
-            duration: '42:50',
-            audioUrl: 'https://podcast.ignitinghope.com/episodes/episode3.mp3',
-            imageUrl: 'https://podcast.ignitinghope.com/images/episode3.jpg'
-          },
-          {
-            id: '4',
-            title: 'Hearing God\'s Voice Clearly',
-            description: 'Practical steps to enhance your ability to hear and discern God\'s voice in your daily life.',
-            publishDate: 'March 5, 2023',
-            duration: '36:40',
-            audioUrl: 'https://podcast.ignitinghope.com/episodes/episode4.mp3',
-            imageUrl: 'https://podcast.ignitinghope.com/images/episode4.jpg'
-          }
-        ];
-        setEpisodes(fallbackData);
-        console.log('Set fallback podcast episodes');
-      }
+      // Set the data regardless of source
+      setEpisodes(data);
+      console.log('Successfully set podcast episodes');
     } catch (error) {
       console.error('Failed to load podcast episodes:', error);
-      // Ensure we show fallback data even on error
-      const fallbackData = [
+      // This should not happen, but just in case, use some hardcoded fallback data
+      const hardcodedFallback = [
         {
           id: '1',
-          title: 'Activating Your Prophetic Destiny',
-          description: 'In this episode, we discuss how to discover and step into your prophetic calling and destiny.',
-          publishDate: 'June 15, 2023',
-          duration: '45:22',
-          audioUrl: 'https://podcast.ignitinghope.com/episodes/episode1.mp3',
-          imageUrl: 'https://podcast.ignitinghope.com/images/episode1.jpg'
-        },
-        {
-          id: '2',
-          title: 'Breakthrough Prayer Strategies',
-          description: 'Learn powerful prayer techniques that can help you break through barriers in your spiritual life.',
-          publishDate: 'May 22, 2023',
-          duration: '38:15',
-          audioUrl: 'https://podcast.ignitinghope.com/episodes/episode2.mp3',
-          imageUrl: 'https://podcast.ignitinghope.com/images/episode2.jpg'
-        },
-        {
-          id: '3',
-          title: 'Kingdom Mindsets for Success',
-          description: 'Discover how to develop mindsets that align with God\'s kingdom principles for success in every area of life.',
-          publishDate: 'April 10, 2023',
-          duration: '42:50',
-          audioUrl: 'https://podcast.ignitinghope.com/episodes/episode3.mp3',
-          imageUrl: 'https://podcast.ignitinghope.com/images/episode3.jpg'
-        },
-        {
-          id: '4',
-          title: 'Hearing God\'s Voice Clearly',
-          description: 'Practical steps to enhance your ability to hear and discern God\'s voice in your daily life.',
-          publishDate: 'March 5, 2023',
-          duration: '36:40',
-          audioUrl: 'https://podcast.ignitinghope.com/episodes/episode4.mp3',
-          imageUrl: 'https://podcast.ignitinghope.com/images/episode4.jpg'
+          title: 'Emergency Fallback Episode',
+          description: 'This is a fallback episode shown when all other methods fail.',
+          publishDate: 'January 1, 2024',
+          duration: '5:00',
+          audioUrl: 'https://example.com/fallback.mp3',
+          imageUrl: 'https://via.placeholder.com/300'
         }
       ];
-      setEpisodes(fallbackData);
-      console.log('Set fallback podcast episodes after error');
+      setEpisodes(hardcodedFallback);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -215,6 +147,13 @@ export default function PodcastScreen() {
       </View>
 
       {/* Debug Info */}
+      {/* Debug info */}
+      <View style={styles.debugContainer}>
+        <ThemedText style={styles.debugText}>
+          Episodes: {episodes.length} | Loading: {isLoading ? 'Yes' : 'No'} | Refreshing: {refreshing ? 'Yes' : 'No'}
+        </ThemedText>
+      </View>
+
       {episodes.length === 0 && !isLoading && (
         <View style={styles.errorContainer}>
           <ThemedText style={styles.errorText}>
@@ -489,5 +428,15 @@ const styles = StyleSheet.create({
   retryText: {
     color: 'white',
     fontWeight: '600',
+  },
+  debugContainer: {
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    padding: 8,
+    margin: 8,
+    borderRadius: 4,
+  },
+  debugText: {
+    fontSize: 12,
+    opacity: 0.8,
   },
 });
