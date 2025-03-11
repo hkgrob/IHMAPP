@@ -27,14 +27,18 @@ export default function HomeScreen() {
           <Link href="/(tabs)/counter" asChild>
             <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
               <BlurView intensity={90} style={styles.featureButton} tint="light">
-                <ThemedView style={styles.iconContainer}>
-                  <Ionicons name="stopwatch-outline" size={32} color="#5AC8FA" />
-                </ThemedView>
-                <ThemedText style={styles.featureText}>Declaration Counter</ThemedText>
-                <ThemedText style={styles.featureDescription}>
-                  Track your progress
-                </ThemedText>
-                <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+                <View style={styles.featureTextContainer}>
+                  <ThemedView style={styles.iconContainer}>
+                    <Ionicons name="stopwatch-outline" size={32} color="#5AC8FA" />
+                  </ThemedView>
+                  <ThemedText style={styles.featureText}>Declaration Counter</ThemedText>
+                </View>
+                <View style={styles.featureDescriptionContainer}>
+                  <ThemedText style={styles.featureDescription}>
+                    Track your progress
+                  </ThemedText>
+                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+                </View>
               </BlurView>
             </TouchableOpacity>
           </Link>
@@ -42,14 +46,18 @@ export default function HomeScreen() {
           <Link href="/(tabs)/podcast" asChild>
             <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
               <BlurView intensity={90} style={styles.featureButton} tint="light">
-                <ThemedView style={styles.iconContainer}>
-                  <Ionicons name="mic-outline" size={32} color="#FF9500" />
-                </ThemedView>
-                <ThemedText style={styles.featureText}>Podcast</ThemedText>
-                <ThemedText style={styles.featureDescription}>
-                  Listen to spiritual teachings
-                </ThemedText>
-                <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+                <View style={styles.featureTextContainer}>
+                  <ThemedView style={styles.iconContainer}>
+                    <Ionicons name="mic-outline" size={32} color="#FF9500" />
+                  </ThemedView>
+                  <ThemedText style={styles.featureText}>Podcast</ThemedText>
+                </View>
+                <View style={styles.featureDescriptionContainer}>
+                  <ThemedText style={styles.featureDescription}>
+                    Listen to spiritual teachings
+                  </ThemedText>
+                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+                </View>
               </BlurView>
             </TouchableOpacity>
           </Link>
@@ -57,14 +65,18 @@ export default function HomeScreen() {
           <Link href="/(tabs)/blog" asChild>
             <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
               <BlurView intensity={90} style={styles.featureButton} tint="light">
-                <ThemedView style={styles.iconContainer}>
-                  <Ionicons name="newspaper-outline" size={32} color="#4CD964" />
-                </ThemedView>
-                <ThemedText style={styles.featureText}>Blog</ThemedText>
-                <ThemedText style={styles.featureDescription}>
-                  Inspiration for your journey
-                </ThemedText>
-                <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+                <View style={styles.featureTextContainer}>
+                  <ThemedView style={styles.iconContainer}>
+                    <Ionicons name="newspaper-outline" size={32} color="#4CD964" />
+                  </ThemedView>
+                  <ThemedText style={styles.featureText}>Blog</ThemedText>
+                </View>
+                <View style={styles.featureDescriptionContainer}>
+                  <ThemedText style={styles.featureDescription}>
+                    Inspiration for your journey
+                  </ThemedText>
+                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+                </View>
               </BlurView>
             </TouchableOpacity>
           </Link>
@@ -72,14 +84,18 @@ export default function HomeScreen() {
           <Link href="/(tabs)/declarations" asChild>
             <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
               <BlurView intensity={90} style={styles.featureButton} tint="light">
-                <ThemedView style={styles.iconContainer}>
-                  <Ionicons name="book-outline" size={32} color="#FF2D55" />
-                </ThemedView>
-                <ThemedText style={styles.featureText}>Daily Declarations</ThemedText>
-                <ThemedText style={styles.featureDescription}>
-                  Speak life over yourself
-                </ThemedText>
-                <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+                <View style={styles.featureTextContainer}>
+                  <ThemedView style={styles.iconContainer}>
+                    <Ionicons name="book-outline" size={32} color="#FF2D55" />
+                  </ThemedView>
+                  <ThemedText style={styles.featureText}>Daily Declarations</ThemedText>
+                </View>
+                <View style={styles.featureDescriptionContainer}>
+                  <ThemedText style={styles.featureDescription}>
+                    Speak life over yourself
+                  </ThemedText>
+                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+                </View>
               </BlurView>
             </TouchableOpacity>
           </Link>
@@ -87,14 +103,18 @@ export default function HomeScreen() {
           <Link href="/(tabs)/stats" asChild>
             <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
               <BlurView intensity={90} style={styles.featureButton} tint="light">
-                <ThemedView style={[styles.iconContainer, { backgroundColor: 'rgba(74, 144, 226, 0.2)' }]}>
-                  <Ionicons name="stats-chart" size={32} color="#4A90E2" />
-                </ThemedView>
-                <ThemedText style={styles.featureText}>Statistics</ThemedText>
-                <ThemedText style={styles.featureDescription}>
-                  View your progress
-                </ThemedText>
-                <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+                <View style={styles.featureTextContainer}>
+                  <ThemedView style={[styles.iconContainer, { backgroundColor: 'rgba(74, 144, 226, 0.2)' }]}>
+                    <Ionicons name="stats-chart" size={32} color="#4A90E2" />
+                  </ThemedView>
+                  <ThemedText style={styles.featureText}>Statistics</ThemedText>
+                </View>
+                <View style={styles.featureDescriptionContainer}>
+                  <ThemedText style={styles.featureDescription}>
+                    View your progress
+                  </ThemedText>
+                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+                </View>
               </BlurView>
             </TouchableOpacity>
           </Link>
@@ -219,15 +239,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 16,
   },
+  featureTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   featureText: {
     fontWeight: '600',
     fontSize: 20,
     marginBottom: 5,
+    textAlign: 'left',
+  },
+  featureDescriptionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   featureDescription: {
     fontSize: 15,
     color: '#8E8E93',
     fontWeight: '400',
+    textAlign: 'right',
+    flex: 1,
   },
   chevron: {
     position: 'absolute',
