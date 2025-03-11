@@ -37,23 +37,62 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
     console.log('Fetching blog from XML feed:', BLOG_XML_FEED);
     
     try {
-      // Use a CORS proxy to access the XML feed
-      const corsProxyUrl = 'https://corsproxy.io/?';
-      const response = await fetch(corsProxyUrl + encodeURIComponent(BLOG_XML_FEED), {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/xml, text/xml, */*'
+      // Try multiple CORS proxies in case one fails
+      const corsProxies = [
+        'https://corsproxy.io/?',
+        'https://cors-anywhere.herokuapp.com/',
+        'https://api.allorigins.win/raw?url='
+      ];
+      
+      let response = null;
+      let xmlData = '';
+      
+      // Try each proxy until one works
+      for (const proxy of corsProxies) {
+        try {
+          console.log(`Trying CORS proxy: ${proxy}`);
+          response = await fetch(proxy + encodeURIComponent(BLOG_XML_FEED), {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/xml, text/xml, */*'
+            }
+          });
+          
+          console.log('XML feed response status:', response.status);
+          
+          if (response.ok) {
+            xmlData = await response.text();
+            console.log('Received XML data length:', xmlData.length);
+            break; // We found a working proxy
+          }
+        } catch (proxyError) {
+          console.error(`Error with proxy ${proxy}:`, proxyError);
+          // Continue to the next proxy
         }
-      });
-      
-      console.log('XML feed response status:', response.status);
-      
-      if (!response.ok) {
-        throw new Error(`XML feed response error: ${response.status}`);
       }
       
-      const xmlData = await response.text();
-      console.log('Received XML data length:', xmlData.length);
+      // If no proxy worked, try a direct fetch as a last resort
+      if (!xmlData) {
+        console.log('All proxies failed. Trying direct fetch...');
+        try {
+          response = await fetch(BLOG_XML_FEED, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/xml, text/xml, */*'
+            }
+          });
+          
+          if (response.ok) {
+            xmlData = await response.text();
+          }
+        } catch (directError) {
+          console.error('Direct fetch failed:', directError);
+        }
+      }
+      
+      if (!xmlData) {
+        throw new Error('Could not fetch XML data through any method');
+      }
       
       // Parse the RSS XML
       const rssPosts = parseRssForBlogPosts(xmlData);
@@ -73,8 +112,37 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
     } catch (xmlError) {
       console.error('XML feed error:', xmlError);
       
-      // If the direct XML feed fails, use fallback data
-      console.log('Using fallback blog posts after XML feed attempt failed');
+      // Try one more approach - scrape the blog page directly
+      try {
+        console.log('Attempting to scrape blog page directly...');
+        const blogPageUrl = 'https://www.ignitinghope.com/blog';
+        
+        const corsProxyUrl = 'https://corsproxy.io/?';
+        const response = await fetch(corsProxyUrl + encodeURIComponent(blogPageUrl), {
+          method: 'GET',
+          headers: {
+            'Accept': 'text/html'
+          }
+        });
+        
+        if (response.ok) {
+          const htmlData = await response.text();
+          console.log('Received HTML data length:', htmlData.length);
+          
+          // Parse the HTML
+          const htmlPosts = parseHtmlForBlogPosts(htmlData);
+          
+          if (htmlPosts.length > 0) {
+            console.log(`Successfully scraped ${htmlPosts.length} posts from HTML`);
+            return htmlPosts;
+          }
+        }
+      } catch (scrapeError) {
+        console.error('HTML scraping error:', scrapeError);
+      }
+      
+      // If all approaches fail, use fallback data
+      console.log('Using fallback blog posts after all fetch methods failed');
       return getFallbackBlogPosts();
     }
   } catch (error) {
@@ -160,68 +228,78 @@ const parseHtmlForBlogPosts = (html: string): BlogPost[] => {
   return posts;
 };
 
-// Simple XML parser for RSS feed
+// XML parser for RSS feed using xml2js
 const parseRssForBlogPosts = (xml: string): BlogPost[] => {
   const posts: BlogPost[] = [];
   
   try {
-    // Look for item elements in RSS
-    const itemMatches = xml.match(/<item>([\s\S]*?)<\/item>/g);
+    // Import xml2js parser
+    const xml2js = require('xml2js');
+    const parser = new xml2js.Parser({ explicitArray: false });
     
-    if (itemMatches && itemMatches.length > 0) {
-      console.log(`Found ${itemMatches.length} RSS items`);
+    // Parse the XML data
+    parser.parseString(xml, (err: any, result: any) => {
+      if (err) {
+        console.error('XML parsing error:', err);
+        return [];
+      }
       
-      itemMatches.forEach((itemXml, index) => {
-        // Extract title
-        const titleMatch = itemXml.match(/<title>([\s\S]*?)<\/title>/);
+      if (!result || !result.rss || !result.rss.channel || !result.rss.channel.item) {
+        console.log('No RSS items found in the XML structure');
+        return [];
+      }
+      
+      // Get the items from the RSS feed
+      const items = Array.isArray(result.rss.channel.item) 
+        ? result.rss.channel.item 
+        : [result.rss.channel.item];
+      
+      console.log(`Found ${items.length} RSS items`);
+      
+      items.forEach((item: any, index: number) => {
+        if (!item) return;
         
-        // Extract description/content
-        const descMatch = itemXml.match(/<description>([\s\S]*?)<\/description>/) ||
-                         itemXml.match(/<content:encoded>([\s\S]*?)<\/content:encoded>/);
+        const title = item.title ? stripHtml(item.title) : 'No title';
+        
+        // Get content from either description or content:encoded
+        const content = item['content:encoded'] || item.description || '';
+        const excerpt = stripHtml(content).substring(0, 150) + '...';
         
         // Extract date
-        const dateMatch = itemXml.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+        let dateStr = 'No date';
+        if (item.pubDate) {
+          try {
+            const dateObj = new Date(item.pubDate);
+            dateStr = dateObj.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            });
+          } catch (e) {
+            dateStr = item.pubDate || 'No date';
+          }
+        }
         
         // Extract link
-        const linkMatch = itemXml.match(/<link>([\s\S]*?)<\/link>/);
+        const link = item.link || `https://www.ignitinghope.com/blog`;
         
-        // Extract image
-        const imageMatch = descMatch && descMatch[1].match(/<img[^>]*src="([^"]*)"[^>]*>/);
-        
-        if (titleMatch) {
-          const title = stripHtml(titleMatch[1]);
-          const excerpt = descMatch ? stripHtml(descMatch[1]).substring(0, 150) + '...' : 'No excerpt available';
-          
-          let dateStr = 'No date';
-          if (dateMatch) {
-            try {
-              const dateObj = new Date(dateMatch[1]);
-              dateStr = dateObj.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              });
-            } catch (e) {
-              dateStr = dateMatch[1] || 'No date';
-            }
-          }
-          
-          const link = linkMatch ? stripHtml(linkMatch[1]) : `https://www.ignitinghope.com/blog`;
-          const imageUrl = imageMatch ? imageMatch[1] : undefined;
-          
-          posts.push({
-            id: `rss-${index}`,
-            title,
-            excerpt,
-            date: dateStr,
-            link,
-            imageUrl
-          });
+        // Try to extract image from content
+        let imageUrl;
+        const imgMatch = content.match(/<img[^>]*src="([^"]*)"[^>]*>/);
+        if (imgMatch) {
+          imageUrl = imgMatch[1];
         }
+        
+        posts.push({
+          id: `rss-${index}`,
+          title,
+          excerpt,
+          date: dateStr,
+          link,
+          imageUrl
+        });
       });
-    } else {
-      console.log('No item elements found in RSS XML');
-    }
+    });
   } catch (e) {
     console.error('Error parsing RSS XML:', e);
   }

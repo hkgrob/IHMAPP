@@ -49,31 +49,56 @@ export default function BlogScreen() {
   const handleRefresh = async () => {
     try {
       setLoading(true);
+      setRefreshing(true);
+      setErrorMessage('Refreshing blog posts...');
+
       console.log('Clearing blog cache...');
       // Clear the cache
       await AsyncStorage.removeItem('wix_blog_posts');
       await AsyncStorage.removeItem('wix_blog_cache_time');
 
-      console.log('Refreshing blog posts...');
-      // Reload the posts
-      const blogPosts = await fetchWixBlogPosts();
-      setPosts(blogPosts);
+      // Force clear any other cached data
+      await AsyncStorage.getAllKeys()
+        .then(keys => {
+          const blogKeys = keys.filter(k => k.includes('blog') || k.includes('wix'));
+          if (blogKeys.length > 0) {
+            return AsyncStorage.multiRemove(blogKeys);
+          }
+        })
+        .catch(err => console.log('Error clearing additional cache:', err));
 
-      console.log(`Received ${blogPosts.length} posts after refresh`);
+      console.log('Refreshing blog posts with force reload...');
+      // Reload the posts with a short timeout to ensure cache is fully cleared
+      setTimeout(async () => {
+        try {
+          const blogPosts = await fetchWixBlogPosts();
+          setPosts(blogPosts);
 
-      // Show different messages based on whether we got fallback data or real data
-      if (blogPosts.length > 0 && blogPosts[0].id !== '1') {
-        console.log('Showing fresh content after refresh');
-        Alert.alert('Success', 'Blog posts updated successfully!');
-      } else {
-        console.log('Still showing fallback content after refresh');
-        Alert.alert('Notice', 'Using fallback blog content. Could not fetch latest posts.');
-      }
+          console.log(`Received ${blogPosts.length} posts after refresh`);
+          // Show different messages based on whether we got fallback data or real data
+          if (blogPosts.length > 0 && blogPosts[0].id !== '1') {
+            console.log('Showing fresh content after refresh');
+            setErrorMessage(null);
+            Alert.alert('Success', 'Blog posts updated successfully!');
+          } else {
+            console.log('Still showing fallback content after refresh');
+            setErrorMessage('Could not connect to blog service. Showing fallback content.');
+            Alert.alert('Notice', 'Using fallback blog content. Could not fetch latest posts.');
+          }
+        } catch (error) {
+          console.error('Failed in delayed refresh:', error);
+          setErrorMessage('Failed to load blog posts. Please try again later.');
+        } finally {
+          setLoading(false);
+          setRefreshing(false);
+        }
+      }, 1000); // Small delay to ensure cache clearing has completed
     } catch (error) {
       console.error('Failed to refresh blog posts:', error);
       Alert.alert('Error', 'Failed to refresh blog posts. Please try again later.');
-    } finally {
       setLoading(false);
+      setRefreshing(false);
+      setErrorMessage('Failed to load blog posts. Please try again later.');
     }
   };
 
