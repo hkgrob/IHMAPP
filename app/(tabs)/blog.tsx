@@ -163,7 +163,7 @@ export default function BlogScreen() {
         ) : (
           <>
             {posts.map(post => (
-              <View key={post.id} style={styles.blogCard}>
+              <ThemedView key={post.id} style={styles.blogCard}>
                 {post.imageUrl && (
                   <Image 
                     source={{ uri: post.imageUrl }} 
@@ -181,7 +181,7 @@ export default function BlogScreen() {
                   <ThemedText style={styles.readMoreText}>Read More</ThemedText>
                   <Ionicons name="arrow-forward" size={16} color="#0066cc" />
                 </TouchableOpacity>
-              </View>
+              </ThemedView>
             ))}
           </>
         )}
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   blogCard: {
-    backgroundColor: 'white',
+    // backgroundColor: 'white', // Removed hardcoded background color
     borderRadius: 10,
     padding: 16,
     marginBottom: 16,
