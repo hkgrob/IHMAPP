@@ -115,12 +115,12 @@ export default function PodcastScreen() {
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
+      <View style={styles.headerWrapper}>
         <View style={styles.headerContainer}>
           <ThemedText style={styles.headerTitle}>Igniting Hope Podcast</ThemedText>
           <ThemedText style={styles.headerSubtitle}>Inspiration for your journey</ThemedText>
         </View>
-      </ScrollView>
+      </View>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -208,12 +208,19 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: 15,
   },
-  headerContainer: {
-    padding: 20,
-    paddingBottom: 10,
+  headerWrapper: {
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+  },
+  headerContainer: {
+    padding: 20,
+    paddingBottom: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
   },
   headerTitle: {
     fontSize: 28,
