@@ -22,10 +22,11 @@ export default function DeclarationsScreen() {
   const handleDownload = async (filename: string) => {
     try {
       if (Platform.OS === 'web') {
-        // Direct access to attached_assets
-        const pdfPath = `${window.location.origin}/attached_assets/${filename}`;
-        window.open(pdfPath, '_blank');
-        console.log('Opening PDF at path:', pdfPath);
+        // Use the viewer approach
+        const encodedFilename = encodeURIComponent(filename);
+        const viewerPath = `${window.location.origin}/attached_assets/viewer.html?pdf=/attached_assets/${encodedFilename}`;
+        window.open(viewerPath, '_blank');
+        console.log('Opening PDF at path:', viewerPath);
       } else {
         // For mobile platforms, use Sharing API
         const localUri = FileSystem.documentDirectory + filename;

@@ -25,7 +25,10 @@
         "babel": {
           "include": ["attached_assets/**/*"]
         }
-      }
+      },
+      "copy": [
+        { "from": "attached_assets", "to": "attached_assets" }
+      ]
     },
     "assetBundlePatterns": [
       "assets/**/*",
