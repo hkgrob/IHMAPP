@@ -11,7 +11,8 @@ config.resolver = {
   extraNodeModules: {
     ...config.resolver.extraNodeModules,
     'timers': require.resolve('timers-browserify'),
-    'string_decoder': require.resolve('string_decoder-browserify'),
+    // Use the browser version of string_decoder directly
+    'string_decoder': require.resolve('string_decoder')
   }
 };
 
