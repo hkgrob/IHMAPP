@@ -7,10 +7,11 @@ interface ResponsiveTextProps extends TextProps {
   variant?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'body' | 'caption';
   lightColor?: string;
   darkColor?: string;
+  numberOfLines?: number;
 }
 
 export default function ResponsiveText(props: ResponsiveTextProps) {
-  const { style, lightColor, darkColor, variant = 'body', ...otherProps } = props;
+  const { style, lightColor, darkColor, variant = 'body', numberOfLines, ...otherProps } = props;
   const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
 
   // Get the appropriate base styles based on the variant
@@ -21,7 +22,8 @@ export default function ResponsiveText(props: ResponsiveTextProps) {
   
   return (
     <Text
-      style={[variantStyles, { color }, style]}
+      style={[variantStyles, { color }, styles.baseText, style]}
+      numberOfLines={numberOfLines}
       {...otherProps}
     >
       {children}
@@ -50,6 +52,10 @@ function getVariantStyles(variant: string) {
 }
 
 const styles = StyleSheet.create({
+  baseText: {
+    flexShrink: 1,
+    flexWrap: 'wrap',
+  },
   h1: {
     fontSize: Platform.OS === 'web' ? 36 : 30,
     fontWeight: 'bold',
