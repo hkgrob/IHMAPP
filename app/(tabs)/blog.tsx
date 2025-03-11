@@ -36,7 +36,7 @@ export default function BlogScreen() {
         {
           id: '1',
           title: 'Prophetic Breakthrough',
-          excerpt: 'Learning to hear God's voice clearly is vital for every believer. In this post, we explore practical steps to enhancing your prophetic gifting.',
+          excerpt: 'Learning to hear God\'s voice clearly is vital for every believer. In this post, we explore practical steps to enhancing your prophetic gifting.',
           date: 'May 15, 2023',
           link: 'https://www.ignitinghope.com/blog/prophetic-breakthrough'
         },
@@ -140,7 +140,7 @@ export default function BlogScreen() {
               <ThemedText style={styles.visitBlogText}>
                 Visit Full Blog
               </ThemedText>
-              <Ionicons name="open-outline" size={18} color={isDark ? "#fff" : "#000"} />
+              <Ionicons name="open-outline" size={18} color="#fff" />
             </TouchableOpacity>
             
             <ThemedText style={styles.disclaimerText}>
