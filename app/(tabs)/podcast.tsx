@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl, Platform, Dimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -7,13 +6,15 @@ import { Stack } from 'expo-router';
 import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
 import { fetchPodcastEpisodes } from '../../services/podcastService';
+import { Colors } from '@/constants/Colors'; // Speculative import to address the theme issue
+
 
 export default function PodcastScreen() {
   const [podcasts, setPodcasts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  
+
   // Get screen width for responsive layout
   const screenWidth = Dimensions.get('window').width;
 

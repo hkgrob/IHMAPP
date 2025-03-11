@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View, Image, ScrollView, Dimensions, Platform, Linking } from 'react-native';
 import { Link, Stack } from 'expo-router';
@@ -41,7 +40,7 @@ export default function HomeScreen() {
               Discover resources to empower your spiritual journey
             </ResponsiveText>
           </View>
-          
+
           {/* Declarations Section */}
           <View style={styles.section}>
             <ResponsiveText variant="h2" style={styles.sectionTitle}>Daily Declarations</ResponsiveText>
@@ -65,7 +64,7 @@ export default function HomeScreen() {
               </View>
             </TouchableOpacity>
           </View>
-          
+
           {/* Blog Section */}
           <View style={styles.section}>
             <ResponsiveText variant="h2" style={styles.sectionTitle}>Latest Blog Posts</ResponsiveText>
@@ -89,7 +88,7 @@ export default function HomeScreen() {
               </View>
             </TouchableOpacity>
           </View>
-          
+
           {/* Podcast Section */}
           <View style={styles.section}>
             <ResponsiveText variant="h2" style={styles.sectionTitle}>Podcast Episodes</ResponsiveText>
@@ -113,7 +112,7 @@ export default function HomeScreen() {
               </View>
             </TouchableOpacity>
           </View>
-          
+
           {/* Social Media Section */}
           <View style={styles.section}>
             <ResponsiveText variant="h2" style={styles.sectionTitle}>Connect With Us</ResponsiveText>
@@ -144,7 +143,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
           </View>
-          
+
           {/* Settings Section */}
           <View style={styles.section}>
             <TouchableOpacity 
