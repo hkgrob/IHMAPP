@@ -7,11 +7,11 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
-import declarationCategories from '../../constants/DeclarationsData';
-import { CustomDeclaration } from '../../types/declarations';
+import { DECLARATION_CATEGORIES } from '../../constants/DeclarationsData';
+import { CustomDeclaration, DeclarationCategory } from '../../types/declarations';
 
 export default function DeclarationsScreen() {
-  const [selectedCategory, setSelectedCategory] = useState(declarationCategories[0]);
+  const [selectedCategory, setSelectedCategory] = useState<DeclarationCategory>(DECLARATION_CATEGORIES[0]);
   const [customDeclarations, setCustomDeclarations] = useState<CustomDeclaration[]>([]);
   const [newDeclaration, setNewDeclaration] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
