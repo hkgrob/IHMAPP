@@ -57,8 +57,11 @@
         return;
       }
 
+      // Handle both formats (with spaces or with underscores)
+      const normalizedPdfFile = pdfFile.replace(/\s+/g, '_');
+      
       const baseUrl = window.location.origin;
-      const pdfUrl = `${baseUrl}/attached_assets/${encodeURIComponent(pdfFile)}`;
+      const pdfUrl = `${baseUrl}/attached_assets/${encodeURIComponent(normalizedPdfFile)}`;
       const iframe = document.getElementById('pdf-viewer');
       
       // Set up iframe load event handler

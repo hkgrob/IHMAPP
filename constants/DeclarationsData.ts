@@ -4,7 +4,7 @@ export const DECLARATION_CATEGORIES: DeclarationCategory[] = [
   {
     id: 'identity',
     title: 'Identity Declarations',
-    source: 'Identity Declarations.pdf',
+    source: 'Identity_Declarations.pdf',
     declarations: [
       "I am God's workmanship - Ephesians 2:10",
       "I am filled with His Spirit - Romans 8:11",
@@ -37,7 +37,7 @@ export const DECLARATION_CATEGORIES: DeclarationCategory[] = [
   {
     id: 'biblical',
     title: '100 Biblical Declarations',
-    source: '100 Biblical Declarations.pdf',
+    source: '100_Biblical_Declarations.pdf',
     declarations: [
       "I am blessed coming in and going out - Deuteronomy 28:6",
       "I am the apple of God's eye - Psalm 17:8",
@@ -54,7 +54,7 @@ export const DECLARATION_CATEGORIES: DeclarationCategory[] = [
   {
     id: 'leadership',
     title: 'Leadership Beliefs',
-    source: '25 Leadership Beliefs to Declare.pdf',
+    source: '25_Leadership_Beliefs_to_Declare.pdf',
     declarations: [
       "I lead with integrity and authenticity",
       "I inspire others through my example",
@@ -71,7 +71,7 @@ export const DECLARATION_CATEGORIES: DeclarationCategory[] = [
   {
     id: 'spirit',
     title: 'Spirit Awareness',
-    source: '65 Spirit Awareness Declarations.pdf',
+    source: '65_Spirit_Awareness_Declarations.pdf',
     declarations: [
       "I am sensitive to the leading of the Holy Spirit",
       "I recognize God's voice and follow His direction",
@@ -88,7 +88,7 @@ export const DECLARATION_CATEGORIES: DeclarationCategory[] = [
   {
     id: 'victorious',
     title: 'Victorious Mindsets',
-    source: '50 Victorious Mindsets Declarations.pdf',
+    source: '50_Victorious_Mindsets_Declarations.pdf',
     declarations: [
       "I think thoughts of victory, not defeat",
       "I focus on solutions, not problems",
@@ -105,7 +105,7 @@ export const DECLARATION_CATEGORIES: DeclarationCategory[] = [
   {
     id: 'unseen',
     title: 'Living From the Unseen',
-    source: 'Living From the Unseen Declarations.pdf',
+    source: 'Living_From_the_Unseen_Declarations.pdf',
     declarations: [
       "I live by faith, not by sight",
       "I am anchored in eternal realities",
