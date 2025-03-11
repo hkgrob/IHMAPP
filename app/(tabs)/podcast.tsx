@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl, Platform, Dimensions } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, FlatList, TouchableOpacity, View, Image, ActivityIndicator, RefreshControl, Platform, Dimensions } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import ResponsiveText from '@/components/ResponsiveText';
@@ -16,11 +16,13 @@ export default function PodcastScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
-  const { width, height } = Dimensions.get('window');
+  const windowDimensions = Dimensions.get('window');
+  const screenWidth = windowDimensions.width;
+  const screenHeight = windowDimensions.height;
   
   // Add responsiveness checks
-  const isSmallDevice = width < 360;
-  const isLandscape = width > height;
+  const isSmallDevice = screenWidth < 360;
+  const isLandscape = screenWidth > screenHeight;
 
   const [episodes, setEpisodes] = useState<PodcastEpisode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,8 +55,6 @@ export default function PodcastScreen() {
       if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
-
-      // Set the selected episode to display in the embedded player
       setSelectedEpisode(episode);
     } catch (error) {
       console.error('Error opening podcast episode:', error);
@@ -66,59 +66,66 @@ export default function PodcastScreen() {
       if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
-
       await WebBrowser.openBrowserAsync('https://podcast.ignitinghope.com');
     } catch (error) {
       console.error('Error opening podcast website:', error);
     }
   };
 
-  const renderPodcastItem = ({ item }: { item: PodcastEpisode }) => (
-    <TouchableOpacity 
-      style={styles.episodeCard}
-      activeOpacity={0.7} 
-      onPress={() => openEpisode(item)}
-    >
-      <BlurView intensity={80} tint={isDark ? 'dark' : 'light'} style={styles.episodeCardInner}>
-        {item.imageUrl ? (
-          <Image 
-            source={{ uri: item.imageUrl }} 
-            style={styles.episodeImage} 
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={[styles.episodeImage, styles.placeholderImage]}>
-            <Ionicons name="mic" size={32} color={isDark ? "#fff" : "#333"} />
+  const renderPodcastItem = ({ item }: { item: PodcastEpisode }) => {
+    // Truncate description
+    const maxDescriptionLength = isSmallDevice ? 60 : 90;
+    const truncatedDescription = item.description.length > maxDescriptionLength
+      ? `${item.description.substring(0, maxDescriptionLength)}...`
+      : item.description;
+
+    return (
+      <TouchableOpacity
+        style={styles.episodeCard}
+        activeOpacity={0.7}
+        onPress={() => openEpisode(item)}
+      >
+        <ThemedView style={styles.episodeCardInner}>
+          {item.imageUrl ? (
+            <Image 
+              source={{ uri: item.imageUrl }} 
+              style={styles.episodeImage} 
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[styles.episodeImage, styles.placeholderImage]}>
+              <Ionicons name="mic" size={24} color="#fff" />
+            </View>
+          )}
+          
+          <View style={styles.episodeDetails}>
+            <ResponsiveText style={styles.episodeTitle} numberOfLines={2}>
+              {item.title}
+            </ResponsiveText>
+            
+            <ResponsiveText style={styles.episodeDate}>
+              {item.publishDate}
+            </ResponsiveText>
+            
+            <ResponsiveText style={styles.episodeDescription} numberOfLines={2}>
+              {truncatedDescription}
+            </ResponsiveText>
+            
+            <View style={styles.playButtonContainer}>
+              <Ionicons name="play-circle" size={16} color={isDark ? "#fff" : "#000"} />
+              <ResponsiveText style={styles.playButtonText}>
+                Play Episode
+              </ResponsiveText>
+            </View>
           </View>
-        )}
-
-        <View style={styles.episodeDetails}>
-          <ResponsiveText variant="h5" style={styles.episodeTitle} numberOfLines={2}>
-            {item.title}
-          </ResponsiveText>
-
-          <ResponsiveText variant="caption" style={styles.episodeDate}>
-            {item.publishDate} • {item.duration}
-          </ResponsiveText>
-
-          <ResponsiveText variant="caption" style={styles.episodeDescription} numberOfLines={2}>
-            {item.description}
-          </ResponsiveText>
-
-          <View style={styles.playButtonContainer}>
-            <Ionicons name="play-circle" size={18} color={isDark ? "#fff" : "#333"} />
-            <ResponsiveText variant="caption" style={styles.playButtonText}>Play Episode</ResponsiveText>
-          </View>
-        </View>
-      </BlurView>
-    </TouchableOpacity>
-  );
+        </ThemedView>
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <MobileContainer scrollable={false} padded={false}>
+    <MobileContainer withInsets={false}>
       <ThemedView style={styles.container}>
-        <StatusBar style={isDark ? 'light' : 'dark'} />
-
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={isDark ? "#fff" : "#333"} />
@@ -173,25 +180,29 @@ export default function PodcastScreen() {
             }
           />
         )}
-
+        
         {selectedEpisode && (
-          <BlurView 
-            intensity={90} 
-            tint={isDark ? 'dark' : 'light'} 
-            style={styles.playerContainer}
+          <BlurView
+            intensity={90}
+            tint={isDark ? 'dark' : 'light'}
+            style={[
+              styles.playerContainer,
+              { backgroundColor: isDark ? 'rgba(30, 30, 30, 0.8)' : 'rgba(240, 240, 240, 0.8)' }
+            ]}
           >
             <View style={styles.playerHeader}>
               <ResponsiveText style={styles.playerTitle} numberOfLines={1}>
                 {selectedEpisode.title}
               </ResponsiveText>
-              <TouchableOpacity 
-                onPress={() => setSelectedEpisode(null)}
+              
+              <TouchableOpacity
                 style={styles.closeButton}
+                onPress={() => setSelectedEpisode(null)}
               >
-                <Ionicons name="close" size={24} color={isDark ? "#fff" : "#333"} />
+                <Ionicons name="close" size={24} color={isDark ? "#fff" : "#000"} />
               </TouchableOpacity>
             </View>
-
+            
             <View style={styles.audioPlayerWrapper}>
               {Platform.OS === 'web' ? (
                 <audio 
@@ -239,7 +250,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listContent: {
-    paddingHorizontal: width < 360 ? 8 : 16,
+    paddingHorizontal: Dimensions.get('window').width < 360 ? 8 : 16,
     paddingBottom: 20,
   },
   episodeCard: {
@@ -254,14 +265,14 @@ const styles = StyleSheet.create({
   },
   episodeCardInner: {
     flexDirection: 'row',
-    padding: width < 360 ? 8 : 12,
+    padding: Dimensions.get('window').width < 360 ? 8 : 12,
     alignItems: 'center',
   },
   episodeImage: {
-    width: width < 360 ? 60 : 70,
-    height: width < 360 ? 60 : 70,
+    width: Dimensions.get('window').width < 360 ? 60 : 70,
+    height: Dimensions.get('window').width < 360 ? 60 : 70,
     borderRadius: 8,
-    marginRight: width < 360 ? 8 : 12,
+    marginRight: Dimensions.get('window').width < 360 ? 8 : 12,
   },
   placeholderImage: {
     backgroundColor: '#5856D6',
@@ -275,16 +286,16 @@ const styles = StyleSheet.create({
   episodeTitle: {
     fontWeight: 'bold',
     marginBottom: 2,
-    fontSize: width < 360 ? 14 : 16,
+    fontSize: Dimensions.get('window').width < 360 ? 14 : 16,
   },
   episodeDate: {
     marginBottom: 2,
-    fontSize: width < 360 ? 11 : 12,
+    fontSize: Dimensions.get('window').width < 360 ? 11 : 12,
   },
   episodeDescription: {
-    lineHeight: width < 360 ? 16 : 18,
+    lineHeight: Dimensions.get('window').width < 360 ? 16 : 18,
     marginBottom: 4,
-    fontSize: width < 360 ? 11 : 12,
+    fontSize: Dimensions.get('window').width < 360 ? 11 : 12,
   },
   playButtonContainer: {
     flexDirection: 'row',
@@ -293,7 +304,7 @@ const styles = StyleSheet.create({
   playButtonText: {
     fontWeight: '500',
     marginLeft: 5,
-    fontSize: width < 360 ? 12 : 14,
+    fontSize: Dimensions.get('window').width < 360 ? 12 : 14,
   },
   visitPodcastButton: {
     flexDirection: 'row',
