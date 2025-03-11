@@ -42,7 +42,7 @@ name = "Access-Control-Allow-Origin"
 value = "*"
 
 [workflows]
-runButton = "Run Expo"
+runButton = "Run"
 
 [[workflows.workflow]]
 name = "Dev Server"
@@ -98,7 +98,7 @@ author = 39982925
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npx expo start --web --host 0.0.0.0 --port 19006"
+args = "EXPO_PACKAGER_PROXY_URL=https://$REPLIT_DEV_DOMAIN REACT_NATIVE_PACKAGER_HOSTNAME=$REPLIT_DEV_DOMAIN npx expo start --web --host 0.0.0.0 --port 19006"
 
 [[workflows.workflow]]
 name = "Run"
