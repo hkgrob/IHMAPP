@@ -176,7 +176,7 @@ export default function DeclarationsScreen() {
                   </ThemedText>
                 ) : (
                   customDeclarations.map((declaration) => (
-                    <SwipeableDeclaration key={declaration.id} item={declaration} />
+                    <SwipeableDeclaration key={declaration.id} item={declaration} onDelete={deleteCustomDeclaration} tintColor={tintColor} />
                   ))
                 )}
 
@@ -279,82 +279,7 @@ export default function DeclarationsScreen() {
           ))}
         </View>
         
-        {/* Custom Declarations Section */}
-        <View style={styles.categoryContainer}>
-          <BlurView
-            intensity={80}
-            tint={colorScheme === 'dark' ? 'dark' : 'light'}
-            style={styles.blurContainer}
-          >
-            <View style={styles.headerContent}>
-              <ThemedText style={styles.categoryTitle}>My Custom Declarations</ThemedText>
-            </View>
-          </BlurView>
-          
-          {customDeclarations.length > 0 ? (
-            <View style={styles.declarationsList}>
-              {customDeclarations.map((declaration) => (
-                <SwipeableDeclaration 
-                  key={declaration.id} 
-                  item={declaration} 
-                  onDelete={deleteCustomDeclaration}
-                  tintColor={tintColor}
-                />
-              ))}
-              <ThemedText style={styles.swipeHint}>Swipe left to delete</ThemedText>
-            </View>
-          ) : (
-            <ThemedText style={styles.emptyText}>
-              No custom declarations yet. Add your own below.
-            </ThemedText>
-          )}
-          
-          {isAddingNew ? (
-            <View style={styles.addNewContainer}>
-              <TextInput
-                style={[
-                  styles.newDeclarationInput,
-                  {
-                    borderColor: tintColor,
-                    color: colorScheme === 'dark' ? '#fff' : '#000'
-                  }
-                ]}
-                placeholder="Type your declaration here..."
-                placeholderTextColor={colorScheme === 'dark' ? '#999' : '#999'}
-                value={newDeclaration}
-                onChangeText={setNewDeclaration}
-                multiline
-              />
-              <View style={styles.addNewActions}>
-                <TouchableOpacity
-                  style={[styles.addNewButton, styles.cancelButton]}
-                  onPress={() => {
-                    setIsAddingNew(false);
-                    setNewDeclaration('');
-                  }}
-                >
-                  <ThemedText style={styles.buttonText}>Cancel</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.addNewButton, { backgroundColor: tintColor }]}
-                  onPress={addCustomDeclaration}
-                >
-                  <ThemedText style={[styles.buttonText, { color: '#fff' }]}>Save</ThemedText>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={[styles.addButton, { borderColor: tintColor }]}
-              onPress={() => setIsAddingNew(true)}
-            >
-              <Ionicons name="add-circle-outline" size={20} color={tintColor} />
-              <ThemedText style={[styles.addButtonText, { color: tintColor }]}>
-                Add New Declaration
-              </ThemedText>
-            </TouchableOpacity>
-          )}
-        </View>
+        {/* End of categories */}
       </ScrollView>
     </ThemedView>
   );
