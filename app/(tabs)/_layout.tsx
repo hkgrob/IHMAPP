@@ -52,8 +52,17 @@ export default function TabLayout() {
       <Tabs.Screen
         name="blog"
         options={{
+          title: 'Blog',
           tabBarIcon: ({ color }) => <Ionicons name="newspaper-outline" size={24} color={color} />,
           tabBarLabel: ({ color }) => <HapticTab label="Blog" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="podcast"
+        options={{
+          title: 'Podcast',
+          tabBarIcon: ({ color }) => <Ionicons name="mic-outline" size={24} color={color} />,
+          tabBarLabel: ({ color }) => <HapticTab label="Podcast" color={color} />,
         }}
       />
       <Tabs.Screen
