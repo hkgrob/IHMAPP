@@ -16,7 +16,7 @@ export function Header() {
       { backgroundColor: isDark ? '#121212' : '#FFFFFF' }
     ]}>
       <Image 
-        source={require('../assets/images/logo.png')} 
+        source={require('../assets/images/logo-new.png')} 
         style={styles.logo}
         resizeMode="contain"
       />
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   logo: {
-    height: 40,
-    width: 200,
+    height: 45,
+    width: 240,
   }
 });
