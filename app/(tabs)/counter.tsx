@@ -1,275 +1,117 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, TouchableOpacity, Alert, Platform, ScrollView, Dimensions, View } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, TouchableOpacity, Animated, ScrollView, StatusBar } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
-import { BlurView } from 'expo-blur';
+import { ThemedText } from '@/components/ThemedText';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Haptics from 'expo-haptics';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
-import { Audio } from 'expo-av';
+import * as Haptics from 'expo-haptics';
 
-const { width } = Dimensions.get('window');
-
-export default function TabTwoScreen() {
+export default function CounterScreen() {
   const [dailyCount, setDailyCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
-  const [lastDate, setLastDate] = useState('');
-  const [bestStreak, setBestStreak] = useState(0);
-  const [currentStreak, setCurrentStreak] = useState(0);
-  const [showTips, setShowTips] = useState(true);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [sound, setSound] = useState(null); // Added sound state
-  const soundRef = useRef(new Audio.Sound());
-  const [lastDeclarationDate, setLastDeclarationDate] = useState(''); // Added lastDeclarationDate state
-  const hapticEnabled = Platform.OS !== 'web';
+  const [streakDays, setStreakDays] = useState(0);
+  const [buttonScale] = useState(new Animated.Value(1));
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
+  const animateButton = () => {
+    Animated.sequence([
+      Animated.timing(buttonScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   useEffect(() => {
     loadCounts();
-    loadSoundPreferences();
-    loadLastDeclarationDate();
-    //loadHapticPreferences(); //Assuming this function exists elsewhere.  If not, remove this line.
-
-    // Setup midnight reset check
-    const checkMidnightReset = () => {
-      const now = new Date();
-      const today = now.toDateString();
-
-      if (lastDate !== today) {
-        setDailyCount(0);
-        AsyncStorage.setItem('dailyCount', '0')
-          .then(() => console.log('Daily count reset at midnight'))
-          .catch(error => console.error('Error resetting daily count:', error));
-        setLastDate(today);
-        AsyncStorage.setItem('lastDate', today);
-      }
-    };
-
-    // Check every minute if we've crossed midnight
-    const intervalId = setInterval(checkMidnightReset, 60000);
-
-    // Initial check
-    checkMidnightReset();
-
-    return () => clearInterval(intervalId);
-  }, [lastDate]);
+  }, []);
 
   const loadCounts = async () => {
     try {
-      const storedDailyCount = await AsyncStorage.getItem('dailyCount');
-      const storedTotalCount = await AsyncStorage.getItem('totalCount');
-      const storedLastDate = await AsyncStorage.getItem('lastDate');
-      const storedBestStreak = await AsyncStorage.getItem('bestStreak');
-      const storedCurrentStreak = await AsyncStorage.getItem('currentStreak');
-      const storedFirstDate = await AsyncStorage.getItem('firstDate');
+      const savedDailyCount = await AsyncStorage.getItem('daily_count');
+      const savedTotalCount = await AsyncStorage.getItem('total_count');
+      const savedStreakDays = await AsyncStorage.getItem('streak_days');
+      const lastCountDate = await AsyncStorage.getItem('last_count_date');
 
-      if (storedDailyCount) setDailyCount(parseInt(storedDailyCount, 10));
-      if (storedTotalCount) setTotalCount(parseInt(storedTotalCount, 10));
-      if (storedLastDate) setLastDate(storedLastDate);
-      if (storedBestStreak) setBestStreak(parseInt(storedBestStreak, 10));
-      if (storedCurrentStreak) setCurrentStreak(parseInt(storedCurrentStreak, 10));
+      if (savedDailyCount) setDailyCount(parseInt(savedDailyCount));
+      if (savedTotalCount) setTotalCount(parseInt(savedTotalCount));
+      if (savedStreakDays) setStreakDays(parseInt(savedStreakDays));
 
+      // Check if it's a new day
       const today = new Date().toDateString();
-      if (!storedFirstDate) {
-        await AsyncStorage.setItem('firstDate', today);
-      }
-
-      //This section is now handled by the useEffect's midnight check
-      // if (storedLastDate && storedLastDate !== today) {
-      //   setDailyCount(0);
-      //   await AsyncStorage.setItem('dailyCount', '0');
-      // }
-    } catch (error) {
-      console.error("Error loading counts:", error);
-    }
-  };
-
-  const loadSoundPreferences = async () => {
-    try {
-      const storedSoundEnabled = await AsyncStorage.getItem('soundEnabled');
-      if (storedSoundEnabled !== null) {
-        setSoundEnabled(JSON.parse(storedSoundEnabled));
-      }
-    } catch (error) {
-      console.error("Error loading sound preferences:", error);
-    }
-  };
-
-  const loadLastDeclarationDate = async () => {
-    try {
-      const storedLastDeclarationDate = await AsyncStorage.getItem('lastDeclarationDate');
-      if (storedLastDeclarationDate) {
-        setLastDeclarationDate(storedLastDeclarationDate);
-      }
-    } catch (error) {
-      console.error("Error loading last declaration date:", error);
-    }
-  };
-
-  //Assuming this function exists elsewhere. If not, remove this function call and the function definition
-  const loadHapticPreferences = async () => {
-    //Implementation for loading haptic preferences
-  }
-
-
-  const incrementCount = async () => {
-    try {
-      console.log('Increment button pressed');
-      const newDailyCount = dailyCount + 1;
-      const newTotalCount = totalCount + 1;
-
-      setDailyCount(newDailyCount);
-      setTotalCount(newTotalCount);
-
-      // Check if this is the first declaration of the day
-      const today = new Date().toDateString();
-      if (lastDeclarationDate !== today) {
-        // New day, update the streak
-        const newCurrentStreak = currentStreak + 1;
-        setCurrentStreak(newCurrentStreak);
-        if (newCurrentStreak > bestStreak) {
-          setBestStreak(newCurrentStreak);
-          await AsyncStorage.setItem('bestStreak', JSON.stringify(newCurrentStreak));
-        }
-        setLastDeclarationDate(today);
-        await AsyncStorage.setItem('lastDeclarationDate', today);
-      }
-
-      // Save all data
-      await saveCounts(newDailyCount, newTotalCount);
-
-      if (hapticEnabled) {
-        try {
-          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        } catch (hapticError) {
-          console.log('Haptic feedback error:', hapticError);
-        }
-      }
-
-      await playClickSound();
-
-    } catch (error) {
-      console.error('Error incrementing count:', error);
-      Alert.alert('Error', 'Failed to increment count. Please try again.');
-    }
-  };
-
-  const playClickSound = async () => {
-    if (soundEnabled) {
-      try {
-        if (sound) {
-          await sound.setPositionAsync(0);
-          await sound.playAsync();
-          console.log('Sound played successfully');
-        } else {
-          console.log('Loading sound on demand');
-          // Preload sound file to ensure it's cached
-          const soundAsset = require('../../assets/sounds/click.mp3');
-          const { sound: newSound } = await Audio.Sound.createAsync(
-            soundAsset,
-            { shouldPlay: false }
-          );
-          if (newSound) {
-            setSound(newSound);
-            try {
-              await newSound.playAsync();
-            } catch (playError) {
-              console.error('Error playing sound:', playError);
-            }
-          } else {
-            console.error('Failed to load sound');
-          }
-        }
-      } catch (error) {
-        console.error('Error loading sound:', error);
-      }
-    }
-  };
-
-  const saveCounts = async (newDailyCount, newTotalCount) => {
-    try {
-      await AsyncStorage.setItem('dailyCount', newDailyCount.toString());
-      await AsyncStorage.setItem('totalCount', newTotalCount.toString());
-      await AsyncStorage.setItem('lastDate', new Date().toDateString());
-      console.log("Counts saved successfully");
-    } catch (error) {
-      console.error("Error saving counts:", error);
-    }
-  };
-
-  const resetDailyCount = () => {
-    if (Platform.OS === 'web') {
-      const confirmed = confirm("Are you sure you want to reset your daily count to zero?");
-      if (confirmed) {
+      if (lastCountDate && lastCountDate !== today) {
+        // It's a new day, reset daily count
         setDailyCount(0);
-        AsyncStorage.setItem('dailyCount', '0')
-          .then(() => console.log('Daily count reset successfully'))
-          .catch(error => console.error('Error resetting daily count:', error));
+        await AsyncStorage.setItem('daily_count', '0');
+        await AsyncStorage.setItem('last_count_date', today);
       }
-    } else {
-      Alert.alert(
-        "Reset Daily Count",
-        "Are you sure you want to reset your daily count to zero?",
-        [
-          { text: "Cancel", style: "cancel" },
-          { 
-            text: "Reset", 
-            onPress: () => {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-              setDailyCount(0);
-              AsyncStorage.setItem('dailyCount', '0')
-                .then(() => console.log('Daily count reset successfully'))
-                .catch(error => console.error('Error resetting daily count:', error));
-            }
-          }
-        ]
-      );
+    } catch (e) {
+      console.error('Failed to load counts:', e);
     }
   };
 
-  const resetTotalCount = () => {
-    if (Platform.OS === 'web') {
-      const confirmed = confirm("Are you sure you want to reset your all-time total count to zero?");
-      if (confirmed) {
-        setTotalCount(0);
-        AsyncStorage.setItem('totalCount', '0')
-          .then(() => console.log('Total count reset successfully'))
-          .catch(error => console.error('Error resetting total count:', error));
-      }
-    } else {
-      Alert.alert(
-        "Reset Total Count",
-        "Are you sure you want to reset your all-time total count to zero?",
-        [
-          { text: "Cancel", style: "cancel" },
-          { 
-            text: "Reset", 
-            onPress: () => {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-              setTotalCount(0);
-              AsyncStorage.setItem('totalCount', '0')
-                .then(() => console.log('Total count reset successfully'))
-                .catch(error => console.error('Error resetting total count:', error));
-            }
-          }
-        ]
-      );
-    }
-  };
-
-  const toggleTips = () => {
-    setShowTips(!showTips);
-  };
-
-  const toggleSound = async (value) => {
-    setSoundEnabled(value);
+  const saveCounts = async () => {
     try {
-      await AsyncStorage.setItem('soundEnabled', value.toString());
-      console.log('Sound preference saved');
-    } catch (error) {
-      console.error('Error saving sound preference:', error);
+      await AsyncStorage.setItem('daily_count', dailyCount.toString());
+      await AsyncStorage.setItem('total_count', totalCount.toString());
+      await AsyncStorage.setItem('streak_days', streakDays.toString());
+      await AsyncStorage.setItem('last_count_date', new Date().toDateString());
+      console.log('Counts saved successfully');
+    } catch (e) {
+      console.error('Failed to save counts:', e);
     }
+  };
+
+  const incrementCount = () => {
+    const newDailyCount = dailyCount + 1;
+    const newTotalCount = totalCount + 1;
+
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+
+    console.log('Increment button pressed');
+    setDailyCount(newDailyCount);
+    setTotalCount(newTotalCount);
+
+    // Check if this is the first declaration of the day
+    if (dailyCount === 0) {
+      setStreakDays(streakDays + 1);
+    }
+
+    animateButton();
+    saveCounts();
+  };
+
+  const resetDailyCount = async () => {
+    if (Platform.OS === 'ios') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    }
+
+    setDailyCount(0);
+    await AsyncStorage.setItem('daily_count', '0');
+    console.log('Daily count reset successfully');
+    setShowResetConfirm(false);
+  };
+
+  const resetTotalCount = async () => {
+    if (Platform.OS === 'ios') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    }
+
+    setTotalCount(0);
+    setStreakDays(0);
+    await AsyncStorage.setItem('total_count', '0');
+    await AsyncStorage.setItem('streak_days', '0');
+    console.log('Total count reset successfully');
+    setShowResetConfirm(false);
   };
 
   return (
@@ -281,115 +123,104 @@ export default function TabTwoScreen() {
       >
         <View style={styles.headerContainer}>
           <ThemedText style={styles.header}>
-            Declaration Clicker
+            Declaration Tracker
           </ThemedText>
           <ThemedText style={styles.subheader}>
-            Track your declarations to build new mindsets
+            Build powerful new mindsets one declaration at a time
           </ThemedText>
         </View>
 
-        <View style={styles.counterContainer}>
-          <BlurView intensity={90} tint="light" style={styles.counterCard}>
-            <View style={styles.counterCardHeader}>
-              <ThemedText style={styles.counterTitle}>TODAY'S COUNT</ThemedText>
-              <TouchableOpacity 
-                style={styles.resetButtonSmall} 
-                onPress={resetDailyCount}>
-                <Ionicons name="refresh" size={18} color="#FF3B30" />
-              </TouchableOpacity>
+        <View style={styles.statsContainer}>
+          {/* Daily Count Card */}
+          <BlurView intensity={90} tint="light" style={styles.statsCard}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="today-outline" size={24} color="#5AC8FA" />
             </View>
-
-            <View style={styles.counterDisplayContainer}>
-              <View style={styles.counterDisplay}>
-                <ThemedText style={styles.counterNumber}>{dailyCount}</ThemedText>
-              </View>
-            </View>
-
-            <ThemedText style={styles.counterDescription}>Declarations made today</ThemedText>
+            <ThemedText style={styles.statValue}>{dailyCount}</ThemedText>
+            <ThemedText style={styles.statLabel}>Today</ThemedText>
           </BlurView>
 
-          <BlurView intensity={90} tint="light" style={styles.counterCard}>
-            <View style={styles.counterCardHeader}>
-              <ThemedText style={styles.counterTitle}>TOTAL COUNT</ThemedText>
-              <TouchableOpacity 
-                style={styles.resetButtonSmall} 
-                onPress={resetTotalCount}>
-                <Ionicons name="refresh" size={18} color="#FF3B30" />
-              </TouchableOpacity>
+          {/* Total Count Card */}
+          <BlurView intensity={90} tint="light" style={styles.statsCard}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="infinite-outline" size={24} color="#FF9500" />
             </View>
-
-            <View style={styles.counterDisplayContainer}>
-              <View style={styles.counterDisplay}>
-                <ThemedText style={styles.counterNumber}>{totalCount}</ThemedText>
-              </View>
-            </View>
-
-            <ThemedText style={styles.counterDescription}>All-time declarations</ThemedText>
+            <ThemedText style={styles.statValue}>{totalCount}</ThemedText>
+            <ThemedText style={styles.statLabel}>Total</ThemedText>
           </BlurView>
 
-          <View style={styles.streakContainer}>
-            <BlurView intensity={90} tint="light" style={styles.streakCard}>
-              <ThemedText style={styles.streakLabel}>Current Streak</ThemedText>
-              <View style={styles.streakValueContainer}>
-                <ThemedText style={styles.streakValue}>{currentStreak}</ThemedText>
-                <ThemedText style={styles.streakUnit}>days</ThemedText>
-              </View>
-            </BlurView>
-
-            <BlurView intensity={90} tint="light" style={styles.streakCard}>
-              <ThemedText style={styles.streakLabel}>Best Streak</ThemedText>
-              <View style={styles.streakValueContainer}>
-                <ThemedText style={styles.streakValue}>{bestStreak}</ThemedText>
-                <ThemedText style={styles.streakUnit}>days</ThemedText>
-              </View>
-            </BlurView>
-          </View>
-
-          <TouchableOpacity 
-            style={[styles.countButton, {backgroundColor: '#FF9500'}]} 
-            onPress={incrementCount}
-            activeOpacity={0.8}
-          >
-            <BlurView intensity={100} tint="light" style={styles.countButtonInner}>
-              <Ionicons name="add-circle" size={28} color="#fff" />
-              <ThemedText style={styles.countButtonText}>Click Declaration</ThemedText>
-            </BlurView>
-          </TouchableOpacity>
+          {/* Streak Card */}
+          <BlurView intensity={90} tint="light" style={styles.statsCard}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="flame-outline" size={24} color="#FF2D55" />
+            </View>
+            <ThemedText style={styles.statValue}>{streakDays}</ThemedText>
+            <ThemedText style={styles.statLabel}>Day Streak</ThemedText>
+          </BlurView>
         </View>
 
-        {showTips && (
-          <BlurView style={styles.tipsCard} intensity={90} tint="light">
-            <ThemedText style={styles.tipsHeader}>Tips for Effective Declarations</ThemedText>
+        {/* Main Counter Button */}
+        <Animated.View style={{transform: [{scale: buttonScale}]}}>
+          <TouchableOpacity 
+            style={styles.mainButton}
+            activeOpacity={0.7}
+            onPress={incrementCount}
+          >
+            <BlurView intensity={90} tint="light" style={styles.mainButtonInner}>
+              <Ionicons name="add-circle" size={32} color="#4CD964" />
+              <ThemedText style={styles.mainButtonText}>Log Declaration</ThemedText>
+            </BlurView>
+          </TouchableOpacity>
+        </Animated.View>
 
-            <View style={styles.tipItem}>
-              <View style={[styles.tipIcon, {backgroundColor: 'rgba(52, 199, 89, 0.2)'}]}>
-                <Ionicons name="mic-outline" size={20} color="#34c759" />
+        <View style={styles.resetSection}>
+          <ThemedText style={styles.resetTitle}>Management</ThemedText>
+
+          {showResetConfirm ? (
+            <View style={styles.confirmationContainer}>
+              <ThemedText style={styles.confirmationText}>Are you sure?</ThemedText>
+              <View style={styles.confirmationButtons}>
+                <TouchableOpacity 
+                  style={[styles.confirmButton, styles.cancelButton]} 
+                  onPress={() => setShowResetConfirm(false)}
+                >
+                  <ThemedText style={styles.confirmButtonText}>Cancel</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.confirmButton, styles.resetConfirmButton]} 
+                  onPress={resetDailyCount}
+                >
+                  <ThemedText style={styles.confirmButtonText}>Reset Today</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.confirmButton, styles.resetAllButton]} 
+                  onPress={resetTotalCount}
+                >
+                  <ThemedText style={styles.confirmButtonText}>Reset All</ThemedText>
+                </TouchableOpacity>
               </View>
-              <ThemedText style={styles.tipText}>Speak your declarations out loud with conviction</ThemedText>
             </View>
-
-            <View style={styles.tipItem}>
-              <View style={[styles.tipIcon, {backgroundColor: 'rgba(255, 149, 0, 0.2)'}]}>
-                <Ionicons name="repeat-outline" size={20} color="#FF9500" />
-              </View>
-              <ThemedText style={styles.tipText}>Consistency is key - make declarations daily</ThemedText>
-            </View>
-
-            <View style={styles.tipItem}>
-              <View style={[styles.tipIcon, {backgroundColor: 'rgba(255, 45, 85, 0.2)'}]}>
-                <Ionicons name="heart-outline" size={20} color="#FF2D55" />
-              </View>
-              <ThemedText style={styles.tipText}>Speak with emotion and belief to increase effectiveness</ThemedText>
-            </View>
-
+          ) : (
             <TouchableOpacity 
-              onPress={() => toggleTips()} 
-              style={styles.dismissButton}
+              style={styles.resetButton} 
+              onPress={() => setShowResetConfirm(true)}
             >
-              <ThemedText style={styles.dismissText}>Dismiss</ThemedText>
+              <Ionicons name="refresh" size={20} color="#FF3B30" />
+              <ThemedText style={styles.resetButtonText}>Reset Counters</ThemedText>
             </TouchableOpacity>
+          )}
+        </View>
+
+        <View style={styles.tipsContainer}>
+          <BlurView intensity={90} tint="light" style={styles.tipsCard}>
+            <ThemedText style={styles.tipsTitle}>
+              <Ionicons name="bulb-outline" size={18} color="#FFCC00" /> Tip
+            </ThemedText>
+            <ThemedText style={styles.tipsText}>
+              Consistency is key! Aim to speak declarations aloud daily to build new neural pathways.
+            </ThemedText>
           </BlurView>
-        )}
+        </View>
       </ScrollView>
     </ThemedView>
   );
@@ -400,241 +231,155 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContainer: {
-    padding: 24,
-    paddingTop: 16,
+    padding: 16,
+    paddingTop: 24,
   },
   headerContainer: {
+    alignItems: 'center',
     marginBottom: 24,
   },
   header: {
-    fontSize: 34,
-    fontWeight: 'bold',
+    fontSize: 32,
+    fontWeight: '800',
     textAlign: 'center',
-    letterSpacing: -0.5,
-    color: 'black', //Improved contrast
+    marginBottom: 8,
   },
   subheader: {
-    fontSize: 17,
-    textAlign: 'center',
-    marginTop: 6,
-    color: '#8E8E93',
-    fontWeight: '500',
-  },
-  counterContainer: {
-    flex: 1,
-  },
-  counterCard: {
-    borderRadius: 20,
-    marginBottom: 20,
-    padding: 20,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-      web: {
-        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
-      }
-    }),
-  },
-  counterCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  counterTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'black', //Improved contrast
-    letterSpacing: 0.5,
-  },
-  resetButtonSmall: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  counterDisplayContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 10,
-  },
-  counterDisplay: {
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  counterNumber: {
-    fontSize: 72,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    fontWeight: 'bold',
-    color: '#000',
-    ...Platform.select({
-      web: {
-        textShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)',
-      }
-    }),
-  },
-  counterDescription: {
-    fontSize: 15,
-    color: 'black', //Improved contrast
-    textAlign: 'center',
-    fontWeight: '500',
-    marginTop: 4,
-  },
-  streakContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  streakCard: {
-    borderRadius: 20,
-    padding: 16,
-    flex: 0.48,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-      web: {
-        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
-      }
-    }),
-  },
-  streakLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'black', //Improved contrast
-    marginBottom: 6,
-  },
-  streakValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  streakValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#5856D6', 
-  },
-  streakUnit: {
     fontSize: 16,
-    fontWeight: '600',
-    color: 'black', //Improved contrast
-    marginLeft: 4,
+    textAlign: 'center',
+    opacity: 0.7,
+    paddingHorizontal: 20,
   },
-  countButton: {
-    alignSelf: 'center',
-    width: '100%',
-    height: 60,
-    borderRadius: 16,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-      web: {
-        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.2)',
-      }
-    }),
-    marginBottom: 30,
-    marginTop: 10,
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 32,
   },
-  countButtonInner: {
+  statsCard: {
     flex: 1,
-    flexDirection: 'row',
+    borderRadius: 16,
+    padding: 14,
+    marginHorizontal: 4,
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#34c759', 
-  },
-  countButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-    marginLeft: 10,
-  },
-  tipsCard: {
-    padding: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderRadius: 20,
-    marginBottom: 20,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-      web: {
-        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
-      }
-    }),
   },
-  tipsHeader: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 20,
-    color: 'black', //Improved contrast
-  },
-  tipItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  tipIcon: {
+  statIconContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
-    marginRight: 12,
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  tipText: {
-    flex: 1,
-    fontSize: 15,
-    lineHeight: 22,
-    color: 'black', //Improved contrast
+  statValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 4,
   },
-  dismissButton: {
-    alignSelf: 'flex-end',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginTop: 8,
+  statLabel: {
+    fontSize: 14,
+    opacity: 0.7,
   },
-  dismissText: {
-    color: '#007AFF',
+  mainButton: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    marginBottom: 32,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  mainButtonInner: {
+    width: '100%',
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mainButtonText: {
+    fontSize: 20,
     fontWeight: '600',
-    fontSize: 15,
+    marginLeft: 12,
+  },
+  resetSection: {
+    marginBottom: 24,
+  },
+  resetTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  resetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+    borderRadius: 12,
+  },
+  resetButtonText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#FF3B30',
+  },
+  confirmationContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+  },
+  confirmationText: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  confirmationButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  confirmButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    flex: 1,
+    marginHorizontal: 4,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: 'rgba(142, 142, 147, 0.2)',
+  },
+  resetConfirmButton: {
+    backgroundColor: 'rgba(255, 149, 0, 0.2)',
+  },
+  resetAllButton: {
+    backgroundColor: 'rgba(255, 59, 48, 0.2)',
+  },
+  confirmButtonText: {
+    fontWeight: '500',
+    fontSize: 14,
+  },
+  tipsContainer: {
+    marginBottom: 24,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  tipsCard: {
+    padding: 16,
+    borderRadius: 16,
+  },
+  tipsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  tipsText: {
+    fontSize: 14,
+    lineHeight: 20,
+    opacity: 0.8,
   }
 });
