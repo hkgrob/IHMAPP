@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { fetchWixBlogPosts, BlogPost } from '@/services/wixBlogService';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { ResponsiveText } from 'react-native-responsive-text'; // Assuming this import is correct
+import ResponsiveText from '@/components/ResponsiveText';
 
 
 export default function BlogScreen() {
