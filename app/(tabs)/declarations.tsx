@@ -22,27 +22,28 @@ export default function DeclarationsScreen() {
   const handleDownload = async (filename: string) => {
     try {
       if (Platform.OS === 'web') {
-        // Most direct approach for web - simple absolute path
+        // Direct approach with full URL path
         const encodedFilename = encodeURIComponent(filename);
-        const pdfUrl = `/attached_assets/${encodedFilename}`;
-        console.log('Opening PDF at path:', pdfUrl);
-        window.open(pdfUrl, '_blank');
+        const baseUrl = window.location.origin;
+        const fullUrl = `${baseUrl}/attached_assets/${encodedFilename}`;
+        console.log('Opening PDF at path:', fullUrl);
+        window.open(fullUrl, '_blank');
       } else {
         // For mobile platforms, use Sharing API
         const localUri = FileSystem.documentDirectory + filename;
-        
+
         // Check if sharing is available
         const canShare = await Sharing.isAvailableAsync();
         if (!canShare) {
           Alert.alert('Error', 'Sharing is not available on this device');
           return;
         }
-        
+
         try {
           // In a real implementation, you would need to make sure the PDF exists at this location
           // For example, by copying it from the assets or downloading it
           // Here we're assuming the file is already at the right location
-          
+
           // Share the file
           await Sharing.shareAsync(localUri);
         } catch (error) {
