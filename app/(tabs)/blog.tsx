@@ -1,5 +1,6 @@
+
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator, View, Image } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator, View, Image, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -10,66 +11,75 @@ import { fetchWixBlogPosts, BlogPost } from '@/services/wixBlogService';
 export default function BlogScreen() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    const loadPosts = async () => {
-      try {
-        setLoading(true);
-        const blogPosts = await fetchWixBlogPosts();
-        setPosts(blogPosts);
-      } catch (error) {
-        console.error('Failed to load blog posts:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadPosts();
   }, []);
+
+  const loadPosts = async () => {
+    try {
+      setLoading(true);
+      const blogPosts = await fetchWixBlogPosts();
+      setPosts(blogPosts);
+      
+      // Check if we're showing fallback data
+      if (blogPosts.length === 4 && blogPosts[0].id === '1') {
+        console.log('Showing fallback content');
+        setErrorMessage('Could not connect to blog service. Showing fallback content.');
+      } else {
+        console.log('Successfully loaded blog posts');
+        setErrorMessage(null);
+      }
+    } catch (error) {
+      console.error('Failed to load blog posts:', error);
+      setErrorMessage('Failed to load blog posts. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenBlog = (url: string) => {
     Linking.openURL(url).catch(err => {
       console.error('Failed to open URL:', err);
+      Alert.alert('Error', 'Could not open the blog post.');
     });
   };
 
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
   const handleRefresh = async () => {
     try {
-      setLoading(true);
+      setRefreshing(true);
       setErrorMessage(null);
 
       // Clear the cache
       console.log('Clearing blog cache...');
       await AsyncStorage.removeItem('wix_blog_posts');
       await AsyncStorage.removeItem('wix_blog_cache_time');
-
+      
       // Reload the posts
       console.log('Refreshing blog posts...');
       const blogPosts = await fetchWixBlogPosts();
       console.log(`Received ${blogPosts.length} posts after refresh`);
 
-      if (blogPosts && blogPosts.length > 0) {
-        setPosts(blogPosts);
+      setPosts(blogPosts);
 
-        // Check if we're showing fallback data
-        if (blogPosts.length === 4 && blogPosts[0].id === '1') {
-          console.log('Showing fallback content');
-          setErrorMessage('Could not connect to blog service. Showing fallback content.');
-        } else {
-          console.log('Successfully loaded live blog posts');
-          setErrorMessage(null);
-        }
+      // Check if we're still showing fallback data
+      if (blogPosts.length === 4 && blogPosts[0].id === '1') {
+        console.log('Still showing fallback content after refresh');
+        setErrorMessage('Could not connect to blog service. Showing fallback content.');
+        Alert.alert('Warning', 'Could not fetch live blog posts. Showing fallback content.');
       } else {
-        console.error('No blog posts returned');
-        setErrorMessage('No blog posts available at this time.');
+        console.log('Successfully refreshed to live blog posts');
+        setErrorMessage(null);
+        Alert.alert('Success', 'Blog posts refreshed successfully!');
       }
     } catch (error) {
       console.error('Failed to refresh blog posts:', error);
-      setErrorMessage('Failed to load blog posts. Please try again later.');
+      setErrorMessage('Failed to refresh blog posts. Please try again later.');
+      Alert.alert('Error', 'Failed to refresh blog posts. Please try again later.');
     } finally {
-      setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -79,23 +89,44 @@ export default function BlogScreen() {
         options={{ 
           title: 'Blog',
           headerRight: () => (
-            <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
-              <Ionicons name="refresh" size={24} color="#0066cc" />
+            <TouchableOpacity 
+              onPress={handleRefresh} 
+              style={styles.refreshButton}
+              disabled={refreshing}
+            >
+              <Ionicons 
+                name={refreshing ? "refresh-circle" : "refresh"} 
+                size={24} 
+                color="#0066cc" 
+              />
             </TouchableOpacity>
-          )
+          ),
         }} 
       />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
         <ThemedText style={styles.headerTitle}>Igniting Hope Blog</ThemedText>
         <ThemedText style={styles.headerSubtitle}>Inspiration for your journey</ThemedText>
+        
         {errorMessage && (
-          <ThemedText style={styles.errorMessage}>{errorMessage}</ThemedText>
+          <View style={styles.errorContainer}>
+            <ThemedText style={styles.errorMessage}>{errorMessage}</ThemedText>
+            <TouchableOpacity 
+              style={styles.retryButton} 
+              onPress={handleRefresh}
+              disabled={refreshing}
+            >
+              <ThemedText style={styles.retryText}>Retry</ThemedText>
+              <Ionicons name="reload" size={16} color="#0066cc" />
+            </TouchableOpacity>
+          </View>
         )}
 
-        {loading ? (
+        {(loading || refreshing) ? (
           <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color="#0000ff" />
-            <ThemedText style={styles.loadingText}>Loading posts...</ThemedText>
+            <ActivityIndicator size="large" color="#0066cc" />
+            <ThemedText style={styles.loadingText}>
+              {refreshing ? 'Refreshing posts...' : 'Loading posts...'}
+            </ThemedText>
           </View>
         ) : (
           <>
@@ -122,20 +153,6 @@ export default function BlogScreen() {
             ))}
           </>
         )}
-
-        <TouchableOpacity 
-          style={styles.visitBlogButton}
-          onPress={() => Linking.openURL('https://www.ignitinghope.com/blog')}
-        >
-          <ThemedText style={styles.visitBlogText}>
-            Visit Full Blog
-          </ThemedText>
-          <Ionicons name="open-outline" size={18} color="#fff" />
-        </TouchableOpacity>
-
-        <ThemedText style={styles.disclaimerText}>
-          Blog content is provided by Igniting Hope Ministries
-        </ThemedText>
       </ScrollView>
     </ThemedView>
   );
@@ -155,23 +172,26 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
+    textAlign: 'center',
     marginBottom: 8,
   },
   headerSubtitle: {
-    fontSize: 16,
+    fontSize: 18,
+    textAlign: 'center',
     marginBottom: 24,
     opacity: 0.7,
   },
   loaderContainer: {
-    padding: 20,
+    marginTop: 50,
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 10,
+    marginTop: 16,
+    fontSize: 16,
   },
   blogCard: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
+    backgroundColor: 'white',
+    borderRadius: 10,
     padding: 16,
     marginBottom: 16,
     shadowColor: '#000',
@@ -206,57 +226,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   readMoreText: {
-    fontSize: 16,
     color: '#0066cc',
     marginRight: 4,
+    fontWeight: '500',
   },
-  visitBlogButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#0066cc',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginTop: 16,
-    marginBottom: 20,
-  },
-  visitBlogText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginRight: 8,
-  },
-  disclaimerText: {
+  footerText: {
     textAlign: 'center',
     fontSize: 12,
     opacity: 0.6,
+    marginTop: 8,
   },
   refreshButton: {
-    padding: 12,
+    padding: 8,
     marginRight: 8,
   },
-  contentRefreshButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f0f8ff',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+  errorContainer: {
+    backgroundColor: '#fff8f8',
     borderRadius: 8,
-    marginVertical: 15,
+    padding: 12,
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#0066cc',
-  },
-  refreshButtonText: {
-    color: '#0066cc',
-    marginLeft: 8,
-    fontWeight: '600',
+    borderColor: '#ffccd5',
   },
   errorMessage: {
-    padding: 10,
-    color: '#e63946',
-    textAlign: 'center',
-    marginBottom: 10,
+    color: '#d32f2f',
+    marginBottom: 8,
   },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+  },
+  retryText: {
+    color: '#0066cc',
+    marginRight: 4,
+  }
 });

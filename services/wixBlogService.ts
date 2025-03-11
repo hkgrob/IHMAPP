@@ -1,25 +1,11 @@
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // The Wix Site ID for your site
 const SITE_ID = '9099b5e6-223e-4f2b-a71d-1ffac8658ea8'; 
-// Use the public content API endpoint instead
-const API_URL = `https://www.wixapis.com/site-data/v1/sites/${SITE_ID}/data/blog/posts`;
 
-// Cache expiration time (5 minutes)
-const CACHE_EXPIRATION = 5 * 60 * 1000;
-
-interface WixBlogPost {
-  id: string;
-  title: string;
-  content: {
-    text: string;
-  };
-  createdDate: string;
-  slug: string;
-  coverImage?: {
-    url: string;
-  };
-}
+// Cache expiration time (1 minute for testing)
+const CACHE_EXPIRATION = 1 * 60 * 1000;
 
 export interface BlogPost {
   id: string;
@@ -42,94 +28,96 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
 
       // Return cached data if it's still fresh
       if (elapsedTime < CACHE_EXPIRATION) {
+        console.log('Using cached blog data');
         return JSON.parse(cachedData);
       }
     }
-
-    // Attempt to fetch from multiple possible Wix API endpoints
-    const endpoints = [
-      // New format
-      `https://www.wixapis.com/site-data/v1/sites/${SITE_ID}/data/blog/posts`,
-      // Standard blog API
-      `https://www.wixapis.com/blog/v3/blogs/${SITE_ID}/posts`,
-      // Public content API
-      `https://www.wixapis.com/wix-public-v1/content/query?site_id=${SITE_ID}`,
-      // Headless API
-      `https://www.ignitinghope.com/_functions/blogPosts`
-    ];
-
-    let blogPosts = null;
-
-    for (const endpoint of endpoints) {
+    
+    console.log('Cache expired or not available, fetching fresh data');
+    
+    // Using the Wix site directly instead of the API
+    // This is a public URL anyone can access
+    const siteUrl = 'https://www.ignitinghope.com';
+    const blogUrl = `${siteUrl}/blog-feed`;
+    
+    console.log('Fetching blog from:', blogUrl);
+    
+    try {
+      const response = await fetch(blogUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json, text/plain, */*',
+          'User-Agent': 'Mozilla/5.0 (compatible; BlogReader/1.0)'
+        }
+      });
+      
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`Site response error: ${response.status}`);
+      }
+      
+      const html = await response.text();
+      console.log('Received HTML length:', html.length);
+      
+      // Parse the blog posts from HTML
+      // This is a simplified approach - parse out blog posts from the HTML
+      const blogPosts = parseHtmlForBlogPosts(html);
+      
+      if (blogPosts.length > 0) {
+        console.log(`Successfully parsed ${blogPosts.length} blog posts`);
+        
+        // Cache the successful data
+        await AsyncStorage.setItem('wix_blog_posts', JSON.stringify(blogPosts));
+        await AsyncStorage.setItem('wix_blog_cache_time', Date.now().toString());
+        
+        return blogPosts;
+      } else {
+        console.log('No blog posts found in the HTML');
+        throw new Error('No blog posts found');
+      }
+    } catch (siteError) {
+      console.error('Site scraping error:', siteError);
+      
+      // Try another approach - fetch RSS feed
       try {
-        console.log('Trying endpoint:', endpoint);
-        const response = await fetch(endpoint, {
+        const rssUrl = `${siteUrl}/blog-feed.xml`;
+        console.log('Trying RSS feed:', rssUrl);
+        
+        const rssResponse = await fetch(rssUrl, {
           method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/xml, text/xml, */*'
           }
         });
-
-        console.log('Response status:', response.status);
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Received data:', JSON.stringify(data).substring(0, 200) + '...');
-
-          // Process response based on different API formats
-          if (data.posts && Array.isArray(data.posts)) {
-            blogPosts = data.posts.map((item: any) => ({
-              id: item.id || `id-${Math.random()}`,
-              title: item.title || 'Untitled Post',
-              excerpt: (item.excerpt || (item.content?.text ? item.content.text.substring(0, 150) + '...' : 'No content available')),
-              date: item.createdDate ? new Date(item.createdDate).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              }) : 'No date',
-              link: item.slug ? `https://www.ignitinghope.com/blog/${item.slug}` : 'https://www.ignitinghope.com/blog',
-              imageUrl: item.coverMedia?.image?.url || item.coverImage?.url
-            }));
-            break;
-          } else if (data.items && Array.isArray(data.items)) {
-            blogPosts = data.items.map((item: any) => ({
-              id: item.id || `id-${Math.random()}`,
-              title: item.title || 'Untitled Post',
-              excerpt: (item.excerpt || item.content || 'No content').substring(0, 150) + '...',
-              date: item.publishedDate || 'No date',
-              link: `https://www.ignitinghope.com/blog/${item.slug || ''}`,
-              imageUrl: item.image || item.coverImage
-            }));
-            break;
-          } else if (Array.isArray(data)) {
-            blogPosts = data.map((item: any) => ({
-              id: item.id || `id-${Math.random()}`,
-              title: item.title || 'Untitled',
-              excerpt: (item.description || item.content || 'No content').substring(0, 150) + '...',
-              date: item.date || 'No date',
-              link: item.url || 'https://www.ignitinghope.com/blog',
-              imageUrl: item.image
-            }));
-            break;
-          }
+        
+        if (!rssResponse.ok) {
+          throw new Error(`RSS feed error: ${rssResponse.status}`);
         }
-      } catch (error) {
-        console.error(`Error with endpoint ${endpoint}:`, error);
+        
+        const rssXml = await rssResponse.text();
+        console.log('Received RSS XML length:', rssXml.length);
+        
+        // Parse the RSS XML
+        const rssPosts = parseRssForBlogPosts(rssXml);
+        
+        if (rssPosts.length > 0) {
+          console.log(`Successfully parsed ${rssPosts.length} posts from RSS`);
+          
+          // Cache the successful data
+          await AsyncStorage.setItem('wix_blog_posts', JSON.stringify(rssPosts));
+          await AsyncStorage.setItem('wix_blog_cache_time', Date.now().toString());
+          
+          return rssPosts;
+        }
+      } catch (rssError) {
+        console.error('RSS feed error:', rssError);
       }
+      
+      // If all attempts fail, use fallback data
+      console.log('Using fallback blog posts after all attempts failed');
+      return getFallbackBlogPosts();
     }
-
-    if (blogPosts && blogPosts.length > 0) {
-      console.log(`Successfully processed ${blogPosts.length} blog posts`);
-      // Cache the successful data
-      await AsyncStorage.setItem('wix_blog_posts', JSON.stringify(blogPosts));
-      await AsyncStorage.setItem('wix_blog_cache_time', Date.now().toString());
-      return blogPosts;
-    }
-
-    // If all attempts fail, use fallback data
-    console.log('Using fallback blog posts after all API attempts failed');
-    return getFallbackBlogPosts();
   } catch (error) {
     console.error('Error fetching Wix blog posts:', error);
 
@@ -140,6 +128,151 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
     // Return fallback data in case of error
     return getFallbackBlogPosts();
   }
+};
+
+// Simple HTML parser for blog posts
+const parseHtmlForBlogPosts = (html: string): BlogPost[] => {
+  const posts: BlogPost[] = [];
+  
+  try {
+    // Look for blog post elements
+    const postMatches = html.match(/<article[^>]*>([\s\S]*?)<\/article>/g);
+    
+    if (postMatches && postMatches.length > 0) {
+      console.log(`Found ${postMatches.length} article elements`);
+      
+      postMatches.forEach((postHtml, index) => {
+        // Extract title
+        const titleMatch = postHtml.match(/<h2[^>]*>([\s\S]*?)<\/h2>/) || 
+                          postHtml.match(/<h3[^>]*>([\s\S]*?)<\/h3>/) ||
+                          postHtml.match(/<h1[^>]*>([\s\S]*?)<\/h1>/);
+        
+        // Extract content/excerpt
+        const contentMatch = postHtml.match(/<p[^>]*>([\s\S]*?)<\/p>/);
+        
+        // Extract date
+        const dateMatch = postHtml.match(/datetime="([^"]*)"/) ||
+                         postHtml.match(/<time[^>]*>([\s\S]*?)<\/time>/);
+        
+        // Extract image
+        const imageMatch = postHtml.match(/<img[^>]*src="([^"]*)"[^>]*>/);
+        
+        // Extract link
+        const linkMatch = postHtml.match(/<a[^>]*href="([^"]*)"[^>]*>/);
+        
+        if (titleMatch) {
+          const title = stripHtml(titleMatch[1]);
+          const excerpt = contentMatch ? stripHtml(contentMatch[1]).substring(0, 150) + '...' : 'No excerpt available';
+          
+          let dateStr = 'No date';
+          if (dateMatch) {
+            try {
+              const dateObj = new Date(dateMatch[1]);
+              dateStr = dateObj.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              });
+            } catch (e) {
+              dateStr = dateMatch[1] || 'No date';
+            }
+          }
+          
+          const link = linkMatch ? linkMatch[1] : `https://www.ignitinghope.com/blog`;
+          const imageUrl = imageMatch ? imageMatch[1] : undefined;
+          
+          posts.push({
+            id: `post-${index}`,
+            title,
+            excerpt,
+            date: dateStr,
+            link,
+            imageUrl
+          });
+        }
+      });
+    } else {
+      console.log('No article elements found in HTML');
+    }
+  } catch (e) {
+    console.error('Error parsing HTML:', e);
+  }
+  
+  return posts;
+};
+
+// Simple XML parser for RSS feed
+const parseRssForBlogPosts = (xml: string): BlogPost[] => {
+  const posts: BlogPost[] = [];
+  
+  try {
+    // Look for item elements in RSS
+    const itemMatches = xml.match(/<item>([\s\S]*?)<\/item>/g);
+    
+    if (itemMatches && itemMatches.length > 0) {
+      console.log(`Found ${itemMatches.length} RSS items`);
+      
+      itemMatches.forEach((itemXml, index) => {
+        // Extract title
+        const titleMatch = itemXml.match(/<title>([\s\S]*?)<\/title>/);
+        
+        // Extract description/content
+        const descMatch = itemXml.match(/<description>([\s\S]*?)<\/description>/) ||
+                         itemXml.match(/<content:encoded>([\s\S]*?)<\/content:encoded>/);
+        
+        // Extract date
+        const dateMatch = itemXml.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+        
+        // Extract link
+        const linkMatch = itemXml.match(/<link>([\s\S]*?)<\/link>/);
+        
+        // Extract image
+        const imageMatch = descMatch && descMatch[1].match(/<img[^>]*src="([^"]*)"[^>]*>/);
+        
+        if (titleMatch) {
+          const title = stripHtml(titleMatch[1]);
+          const excerpt = descMatch ? stripHtml(descMatch[1]).substring(0, 150) + '...' : 'No excerpt available';
+          
+          let dateStr = 'No date';
+          if (dateMatch) {
+            try {
+              const dateObj = new Date(dateMatch[1]);
+              dateStr = dateObj.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              });
+            } catch (e) {
+              dateStr = dateMatch[1] || 'No date';
+            }
+          }
+          
+          const link = linkMatch ? stripHtml(linkMatch[1]) : `https://www.ignitinghope.com/blog`;
+          const imageUrl = imageMatch ? imageMatch[1] : undefined;
+          
+          posts.push({
+            id: `rss-${index}`,
+            title,
+            excerpt,
+            date: dateStr,
+            link,
+            imageUrl
+          });
+        }
+      });
+    } else {
+      console.log('No item elements found in RSS XML');
+    }
+  } catch (e) {
+    console.error('Error parsing RSS XML:', e);
+  }
+  
+  return posts;
+};
+
+// Helper to strip HTML tags
+const stripHtml = (html: string): string => {
+  return html.replace(/<[^>]*>/g, '').trim();
 };
 
 // Fallback data in case the API is unavailable
