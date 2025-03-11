@@ -16,7 +16,7 @@ export function Header() {
       { backgroundColor: isDark ? '#121212' : '#FFFFFF' }
     ]}>
       <Image 
-        source={require('../assets/images/logo.png')} 
+        source={require('../assets/images/logo-new.png')} 
         style={styles.logo}
         resizeMode="contain"
       />
