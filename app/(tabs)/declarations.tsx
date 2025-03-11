@@ -91,20 +91,7 @@ export default function DeclarationsScreen() {
     setExpandedCategory(expandedCategory === categoryId ? null : categoryId);
   };
 
-  const deleteCustomDeclaration = async (id: string) => {
-    try {
-      const updatedDeclarations = customDeclarations.filter(
-        (declaration) => declaration.id !== id
-      );
-      setCustomDeclarations(updatedDeclarations);
-      await AsyncStorage.setItem('customDeclarations', JSON.stringify(updatedDeclarations));
-      if (Platform.OS === 'ios') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-    } catch (error) {
-      console.error('Error deleting declaration:', error);
-    }
-  };
+  // Function moved to avoid duplication
   
   const addCustomDeclaration = async () => {
     if (newDeclaration.trim() !== '') {
