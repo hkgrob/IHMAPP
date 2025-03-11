@@ -27,11 +27,14 @@ export default function DeclarationsScreen() {
         
         // Use our custom PDF viewer page
         const baseUrl = window.location.origin;
-        const viewerUrl = `${baseUrl}/pdf-viewer.html?file=${encodeURIComponent(normalizedFilename)}`;
-        console.log('Opening PDF viewer with:', normalizedFilename);
         
-        // Open in new tab
-        window.open(viewerUrl, '_blank');
+        // Direct path to the PDF file
+        const pdfUrl = `${baseUrl}/attached_assets/${encodeURIComponent(normalizedFilename)}`;
+        
+        console.log('Opening PDF directly:', pdfUrl);
+        
+        // Open in new tab directly to the PDF
+        window.open(pdfUrl, '_blank');
       } else {
         // For mobile platforms, use Sharing API
         const fileUri = FileSystem.documentDirectory + filename;

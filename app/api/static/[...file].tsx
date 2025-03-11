@@ -8,7 +8,7 @@ export default function StaticFileView() {
   
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <Text>Serving file: {file}</Text>
+      <Text>Serving file: {Array.isArray(file) ? file.join('/') : file}</Text>
     </View>
   );
 }

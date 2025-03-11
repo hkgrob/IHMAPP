@@ -1,0 +1,54 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Viewer</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+    #pdf-object {
+      width: 100%;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <object id="pdf-object" type="application/pdf" data="">
+    <div style="padding: 20px; text-align: center;">
+      <h2>Unable to display PDF</h2>
+      <p>It appears your browser cannot display the PDF directly.</p>
+      <p><a id="download-link" href="" download>Download the PDF instead</a></p>
+    </div>
+  </object>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const pdfFile = urlParams.get('file');
+      
+      if (pdfFile) {
+        const normalizedFile = pdfFile.replace(/\s+/g, '_');
+        const pdfUrl = `/attached_assets/${encodeURIComponent(normalizedFile)}`;
+        
+        // Set object data
+        document.getElementById('pdf-object').setAttribute('data', pdfUrl);
+        
+        // Set download link
+        document.getElementById('download-link').setAttribute('href', pdfUrl);
+        
+        // Set page title
+        document.title = `Viewing: ${pdfFile}`;
+      } else {
+        document.body.innerHTML = '<div style="padding: 20px; text-align: center;"><h2>Error</h2><p>No PDF file specified</p></div>';
+      }
+    });
+  </script>
+</body>
+</html>
