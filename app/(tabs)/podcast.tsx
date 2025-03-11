@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, View, FlatList, TouchableOpacity, Platform, RefreshControl, Image, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -55,18 +54,18 @@ export default function PodcastScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
-  
+
   const [episodes, setEpisodes] = useState<PodcastEpisode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedEpisode, setSelectedEpisode] = useState<PodcastEpisode | null>(null);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  
+
   // Load podcast episodes on component mount
   useEffect(() => {
     loadPodcastEpisodes();
-    
+
     return () => {
       // Clean up sound when component unmounts
       if (sound) {
@@ -80,7 +79,7 @@ export default function PodcastScreen() {
       if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
-      
+
       // Set the selected episode to display in the embedded player
       setSelectedEpisode(episode);
     } catch (error) {
@@ -93,7 +92,7 @@ export default function PodcastScreen() {
       if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
-      
+
       await WebBrowser.openBrowserAsync('https://podcast.ignitinghope.com');
     } catch (error) {
       console.error('Error opening podcast website:', error);
@@ -103,12 +102,12 @@ export default function PodcastScreen() {
   // Play or pause the selected episode
   const togglePlayback = async () => {
     if (!selectedEpisode) return;
-    
+
     try {
       if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
-      
+
       if (sound) {
         if (isPlaying) {
           await sound.pauseAsync();
@@ -123,10 +122,10 @@ export default function PodcastScreen() {
           { uri: selectedEpisode.audioUrl },
           { shouldPlay: true }
         );
-        
+
         setSound(newSound);
         setIsPlaying(true);
-        
+
         // Set up sound completion handler
         newSound.setOnPlaybackStatusUpdate((status) => {
           if (status.isLoaded && status.didJustFinish) {
@@ -148,11 +147,11 @@ export default function PodcastScreen() {
     try {
       console.log('Loading podcast episodes directly from fallback data...');
       setIsLoading(true);
-      
+
       // Use our hardcoded fallback data directly
       console.log('Setting fallback data - guaranteed to work');
       setEpisodes(FALLBACK_EPISODES);
-      
+
     } catch (error) {
       console.error('Failed to load podcast episodes:', error);
       // Set fallback data
@@ -188,11 +187,11 @@ export default function PodcastScreen() {
   );
 
   console.log('Rendering podcast screen with', episodes.length, 'episodes');
-  
+
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      
+
       <View style={styles.headerWrapper}>
         <View style={styles.headerContainer}>
           <ThemedText style={styles.headerTitle}>Igniting Hope Podcast</ThemedText>
@@ -222,14 +221,14 @@ export default function PodcastScreen() {
           ) : null
         }
       />
-      
+
       {/* Loading Indicator */}
       {isLoading && (
         <View style={styles.loadingContainer}>
           <ThemedText style={styles.loadingText}>Loading podcast episodes...</ThemedText>
         </View>
       )}
-      
+
       {/* Player View */}
       {selectedEpisode && (
         <View style={styles.playerContainer}>
@@ -248,7 +247,7 @@ export default function PodcastScreen() {
           </View>
         </View>
       )}
-      
+
       {/* Visit Website Button */}
       <TouchableOpacity
         style={styles.websiteButton}

@@ -201,10 +201,11 @@ const parseRssFeed = (xmlData: string): Promise<PodcastEpisode[]> => {
           }
           
           // Get item-specific image or fall back to channel image
-          let imageUrl = channelImage;
+          let imageUrl = channelImage || 'https://pbcdn1.podbean.com/imglogo/image-logo/11560630/Igniting_Hope_Podcast_Cover_Art.jpg';
           if (item['itunes:image'] && item['itunes:image'][0] && item['itunes:image'][0].$) {
             imageUrl = item['itunes:image'][0].$.href;
           }
+          console.log('Episode image URL:', imageUrl);
           
           // Get duration
           let duration = 'Unknown';
