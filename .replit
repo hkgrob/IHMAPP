@@ -5,12 +5,8 @@ modules = ["nodejs-20"]
 channel = "stable-24_05"
 
 [[ports]]
-localPort = 8081
+localPort = 19006
 externalPort = 80
-
-[[ports]]
-localPort = 8082
-externalPort = 3000
 
 [[deployment.rewrites]]
 from = "/attached_assets/*"
@@ -98,7 +94,7 @@ author = 39982925
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npx expo start --web"
+args = "npx expo start --web --host 0.0.0.0 --port 19006"
 
 [[workflows.workflow]]
 name = "Run"
@@ -107,7 +103,3 @@ author = 39982925
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npx expo start --web"
-
-[[ports]]
-localPort = 19006
-externalPort = 80
