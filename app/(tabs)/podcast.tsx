@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl } from 'react-native';
+import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ import { fetchPodcastEpisodes, PodcastEpisode } from '@/services/podcastService'
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
+import { Header } from '@/components/Header';
 
 export default function PodcastScreen() {
   const colorScheme = useColorScheme();
@@ -111,17 +112,9 @@ export default function PodcastScreen() {
   );
 
   return (
-    <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
+    <ThemedView style={styles.container}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      
-      <View style={styles.headerContainer}>
-        <ThemedText style={styles.header}>
-          Igniting Hope Podcast
-        </ThemedText>
-        <ThemedText style={styles.subheader}>
-          Inspiration for your spiritual journey
-        </ThemedText>
-      </View>
+      <Header title="Igniting Hope Podcast" subtitle="Inspiration for your spiritual journey" />
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -202,20 +195,6 @@ export default function PodcastScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  headerContainer: {
-    padding: 20,
-    paddingBottom: 10,
-  },
-  header: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  subheader: {
-    fontSize: 16,
-    opacity: 0.7,
-    marginBottom: 10,
   },
   loadingContainer: {
     flex: 1,
