@@ -38,13 +38,21 @@ export const fetchPodcastEpisodes = async (): Promise<PodcastEpisode[]> => {
     console.log("Cache expired or not available, fetching fresh podcast data");
 
     // Fetch the RSS feed
-    const response = await fetch(PODCAST_RSS_URL);
+    console.log('Attempting to fetch podcast RSS feed from:', PODCAST_RSS_URL);
+    
+    const response = await fetch(PODCAST_RSS_URL)
+      .catch(error => {
+        console.error('Network error fetching podcast feed:', error);
+        throw new Error('Network error fetching podcast feed');
+      });
     
     if (!response.ok) {
-      throw new Error('Failed to fetch podcast RSS feed');
+      console.error('Failed to fetch podcast RSS feed, status:', response.status);
+      throw new Error(`Failed to fetch podcast RSS feed: ${response.status}`);
     }
     
     const xmlData = await response.text();
+    console.log('Successfully fetched podcast RSS data, length:', xmlData.length);
     
     // Parse the XML
     const episodes = await parseRssFeed(xmlData);
