@@ -1,188 +1,198 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  FlatList, 
-  TouchableOpacity, 
-  Platform, 
-  RefreshControl, 
-  Image, 
-  ActivityIndicator,
-  Linking,
-  ScrollView
-} from 'react-native';
+import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
+import { ThemedText } from '@/components/ThemedText';
+import { ThemedView } from '@/components/ThemedView';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { fetchPodcastEpisodes, PodcastEpisode } from '@/services/podcastService';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
-import { useColorScheme } from '../../hooks/useColorScheme';
-import { fetchPodcastEpisodes, PodcastEpisode } from '../../services/podcastService';
-import ThemedView from '../../components/ThemedView';
-import ThemedText from '../../components/ThemedText';
-import ResponsiveText from '../../components/ResponsiveText';
+import { Platform } from 'react-native';
 
 export default function PodcastScreen() {
   const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
-  const [episodes, setEpisodes] = useState<PodcastEpisode[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   
-  const loadPodcasts = useCallback(async () => {
+  const [episodes, setEpisodes] = useState<PodcastEpisode[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadPodcastEpisodes = useCallback(async () => {
     try {
       const data = await fetchPodcastEpisodes();
       setEpisodes(data);
-      setError(null);
-    } catch (err) {
-      setError('Failed to load podcast episodes. Please try again later.');
-      console.error('Error loading podcasts:', err);
+    } catch (error) {
+      console.error('Failed to load podcast episodes:', error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
       setRefreshing(false);
     }
   }, []);
 
-  const onRefresh = useCallback(async () => {
+  const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    await loadPodcasts();
-  }, [loadPodcasts]);
+    loadPodcastEpisodes();
+  }, [loadPodcastEpisodes]);
 
   useEffect(() => {
-    loadPodcasts();
-  }, [loadPodcasts]);
+    loadPodcastEpisodes();
+  }, [loadPodcastEpisodes]);
 
-  const handleEpisodePress = async (episode: PodcastEpisode) => {
-    try {
-      // Provide haptic feedback
-      if (Platform.OS !== 'web') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-
-      // Open the audio URL in browser
-      if (episode.audioUrl) {
-        if (Platform.OS === 'web') {
-          window.open(episode.audioUrl, '_blank');
-        } else {
-          await WebBrowser.openBrowserAsync(episode.audioUrl);
-        }
-      }
-    } catch (error) {
-      console.error('Error opening podcast link:', error);
-      // Fall back to regular linking
-      if (episode.audioUrl) {
-        Linking.openURL(episode.audioUrl);
-      }
-    }
-  };
-
-  // Just using the loadPodcasts function already defined above
-  // The previous implementation had code outside of a function context which isn't valid
+  const [selectedEpisode, setSelectedEpisode] = useState<PodcastEpisode | null>(null);
   
-  }, []);
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await loadPodcasts();
-  }, [loadPodcasts]);
-
-  useEffect(() => {
-    loadPodcasts();
-  }, [loadPodcasts]);
-
-  const handleEpisodePress = async (episode: PodcastEpisode) => {
+  const openEpisode = (episode: PodcastEpisode) => {
     try {
-      // Provide haptic feedback
-      if (Platform.OS !== 'web') {
+      if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
-
-      // Open the audio URL in browser
-      if (episode.audioUrl) {
-        if (Platform.OS === 'web') {
-          window.open(episode.audioUrl, '_blank');
-        } else {
-          await WebBrowser.openBrowserAsync(episode.audioUrl);
-        }
-      }
+      
+      // Set the selected episode to display in the embedded player
+      setSelectedEpisode(episode);
     } catch (error) {
-      console.error('Error opening podcast link:', error);
-      // Fall back to regular linking
-      if (episode.audioUrl) {
-        Linking.openURL(episode.audioUrl);
-      }
+      console.error('Error opening podcast episode:', error);
     }
   };
 
-  const renderEpisode = ({ item }: { item: PodcastEpisode }) => (
-    <TouchableOpacity
+  const visitPodcastSite = async () => {
+    try {
+      if (Platform.OS === 'ios') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+      
+      await WebBrowser.openBrowserAsync('https://podcast.ignitinghope.com');
+    } catch (error) {
+      console.error('Error opening podcast website:', error);
+    }
+  };
+
+  const renderPodcastItem = ({ item }: { item: PodcastEpisode }) => (
+    <TouchableOpacity 
       style={styles.episodeCard}
-      onPress={() => handleEpisodePress(item)}
+      activeOpacity={0.7} 
+      onPress={() => openEpisode(item)}
     >
-      <View style={styles.episodeImageContainer}>
-        <Image
-          source={item.imageUrl ? { uri: item.imageUrl } : { uri: 'https://www.ignitinghope.com/wp-content/uploads/2021/11/podcast.jpg' }}
-          style={styles.episodeImage}
-        />
-      </View>
-      <View style={styles.episodeContent}>
-        <ThemedText style={styles.episodeTitle} numberOfLines={2}>
-          {item.title}
-        </ThemedText>
-        <ThemedText style={styles.episodeDate}>{item.publishDate}</ThemedText>
-        <ThemedText style={styles.episodeDuration}>{item.duration}</ThemedText>
-        <ThemedText style={styles.episodeDescription} numberOfLines={3}>
-          {item.description}
-        </ThemedText>
-      </View>
-      <Ionicons 
-        name="play-circle" 
-        size={24} 
-        color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'} 
-        style={styles.playIcon} 
-      />
+      <BlurView intensity={80} tint={isDark ? 'dark' : 'light'} style={styles.episodeCardInner}>
+        {item.imageUrl ? (
+          <Image 
+            source={{ uri: item.imageUrl }} 
+            style={styles.episodeImage} 
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.episodeImage, styles.placeholderImage]}>
+            <Ionicons name="mic" size={32} color={isDark ? "#fff" : "#333"} />
+          </View>
+        )}
+        
+        <View style={styles.episodeDetails}>
+          <ThemedText style={styles.episodeTitle} numberOfLines={2}>
+            {item.title}
+          </ThemedText>
+          
+          <ThemedText style={styles.episodeDate}>
+            {item.publishDate} • {item.duration}
+          </ThemedText>
+          
+          <ThemedText style={styles.episodeDescription} numberOfLines={3}>
+            {item.description}
+          </ThemedText>
+          
+          <View style={styles.playButtonContainer}>
+            <Ionicons name="play-circle" size={20} color={isDark ? "#fff" : "#333"} />
+            <ThemedText style={styles.playButtonText}>Play Episode</ThemedText>
+          </View>
+        </View>
+      </BlurView>
     </TouchableOpacity>
   );
 
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <ThemedText style={styles.headerTitle}>Igniting Hope Podcast</ThemedText>
-      </View>
-
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-
-      {error ? (
-        <View style={styles.errorContainer}>
-          <ThemedText style={styles.errorText}>{error}</ThemedText>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
+        <View style={styles.headerContainer}>
+          <ThemedText style={styles.headerTitle}>Igniting Hope Podcast</ThemedText>
+          <ThemedText style={styles.headerSubtitle}>Inspiration for your journey</ThemedText>
         </View>
-      ) : loading && !refreshing ? (
+      </ScrollView>
+
+      {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0000ff" />
-          <ThemedText style={styles.loadingText}>Loading podcast episodes...</ThemedText>
+          <ActivityIndicator size="large" color={isDark ? "#fff" : "#333"} />
         </View>
       ) : (
-        <>
-          <ResponsiveText style={styles.statsText}>
-            Episodes: {episodes.length} | Loading: {loading ? 'Yes' : 'No'} | Refreshing: {refreshing ? 'Yes' : 'No'}
-          </ResponsiveText>
-
-          <FlatList
-            data={episodes}
-            renderItem={renderEpisode}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContent}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <ThemedText style={styles.emptyText}>No podcast episodes available.</ThemedText>
+        <FlatList
+          data={episodes}
+          renderItem={renderPodcastItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={handleRefresh}
+              tintColor={isDark ? "#fff" : "#333"}
+            />
+          }
+          ListFooterComponent={
+            <TouchableOpacity 
+              style={styles.visitPodcastButton}
+              activeOpacity={0.7}
+              onPress={visitPodcastSite}
+            >
+              <ThemedText style={styles.visitPodcastText}>
+                Visit Full Podcast Site
+              </ThemedText>
+              <Ionicons name="open-outline" size={18} color={isDark ? "#fff" : "#000"} />
+            </TouchableOpacity>
+          }
+        />
+      )}
+      
+      {selectedEpisode && (
+        <BlurView 
+          intensity={90} 
+          tint={isDark ? 'dark' : 'light'} 
+          style={styles.playerContainer}
+        >
+          <View style={styles.playerHeader}>
+            <ThemedText style={styles.playerTitle} numberOfLines={1}>
+              {selectedEpisode.title}
+            </ThemedText>
+            <TouchableOpacity 
+              onPress={() => setSelectedEpisode(null)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color={isDark ? "#fff" : "#333"} />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.audioPlayerWrapper}>
+            {Platform.OS === 'web' ? (
+              <audio 
+                src={selectedEpisode.audioUrl} 
+                controls 
+                style={styles.audioPlayer}
+                autoPlay
+              />
+            ) : (
+              <View style={styles.mobilePlayerFallback}>
+                <TouchableOpacity 
+                  onPress={() => WebBrowser.openBrowserAsync(selectedEpisode.audioUrl)}
+                  style={styles.mobilePlayButton}
+                >
+                  <Ionicons name="play-circle" size={40} color={isDark ? "#fff" : "#333"} />
+                  <ThemedText style={styles.mobilePlayText}>Play in Browser</ThemedText>
+                </TouchableOpacity>
               </View>
-            }
-          />
-        </>
+            )}
+          </View>
+        </BlurView>
       )}
     </ThemedView>
   );
@@ -192,41 +202,63 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    padding: 16,
+  scrollView: {
+    flex: 1,
+  },
+  contentContainer: {
+    padding: 15,
+  },
+  headerContainer: {
+    padding: 20,
+    paddingBottom: 10,
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
+    marginBottom: 5,
+    textAlign: 'center',
   },
   headerSubtitle: {
     fontSize: 16,
-    marginTop: 4,
+    opacity: 0.7,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   listContent: {
-    padding: 16,
+    padding: 15,
+    paddingTop: 5,
   },
   episodeCard: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    padding: 12,
+    marginBottom: 15,
     borderRadius: 12,
-    backgroundColor: 'rgba(200, 200, 200, 0.1)',
-    position: 'relative',
+    overflow: 'hidden',
   },
-  episodeImageContainer: {
-    marginRight: 12,
+  episodeCardInner: {
+    flexDirection: 'row',
+    padding: 15,
+    alignItems: 'center',
   },
   episodeImage: {
     width: 80,
     height: 80,
     borderRadius: 8,
+    marginRight: 15,
   },
-  episodeContent: {
+  placeholderImage: {
+    backgroundColor: '#5856D6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  episodeDetails: {
     flex: 1,
-    paddingRight: 24,
   },
   episodeTitle: {
     fontSize: 16,
@@ -235,164 +267,89 @@ const styles = StyleSheet.create({
   },
   episodeDate: {
     fontSize: 12,
-    marginBottom: 2,
-  },
-  episodeDuration: {
-    fontSize: 12,
-    marginBottom: 4,
+    opacity: 0.6,
+    marginBottom: 6,
   },
   episodeDescription: {
     fontSize: 14,
-    lineHeight: 18,
+    lineHeight: 20,
+    opacity: 0.8,
+    marginBottom: 8,
   },
-  playIcon: {
-    position: 'absolute',
-    right: 12,
-    top: '50%',
-    marginTop: -12,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 10,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  statsText: {
-    fontSize: 12,
-    padding: 8,
-    textAlign: 'center',
-    opacity: 0.7,
-  }
-});
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  listContent: {
-    padding: 16,
-  },
-  episodeCard: {
+  playButtonContainer: {
     flexDirection: 'row',
-    marginBottom: 20,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    padding: 12,
+    alignItems: 'center',
   },
-  episodeImageContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    overflow: 'hidden',
+  playButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 5,
   },
-  episodeImage: {
-    width: '100%',
-    height: '100%',
-  },
-  episodeContent: {
-    flex: 1,
-    marginLeft: 12,
+  visitPodcastButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
+    padding: 15,
+    marginTop: 10,
+    marginBottom: 30,
   },
-  episodeTitle: {
+  visitPodcastText: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginRight: 5,
+  },
+  playerContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 15,
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 10,
+  },
+  playerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  playerTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  episodeDate: {
-    fontSize: 12,
-    color: '#666666',
-    marginBottom: 2,
-  },
-  episodeDuration: {
-    fontSize: 12,
-    color: '#888888',
-    marginBottom: 4,
-  },
-  episodeDescription: {
-    fontSize: 13,
-    color: '#444444',
-    lineHeight: 18,
-  },
-  playIcon: {
-    alignSelf: 'center',
-    marginLeft: 8,
-  },
-  loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
+    marginRight: 10,
+  },
+  closeButton: {
+    padding: 5,
+  },
+  audioPlayerWrapper: {
+    width: '100%',
+    minHeight: 50,
+    marginBottom: 10,
+  },
+  audioPlayer: {
+    width: '100%',
+  },
+  mobilePlayerFallback: {
     alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-  },
-  emptyContainer: {
-    flex: 1,
     justifyContent: 'center',
+    padding: 15,
+  },
+  mobilePlayButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 40,
-  },
-  emptyText: {
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  errorContainer: {
-    flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    padding: 10,
   },
-  errorText: {
+  mobilePlayText: {
     fontSize: 16,
-    textAlign: 'center',
-    color: 'red',
-  },
-  statsText: {
-    fontSize: 10,
-    color: '#888888',
-    textAlign: 'center',
-    paddingVertical: 5,
+    fontWeight: '500',
+    marginLeft: 10,
+    marginRight: 8,
   },
 });
