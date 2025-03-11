@@ -328,7 +328,26 @@ export const DECLARATION_CATEGORIES: DeclarationCategory[] = [
       "I see from God's perspective",
       "I recognize divine appointments",
       "I tap into supernatural resources",
-      "I live from a place of rest and peace"
+      "I live from a place of rest and peace",
+      "I anticipate good coming my way every day",
+      "My peace is a powerful weapon to change circumstances",
+      "The light of God dwells in me and destroys the works of the enemy",
+      "The supernatural is not something that happens to me, it is who I am",
+      "God and His realm have greater weight than my circumstances for this natural realm",
+      "I am aware of the unseen realm, and I influence people and atmospheres with my spirit",
+      "My spirit is a powerful substance that is a force of light and revelation",
+      "Holy Spirit is communicating with my spirit, and I easily hear Him",
+      "I get my identity from my future, not my past",
+      "I can do what my Father does, because I have His DNA",
+      "I carry the substance of favor, and I don't need to perform for people to like me",
+      "I live from my spirit, and let my spirit have a voice",
+      "The substance of God's love and peace overwhelms people everywhere I go",
+      "I am a partaker of the divine nature, and I look like my Father",
+      "I easily rest and receive in His presence",
+      "I know my past, but I imagine my future according to the power that works in me",
+      "I attach great faith to everything I do; therefore, everything I do creates life and change",
+      "I have unseen resources and spiritual blessings to overcome every negative circumstance",
+      "The eyes of my imagination are enlightened to see the glorious inheritance and power that I have been called into (Eph. 1:18-19)"
     ]
   }
 ];
