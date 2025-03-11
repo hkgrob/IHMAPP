@@ -28,15 +28,8 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <SafeAreaView style={styles.safeArea}>
-          {/* Header */}
-          <View style={styles.headerContainer}>
-            <Image 
-              source={require('../../assets/images/logo-igniting-hope.png')} 
-              style={styles.logo}
-              resizeMode="contain"
-            />
-            <ThemedText style={styles.headerTitle}>Igniting Hope</ThemedText>
-          </View>
+          {/* Header Spacer */}
+          <View style={styles.headerSpacer} />
 
           {/* Welcome Banner */}
           <View style={styles.welcomeBanner}>
@@ -151,21 +144,8 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  headerContainer: {
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: Platform.OS === 'android' ? 30 : 10,
-  },
-  logo: {
-    width: 40,
-    height: 40,
-    marginRight: 10,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  headerSpacer: {
+    height: Platform.OS === 'android' ? 30 : 10,
   },
   welcomeBanner: {
     marginHorizontal: 20,
