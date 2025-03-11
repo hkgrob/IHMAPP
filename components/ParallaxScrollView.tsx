@@ -11,7 +11,11 @@ import { ThemedView } from '@/components/ThemedView';
 import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
-const HEADER_HEIGHT = 250;
+import { Dimensions } from 'react-native';
+
+// Adjust header height based on screen size
+const { width, height } = Dimensions.get('window');
+const HEADER_HEIGHT = height < 700 ? 180 : 250;
 
 type Props = PropsWithChildren<{
   headerImage: ReactElement;
