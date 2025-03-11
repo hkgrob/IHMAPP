@@ -49,6 +49,21 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </Link>
 
+          <Link href="/(tabs)/podcast" asChild>
+            <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
+              <BlurView intensity={90} style={styles.featureButton} tint="light">
+                <ThemedView style={styles.iconContainer}>
+                  <Ionicons name="mic-outline" size={32} color="#FF9500" />
+                </ThemedView>
+                <ThemedText style={styles.featureText}>Podcast</ThemedText>
+                <ThemedText style={styles.featureDescription}>
+                  Listen to spiritual teachings
+                </ThemedText>
+                <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+              </BlurView>
+            </TouchableOpacity>
+          </Link>
+
           <Link href="/(tabs)/declarations" asChild>
             <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
               <BlurView intensity={90} style={styles.featureButton} tint="light">
