@@ -8,7 +8,7 @@ import { Linking, StyleSheet, Platform } from 'react-native';
 export default function PDFViewer() {
   const { id } = useLocalSearchParams();
   const pdfName = id as string;
-  
+
   // If we're on the web, redirect to the PDF file directly
   React.useEffect(() => {
     if (Platform.OS === 'web') {
@@ -20,16 +20,11 @@ export default function PDFViewer() {
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title">Loading PDF...</ThemedText>
-      {Platform.OS !== 'web' && (
-        <ThemedText 
-          type="link" 
-          style={styles.link}
-          onPress={() => Linking.openURL(`${process.env.EXPO_PUBLIC_API_URL}/attached_assets/${pdfName}`)}
-        >
-          Open PDF Externally
-        </ThemedText>
-      )}
+      <ThemedText style={styles.text}>
+        {Platform.OS === 'web' 
+          ? 'Redirecting to PDF...' 
+          : 'Please view this PDF on web platform'}
+      </ThemedText>
     </ThemedView>
   );
 }
@@ -41,8 +36,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
   },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
+  text: {
+    fontSize: 16,
+    textAlign: 'center',
   },
 });
