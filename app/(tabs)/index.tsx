@@ -31,7 +31,7 @@ export default function HomeScreen() {
           {/* Header */}
           <View style={styles.headerContainer}>
             <Image 
-              source={require('../../assets/images/IHM-Logo.png')} 
+              source={require('../../assets/images/logo-igniting-hope.png')} 
               style={styles.logo}
               resizeMode="contain"
             />
