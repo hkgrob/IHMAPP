@@ -36,7 +36,10 @@
       const file = urlParams.get('file');
       
       if (file) {
-        const pdfPath = `/attached_assets/${encodeURIComponent(file)}`;
+        // Normalize filename to use underscores
+        const normalizedFile = file.replace(/\s+/g, '_');
+        const pdfPath = `/attached_assets/${encodeURIComponent(normalizedFile)}`;
+        
         document.getElementById('direct-link').href = pdfPath;
         
         // Redirect to PDF after a short delay

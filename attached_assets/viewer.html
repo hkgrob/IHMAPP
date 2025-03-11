@@ -11,6 +11,7 @@
       padding: 0;
       height: 100%;
       overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     #pdf-container {
       width: 100%;
@@ -23,6 +24,13 @@
       width: 100%;
       height: 100%;
       border: none;
+    }
+    .error-container {
+      padding: 20px;
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto;
+      margin-top: 50px;
     }
   </style>
 </head>
@@ -38,10 +46,13 @@
       const pdfPath = urlParams.get('pdf');
       
       if (pdfPath) {
+        // Normalize the path to use underscores instead of spaces
+        const normalizedPath = pdfPath.replace(/\s+/g, '_');
+        
         // Set the iframe source to the PDF file
-        document.getElementById('pdf-viewer').src = pdfPath;
+        document.getElementById('pdf-viewer').src = normalizedPath;
       } else {
-        document.getElementById('pdf-container').innerHTML = '<h1>Error: No PDF specified</h1>';
+        document.getElementById('pdf-container').innerHTML = '<div class="error-container"><h1>Error: No PDF specified</h1></div>';
       }
     });
   </script>

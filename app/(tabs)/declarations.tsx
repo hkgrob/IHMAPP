@@ -22,10 +22,13 @@ export default function DeclarationsScreen() {
   const handleDownload = async (filename: string) => {
     try {
       if (Platform.OS === 'web') {
+        // Ensure we're using the underscore version of the filename
+        const normalizedFilename = filename.replace(/\s+/g, '_');
+        
         // Use our custom PDF viewer page
         const baseUrl = window.location.origin;
-        const viewerUrl = `${baseUrl}/pdf-viewer.html?file=${encodeURIComponent(filename)}`;
-        console.log('Opening PDF viewer with:', filename);
+        const viewerUrl = `${baseUrl}/pdf-viewer.html?file=${encodeURIComponent(normalizedFilename)}`;
+        console.log('Opening PDF viewer with:', normalizedFilename);
         
         // Open in new tab
         window.open(viewerUrl, '_blank');
