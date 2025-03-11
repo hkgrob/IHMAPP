@@ -1,79 +1,86 @@
 
 import React from 'react';
-import { Text, StyleSheet, TextStyle, Platform, Dimensions } from 'react-native';
-import { ThemedText } from './ThemedText';
+import { Text, TextProps, StyleSheet, Platform } from 'react-native';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
-const { width } = Dimensions.get('window');
-const scale = width < 375 ? 0.85 : width > 768 ? 1.2 : 1;
-
-interface ResponsiveTextProps {
-  style?: TextStyle | TextStyle[];
-  children: React.ReactNode;
-  variant?: 'h1' | 'h2' | 'h3' | 'h4' | 'body' | 'caption';
-  numberOfLines?: number;
+interface ResponsiveTextProps extends TextProps {
+  variant?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'body' | 'caption';
+  lightColor?: string;
+  darkColor?: string;
 }
 
-export default function ResponsiveText({ 
-  style, 
-  children, 
-  variant = 'body', 
-  numberOfLines 
-}: ResponsiveTextProps) {
+export default function ResponsiveText(props: ResponsiveTextProps) {
+  const { style, lightColor, darkColor, variant = 'body', ...otherProps } = props;
+  const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+
+  // Get the appropriate base styles based on the variant
+  const variantStyles = getVariantStyles(variant);
+
+  // Safely ensure children is treated as a string if defined
+  const children = otherProps.children !== undefined ? otherProps.children : '';
+  
   return (
-    <ThemedText 
-      style={[
-        styles.text, 
-        styles[variant],
-        Array.isArray(style) ? style : style ? [style] : null
-      ]}
-      numberOfLines={numberOfLines}
+    <Text
+      style={[variantStyles, { color }, style]}
+      {...otherProps}
     >
       {children}
-    </ThemedText>
+    </Text>
   );
 }
 
+function getVariantStyles(variant: string) {
+  switch (variant) {
+    case 'h1':
+      return styles.h1;
+    case 'h2':
+      return styles.h2;
+    case 'h3':
+      return styles.h3;
+    case 'h4':
+      return styles.h4;
+    case 'h5':
+      return styles.h5;
+    case 'caption':
+      return styles.caption;
+    case 'body':
+    default:
+      return styles.body;
+  }
+}
+
 const styles = StyleSheet.create({
-  text: {
-    ...Platform.select({
-      ios: { fontFamily: 'System' },
-      android: { fontFamily: 'Roboto' },
-      default: { fontFamily: 'System' }
-    }),
-    flexWrap: 'wrap',
-  },
   h1: {
-    fontSize: 28 * scale,
+    fontSize: Platform.OS === 'web' ? 36 : 30,
     fontWeight: 'bold',
-    marginBottom: 12,
-    flexWrap: 'wrap',
+    marginVertical: 6,
   },
   h2: {
-    fontSize: 24 * scale,
+    fontSize: Platform.OS === 'web' ? 28 : 24,
     fontWeight: 'bold',
-    marginBottom: 10,
-    flexWrap: 'wrap',
+    marginVertical: 5,
   },
   h3: {
-    fontSize: 20 * scale,
+    fontSize: Platform.OS === 'web' ? 22 : 20,
     fontWeight: 'bold',
-    marginBottom: 8,
-    flexWrap: 'wrap',
+    marginVertical: 4,
   },
   h4: {
-    fontSize: 18 * scale,
+    fontSize: Platform.OS === 'web' ? 18 : 16,
     fontWeight: 'bold',
-    marginBottom: 6,
-    flexWrap: 'wrap',
+    marginVertical: 3,
+  },
+  h5: {
+    fontSize: Platform.OS === 'web' ? 16 : 14,
+    fontWeight: 'bold',
+    marginVertical: 2,
   },
   body: {
-    fontSize: 16 * scale,
-    lineHeight: 24 * scale,
-    flexWrap: 'wrap',
+    fontSize: Platform.OS === 'web' ? 16 : 14,
+    lineHeight: Platform.OS === 'web' ? 24 : 22,
   },
   caption: {
-    fontSize: 14 * scale,
+    fontSize: Platform.OS === 'web' ? 14 : 12,
     color: '#666',
-    flexWrap: 'wrap',
   },
 });
