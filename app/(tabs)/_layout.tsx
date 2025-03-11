@@ -13,8 +13,15 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarInactiveTintColor: Colors[colorScheme ?? 'light'].tabIconDefault,
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [
+          styles.tabBar,
+          { 
+            backgroundColor: Colors[colorScheme ?? 'light'].background,
+            borderTopColor: colorScheme === 'dark' ? '#333333' : '#e0e0e0',
+          }
+        ],
       }}>
       <Tabs.Screen
         name="index"
@@ -80,8 +87,7 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: '#ffffff',
+    // Theme-aware styling will be applied via screenOptions
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
   },
 });
