@@ -97,16 +97,21 @@ export default function BlogScreen() {
           ),
         }} 
       />
+
+      {/* Add visible refresh button at the top of the screen */}
+      <TouchableOpacity 
+        onPress={handleRefresh} 
+        style={styles.visibleRefreshButton}
+      >
+        <Ionicons name="refresh-outline" size={22} color="#fff" />
+        <ThemedText style={styles.refreshButtonText}>Refresh Blog</ThemedText>
+      </TouchableOpacity>
+
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
         <View style={styles.headerContainer}>
           <ThemedText style={styles.headerTitle}>Igniting Hope Blog</ThemedText>
           <ThemedText style={styles.headerSubtitle}>Inspiration for your journey</ThemedText>
-          <TouchableOpacity 
-            onPress={handleRefresh} 
-            style={styles.refreshButtonLarge}>
-            <Ionicons name="refresh-outline" size={20} color="#fff" />
-            <ThemedText style={styles.refreshButtonText}>Refresh</ThemedText>
-          </TouchableOpacity>
+          {/* Removed duplicate refresh button */}
         </View>
 
         {errorMessage && (
@@ -284,5 +289,16 @@ const styles = StyleSheet.create({
   retryText: {
     color: '#0066cc',
     marginRight: 4,
+  },
+  visibleRefreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0066cc',
+    padding: 10,
+    borderRadius: 8,
+    margin: 16,
+    marginTop: 8,
+    marginBottom: 12,
   }
 });

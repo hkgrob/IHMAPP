@@ -37,11 +37,12 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
     console.log('Fetching blog from XML feed:', BLOG_XML_FEED);
     
     try {
-      const response = await fetch(BLOG_XML_FEED, {
+      // Use a CORS proxy to access the XML feed
+      const corsProxyUrl = 'https://corsproxy.io/?';
+      const response = await fetch(corsProxyUrl + encodeURIComponent(BLOG_XML_FEED), {
         method: 'GET',
         headers: {
-          'Accept': 'application/xml, text/xml, */*',
-          'User-Agent': 'Mozilla/5.0 (compatible; BlogReader/1.0)'
+          'Accept': 'application/xml, text/xml, */*'
         }
       });
       
