@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl, Platform, Dimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -5,20 +6,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
-import { getPodcasts } from '../../services/podcastService';
+import { fetchPodcastEpisodes } from '../../services/podcastService';
 
 export default function PodcastScreen() {
   const [podcasts, setPodcasts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-
+  
+  // Get screen width for responsive layout
   const screenWidth = Dimensions.get('window').width;
 
   const fetchPodcasts = useCallback(async () => {
     try {
       setError(null);
-      const data = await getPodcasts();
+      const data = await fetchPodcastEpisodes();
       setPodcasts(data);
     } catch (err) {
       console.error('Error fetching podcasts:', err);
@@ -50,7 +52,7 @@ export default function PodcastScreen() {
       <View style={styles.podcastItem}>
         <View style={styles.podcastContent}>
           <Image 
-            source={{ uri: item.image }} 
+            source={{ uri: item.imageUrl || 'https://podcast.ignitinghope.com/images/default.jpg' }} 
             style={styles.podcastImage} 
             resizeMode="cover"
           />
@@ -60,11 +62,7 @@ export default function PodcastScreen() {
 
             <View style={styles.podcastMeta}>
               <ThemedText style={styles.podcastDate}>
-                {new Date(item.publishDate).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
+                {item.publishDate}
               </ThemedText>
 
               <ThemedText style={styles.podcastDuration}>
@@ -120,7 +118,6 @@ export default function PodcastScreen() {
         title: "Podcasts",
         headerLargeTitle: true,
       }} />
-
       <FlatList
         data={podcasts}
         renderItem={renderPodcastItem}
@@ -154,8 +151,17 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderRadius: 12,
     overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#E0E0E0',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   podcastContent: {
     flexDirection: 'column',
@@ -163,6 +169,7 @@ const styles = StyleSheet.create({
   podcastImage: {
     width: '100%',
     height: 180,
+    backgroundColor: '#F5F5F5',
   },
   podcastInfo: {
     padding: 16,
@@ -175,6 +182,7 @@ const styles = StyleSheet.create({
   podcastMeta: {
     flexDirection: 'row',
     marginBottom: 8,
+    alignItems: 'center',
   },
   podcastDate: {
     fontSize: 14,
@@ -183,12 +191,13 @@ const styles = StyleSheet.create({
   podcastDuration: {
     fontSize: 14,
     opacity: 0.7,
-    marginLeft: 4,
+    marginLeft: 8,
   },
   podcastDescription: {
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 12,
+    opacity: 0.8,
   },
   playButton: {
     flexDirection: 'row',
@@ -231,14 +240,15 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: 'white',
     fontWeight: 'bold',
-    fontSize: 16,
   },
   emptyContainer: {
-    padding: 20,
+    padding: 40,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyText: {
     fontSize: 16,
+    textAlign: 'center',
     opacity: 0.7,
-  },
+  }
 });
