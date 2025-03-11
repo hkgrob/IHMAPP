@@ -139,7 +139,6 @@ export default function BlogScreen() {
         <View style={styles.headerContainer}>
           <ThemedText style={styles.headerTitle}>Igniting Hope Blog</ThemedText>
           <ThemedText style={styles.headerSubtitle}>Inspiration for your journey</ThemedText>
-          {/* Removed duplicate refresh button */}
         </View>
 
         {errorMessage && (
@@ -208,18 +207,21 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: 16,
     paddingBottom: 40,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 8,
+    width: '100%',
   },
   headerSubtitle: {
-    fontSize: 18,
+    fontSize: 16,
     textAlign: 'center',
     marginBottom: 24,
     opacity: 0.7,
+    width: '100%',
   },
   loaderContainer: {
     marginTop: 50,
@@ -283,6 +285,9 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
     alignItems: 'center',
     marginBottom: 16,
   },
