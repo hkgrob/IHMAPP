@@ -22,12 +22,12 @@ export default function DeclarationsScreen() {
   const handleDownload = async (filename: string) => {
     try {
       if (Platform.OS === 'web') {
-        // Direct approach with full URL path
+        // Use our custom PDF viewer
         const encodedFilename = encodeURIComponent(filename);
-        const baseUrl = window.location.origin;
-        const fullUrl = `${baseUrl}/attached_assets/${encodedFilename}`;
-        console.log('Opening PDF at path:', fullUrl);
-        window.open(fullUrl, '_blank');
+        const pdfPath = `/attached_assets/${encodedFilename}`;
+        console.log('Opening PDF at path:', pdfPath);
+        // Open the standalone viewer with the PDF path as a parameter
+        window.open(pdfPath, '_blank');
       } else {
         // For mobile platforms, use Sharing API
         const localUri = FileSystem.documentDirectory + filename;
