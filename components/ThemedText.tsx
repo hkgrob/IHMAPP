@@ -28,6 +28,8 @@ export function ThemedText({
         type === 'link' ? styles.link : undefined,
         style,
       ]}
+      numberOfLines={rest.numberOfLines || 0}
+      adjustsFontSizeToFit={false}
       {...rest}
     />
   );
@@ -37,24 +39,29 @@ const styles = StyleSheet.create({
   default: {
     fontSize: 16,
     lineHeight: 24,
+    flexWrap: 'wrap',
   },
   defaultSemiBold: {
     fontSize: 16,
     lineHeight: 24,
     fontWeight: '600',
+    flexWrap: 'wrap',
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    lineHeight: 32,
+    lineHeight: 36,
+    flexWrap: 'wrap',
   },
   subtitle: {
     fontSize: 20,
     fontWeight: 'bold',
+    flexWrap: 'wrap',
   },
   link: {
     lineHeight: 30,
     fontSize: 16,
     color: '#0a7ea4',
+    flexWrap: 'wrap',
   },
 });
