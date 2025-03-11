@@ -23,26 +23,11 @@ export default function HomeScreen() {
             <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
               <BlurView intensity={90} style={styles.featureButton} tint="light">
                 <ThemedView style={styles.iconContainer}>
-                  <Ionicons name="stopwatch-outline" size={32} color="#34c759" />
+                  <Ionicons name="stopwatch-outline" size={32} color="#5AC8FA" />
                 </ThemedView>
-                <ThemedText style={styles.featureText}>Clicker</ThemedText>
+                <ThemedText style={styles.featureText}>Declaration Counter</ThemedText>
                 <ThemedText style={styles.featureDescription}>
-                  Track your declarations
-                </ThemedText>
-                <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
-              </BlurView>
-            </TouchableOpacity>
-          </Link>
-
-          <Link href="/(tabs)/blog" asChild>
-            <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
-              <BlurView intensity={90} style={styles.featureButton} tint="light">
-                <ThemedView style={styles.iconContainer}>
-                  <Ionicons name="newspaper-outline" size={32} color="#5856D6" />
-                </ThemedView>
-                <ThemedText style={styles.featureText}>Blog</ThemedText>
-                <ThemedText style={styles.featureDescription}>
-                  Inspiration for your journey
+                  Track your progress
                 </ThemedText>
                 <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
               </BlurView>
@@ -64,15 +49,30 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </Link>
 
+          <Link href="/(tabs)/blog" asChild>
+            <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
+              <BlurView intensity={90} style={styles.featureButton} tint="light">
+                <ThemedView style={styles.iconContainer}>
+                  <Ionicons name="newspaper-outline" size={32} color="#4CD964" />
+                </ThemedView>
+                <ThemedText style={styles.featureText}>Blog</ThemedText>
+                <ThemedText style={styles.featureDescription}>
+                  Inspiration for your journey
+                </ThemedText>
+                <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
+              </BlurView>
+            </TouchableOpacity>
+          </Link>
+
           <Link href="/(tabs)/declarations" asChild>
             <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
               <BlurView intensity={90} style={styles.featureButton} tint="light">
-                <ThemedView style={[styles.iconContainer, { backgroundColor: 'rgba(255, 149, 0, 0.2)' }]}>
-                  <Ionicons name="document-text" size={32} color="#FF9500" />
+                <ThemedView style={styles.iconContainer}>
+                  <Ionicons name="book-outline" size={32} color="#FF2D55" />
                 </ThemedView>
-                <ThemedText style={styles.featureText}>Declarations</ThemedText>
+                <ThemedText style={styles.featureText}>Daily Declarations</ThemedText>
                 <ThemedText style={styles.featureDescription}>
-                  Find declarations to speak
+                  Speak life over yourself
                 </ThemedText>
                 <Ionicons name="chevron-forward" size={20} color="#8E8E93" style={styles.chevron} />
               </BlurView>
