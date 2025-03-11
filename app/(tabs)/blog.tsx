@@ -33,17 +33,30 @@ export default function BlogScreen() {
     });
   };
 
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const handleRefresh = async () => {
     try {
       setLoading(true);
+      setErrorMessage(null);
       // Clear the cache
       await AsyncStorage.removeItem('wix_blog_posts');
       await AsyncStorage.removeItem('wix_blog_cache_time');
       // Reload the posts
+      console.log('Refreshing blog posts...');
       const blogPosts = await fetchWixBlogPosts();
+      console.log(`Received ${blogPosts.length} posts after refresh`);
       setPosts(blogPosts);
+      
+      // If we're showing fallback data, show a message
+      if (blogPosts.length === 4 && blogPosts[0].id === '1') {
+        setErrorMessage('Could not connect to blog service. Showing fallback content.');
+      } else {
+        setErrorMessage(null);
+      }
     } catch (error) {
       console.error('Failed to refresh blog posts:', error);
+      setErrorMessage('Failed to load blog posts. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -64,6 +77,9 @@ export default function BlogScreen() {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
         <ThemedText style={styles.headerTitle}>Igniting Hope Blog</ThemedText>
         <ThemedText style={styles.headerSubtitle}>Inspiration for your journey</ThemedText>
+        {errorMessage && (
+          <ThemedText style={styles.errorMessage}>{errorMessage}</ThemedText>
+        )}
 
         {loading ? (
           <View style={styles.loaderContainer}>
@@ -209,5 +225,12 @@ const styles = StyleSheet.create({
     padding: 8,
     marginRight: 8,
     marginTop: 8,
+  },
+  errorMessage: {
+    color: '#E53935',
+    textAlign: 'center',
+    marginHorizontal: 20,
+    marginBottom: 10,
+    fontSize: 14,
   },
 });
