@@ -1,24 +1,15 @@
 
-# Handle PDF files correctly
+# Serve PDF files with the correct MIME type
 <FilesMatch "\.pdf$">
   Header set Content-Type "application/pdf"
-  Header set Content-Disposition "inline"
 </FilesMatch>
 
-# Enable CORS for PDF files
-<IfModule mod_headers.c>
-  <FilesMatch "\.pdf$">
-    Header set Access-Control-Allow-Origin "*"
-  </FilesMatch>
-</IfModule>
+# Enable directory browsing for attached_assets
+<Directory "/attached_assets">
+  Options +Indexes
+  AllowOverride All
+  Require all granted
+</Directory>
 
-# Redirect requests to non-existent files to index.html for SPA routing
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteBase /
-  RewriteRule ^index\.html$ - [L]
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteCond %{REQUEST_FILENAME} !\.pdf$
-  RewriteRule . /index.html [L]
-</IfModule>
+# Handle 404 errors
+ErrorDocument 404 /404.html

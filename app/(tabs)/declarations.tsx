@@ -1,18 +1,16 @@
+
 import React from 'react';
-import { FlatList, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
+import { FlatList, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
-import { declarationsData } from '@/constants/DeclarationsData';
+import { DECLARATION_CATEGORIES } from '@/constants/DeclarationsData';
 
 export default function DeclarationsScreen() {
-  const handleOpenPDF = (fileName: string) => {
-    // Replace spaces with underscores to match the file naming convention
-    const normalizedFileName = fileName.replace(/\s+/g, '_');
-
+  const handleOpenPDF = (filename: string) => {
+    // Direct link to PDF file on web
     if (Platform.OS === 'web') {
-      // Direct link to PDF file on web
       const baseUrl = window.location.origin;
-      const pdfUrl = `${baseUrl}/attached_assets/${normalizedFileName}`;
+      const pdfUrl = `${baseUrl}/attached_assets/${filename}`;
       console.log("Opening PDF directly:", pdfUrl);
       window.open(pdfUrl, '_blank');
     } else {
@@ -30,19 +28,19 @@ export default function DeclarationsScreen() {
       </ThemedText>
 
       <FlatList
-        data={declarationsData}
+        data={DECLARATION_CATEGORIES}
         keyExtractor={(item) => item.id}
         style={styles.list}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.item}
-            onPress={() => handleOpenPDF(item.fileName)}
+            onPress={() => handleOpenPDF(item.source)}
           >
             <ThemedText type="subtitle" style={styles.itemTitle}>
               {item.title}
             </ThemedText>
             <ThemedText style={styles.itemDescription}>
-              {item.description}
+              {item.declarations.length} declarations
             </ThemedText>
           </TouchableOpacity>
         )}
@@ -57,27 +55,29 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
+    fontWeight: 'bold',
     marginBottom: 8,
   },
   description: {
-    marginBottom: 16,
+    marginBottom: 24,
+    opacity: 0.7,
   },
   list: {
     flex: 1,
   },
   item: {
     padding: 16,
-    marginBottom: 12,
-    borderRadius: 8,
-    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    marginBottom: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   itemTitle: {
     fontSize: 18,
+    fontWeight: '600',
     marginBottom: 4,
   },
   itemDescription: {
-    fontSize: 14,
     opacity: 0.7,
   },
 });
