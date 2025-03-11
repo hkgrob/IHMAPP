@@ -111,17 +111,11 @@ export default function PodcastScreen() {
   );
 
   return (
-    <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-      
-      <View style={styles.headerContainer}>
-        <ThemedText style={styles.header}>
-          Igniting Hope Podcast
-        </ThemedText>
-        <ThemedText style={styles.subheader}>
-          Inspiration for your spiritual journey
-        </ThemedText>
-      </View>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
+        <View style={styles.headerContainer}>
+          <ThemedText style={styles.headerTitle}>Igniting Hope Podcast</ThemedText>
+          <ThemedText style={styles.headerSubtitle}>Inspiration for your journey</ThemedText>
+        </View>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
