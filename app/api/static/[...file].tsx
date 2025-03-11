@@ -1,27 +1,14 @@
 
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from "expo-router";
+import React from "react";
+import { Text, View } from "react-native";
 
-export default function StaticFile() {
+export default function StaticFileView() {
   const { file } = useLocalSearchParams();
   
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Serving file: {Array.isArray(file) ? file.join('/') : file}</Text>
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <Text>Serving file: {file}</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  text: {
-    fontSize: 16,
-    textAlign: 'center',
-  },
-});

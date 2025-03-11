@@ -1,15 +1,16 @@
 
-# Serve PDF files with the correct MIME type
+# Set correct MIME types for PDF files
+<IfModule mod_mime.c>
+  AddType application/pdf .pdf
+</IfModule>
+
+# Enable PDF file download
 <FilesMatch "\.pdf$">
-  Header set Content-Type "application/pdf"
+  Header set Content-Disposition "inline"
 </FilesMatch>
 
-# Enable directory browsing for attached_assets
-<Directory "/attached_assets">
-  Options +Indexes
-  AllowOverride All
-  Require all granted
-</Directory>
-
-# Handle 404 errors
-ErrorDocument 404 /404.html
+# Fallback for accessing PDF files
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^attached_assets/(.+)$ /attached_assets/$1 [L]
+</IfModule>
