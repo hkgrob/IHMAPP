@@ -5,6 +5,10 @@ modules = ["nodejs-20"]
 channel = "stable-24_05"
 
 [[ports]]
+localPort = 8081
+externalPort = 8081
+
+[[ports]]
 localPort = 19006
 externalPort = 80
 
@@ -38,7 +42,7 @@ name = "Access-Control-Allow-Origin"
 value = "*"
 
 [workflows]
-runButton = "Run"
+runButton = "Run Expo"
 
 [[workflows.workflow]]
 name = "Dev Server"
