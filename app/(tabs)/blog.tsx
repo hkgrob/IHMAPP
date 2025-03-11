@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator, View } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator, View, Image } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,9 +33,34 @@ export default function BlogScreen() {
     });
   };
 
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      // Clear the cache
+      await AsyncStorage.removeItem('wix_blog_posts');
+      await AsyncStorage.removeItem('wix_blog_cache_time');
+      // Reload the posts
+      const blogPosts = await fetchWixBlogPosts();
+      setPosts(blogPosts);
+    } catch (error) {
+      console.error('Failed to refresh blog posts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <ThemedView style={styles.container}>
-      <Stack.Screen options={{ title: 'Blog' }} />
+      <Stack.Screen 
+        options={{ 
+          title: 'Blog',
+          headerRight: () => (
+            <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
+              <Ionicons name="refresh" size={24} color="#0066cc" />
+            </TouchableOpacity>
+          )
+        }} 
+      />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
         <ThemedText style={styles.headerTitle}>Igniting Hope Blog</ThemedText>
         <ThemedText style={styles.headerSubtitle}>Inspiration for your journey</ThemedText>
@@ -48,6 +74,13 @@ export default function BlogScreen() {
           <>
             {posts.map(post => (
               <View key={post.id} style={styles.blogCard}>
+                {post.imageUrl && (
+                  <Image 
+                    source={{ uri: post.imageUrl }} 
+                    style={styles.blogImage} 
+                    resizeMode="cover"
+                  />
+                )}
                 <ThemedText style={styles.blogTitle}>{post.title}</ThemedText>
                 <ThemedText style={styles.blogDate}>{post.date}</ThemedText>
                 <ThemedText style={styles.blogExcerpt}>{post.excerpt}</ThemedText>
@@ -120,6 +153,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  blogImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
   blogTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -165,6 +204,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 12,
     opacity: 0.6,
+  },
+  refreshButton: {
+    padding: 8,
+    marginRight: 8,
     marginTop: 8,
   },
 });

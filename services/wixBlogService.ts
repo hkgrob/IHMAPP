@@ -46,12 +46,47 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
       }
     }
 
-    // For now, just return fallback data while API integration is pending
-    // In a real implementation, this would make a fetch request to the Wix API
-    return getFallbackBlogPosts();
+    // Actually fetch from Wix API
+    const response = await fetch(API_URL, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
 
+    if (!response.ok) {
+      throw new Error(`API response error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Transform the Wix data to our BlogPost format
+    const posts: BlogPost[] = data.items.map((item: WixBlogPost) => ({
+      id: item.id,
+      title: item.title,
+      excerpt: item.content.text.substring(0, 150) + '...',
+      date: new Date(item.createdDate).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }),
+      link: `https://www.ignitinghope.com/blog/${item.slug}`,
+      imageUrl: item.coverImage?.url
+    }));
+
+    // Cache the data
+    await AsyncStorage.setItem('wix_blog_posts', JSON.stringify(posts));
+    await AsyncStorage.setItem('wix_blog_cache_time', Date.now().toString());
+
+    return posts;
   } catch (error) {
     console.error('Error fetching Wix blog posts:', error);
+    
+    // Log more details about the error
+    if (error instanceof Error) {
+      console.error('Error details:', error.message);
+    }
 
     // Return fallback data in case of error
     return getFallbackBlogPosts();
