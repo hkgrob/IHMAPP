@@ -78,7 +78,44 @@ export default function PodcastScreen() {
     } catch (error) {
       console.error('Failed to load podcast episodes:', error);
       // Ensure we show fallback data even on error
-      const fallbackData = getFallbackPodcastEpisodes();
+      const fallbackData = [
+        {
+          id: '1',
+          title: 'Activating Your Prophetic Destiny',
+          description: 'In this episode, we discuss how to discover and step into your prophetic calling and destiny.',
+          publishDate: 'June 15, 2023',
+          duration: '45:22',
+          audioUrl: 'https://podcast.ignitinghope.com/episodes/episode1.mp3',
+          imageUrl: 'https://podcast.ignitinghope.com/images/episode1.jpg'
+        },
+        {
+          id: '2',
+          title: 'Breakthrough Prayer Strategies',
+          description: 'Learn powerful prayer techniques that can help you break through barriers in your spiritual life.',
+          publishDate: 'May 22, 2023',
+          duration: '38:15',
+          audioUrl: 'https://podcast.ignitinghope.com/episodes/episode2.mp3',
+          imageUrl: 'https://podcast.ignitinghope.com/images/episode2.jpg'
+        },
+        {
+          id: '3',
+          title: 'Kingdom Mindsets for Success',
+          description: 'Discover how to develop mindsets that align with God\'s kingdom principles for success in every area of life.',
+          publishDate: 'April 10, 2023',
+          duration: '42:50',
+          audioUrl: 'https://podcast.ignitinghope.com/episodes/episode3.mp3',
+          imageUrl: 'https://podcast.ignitinghope.com/images/episode3.jpg'
+        },
+        {
+          id: '4',
+          title: 'Hearing God\'s Voice Clearly',
+          description: 'Practical steps to enhance your ability to hear and discern God\'s voice in your daily life.',
+          publishDate: 'March 5, 2023',
+          duration: '36:40',
+          audioUrl: 'https://podcast.ignitinghope.com/episodes/episode4.mp3',
+          imageUrl: 'https://podcast.ignitinghope.com/images/episode4.jpg'
+        }
+      ];
       setEpisodes(fallbackData);
       console.log('Set fallback podcast episodes after error');
     } finally {
@@ -164,6 +201,8 @@ export default function PodcastScreen() {
     </TouchableOpacity>
   );
 
+  console.log('Rendering podcast screen with', episodes.length, 'episodes');
+  
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -174,6 +213,23 @@ export default function PodcastScreen() {
           <ThemedText style={styles.headerSubtitle}>Inspiration for your journey</ThemedText>
         </View>
       </View>
+
+      {/* Debug Info */}
+      {episodes.length === 0 && !isLoading && (
+        <View style={styles.errorContainer}>
+          <ThemedText style={styles.errorText}>
+            No episodes available. Please pull down to refresh.
+          </ThemedText>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={handleRefresh}
+          >
+            <ThemedText style={styles.retryText}>
+              Retry Loading
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -411,5 +467,27 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginLeft: 10,
     marginRight: 8,
+  },
+  errorContainer: {
+    margin: 20,
+    padding: 15,
+    backgroundColor: 'rgba(255,0,0,0.1)',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#5856D6',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: 'white',
+    fontWeight: '600',
   },
 });

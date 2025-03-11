@@ -77,13 +77,31 @@ const parseRssFeed = (xmlData: string): Promise<PodcastEpisode[]> => {
   return new Promise((resolve, reject) => {
     parseString(xmlData, (err, result) => {
       if (err) {
+        console.error("XML parsing error:", err);
         reject(err);
         return;
       }
       
       try {
+        console.log("XML parsed successfully, structure:", Object.keys(result));
+        
+        // Safety check for structure
+        if (!result || !result.rss || !result.rss.channel || !result.rss.channel[0]) {
+          console.error("Invalid RSS structure:", result);
+          throw new Error("Invalid RSS structure");
+        }
+        
         const channel = result.rss.channel[0];
+        console.log("Channel found, contains items:", !!channel.item);
+        
+        // Check if items exist
+        if (!channel.item || !Array.isArray(channel.item)) {
+          console.error("No items found in channel:", channel);
+          throw new Error("No podcast items found");
+        }
+        
         const items = channel.item;
+        console.log(`Found ${items.length} podcast items`);
         
         // Get the channel image if available
         let channelImage = '';
