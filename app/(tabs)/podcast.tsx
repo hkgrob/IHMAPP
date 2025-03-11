@@ -7,7 +7,6 @@ import {
   Platform, 
   RefreshControl, 
   Image, 
-  Text,
   ActivityIndicator,
   Linking,
   ScrollView
@@ -30,6 +29,53 @@ export default function PodcastScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const loadPodcasts = useCallback(async () => {
+    try {
+      const data = await fetchPodcastEpisodes();
+      setEpisodes(data);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load podcast episodes. Please try again later.');
+      console.error('Error loading podcasts:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadPodcasts();
+  }, [loadPodcasts]);
+
+  useEffect(() => {
+    loadPodcasts();
+  }, [loadPodcasts]);
+
+  const handleEpisodePress = async (episode: PodcastEpisode) => {
+    try {
+      // Provide haptic feedback
+      if (Platform.OS !== 'web') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+
+      // Open the audio URL in browser
+      if (episode.audioUrl) {
+        if (Platform.OS === 'web') {
+          window.open(episode.audioUrl, '_blank');
+        } else {
+          await WebBrowser.openBrowserAsync(episode.audioUrl);
+        }
+      }
+    } catch (error) {
+      console.error('Error opening podcast link:', error);
+      // Fall back to regular linking
+      if (episode.audioUrl) {
+        Linking.openURL(episode.audioUrl);
+      }
+    }
+  };
 
   const loadPodcasts = useCallback(async () => {
     try {
@@ -149,6 +195,107 @@ export default function PodcastScreen() {
       )}
     </ThemedView>
   );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    marginTop: 4,
+  },
+  listContent: {
+    padding: 16,
+  },
+  episodeCard: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(200, 200, 200, 0.1)',
+    position: 'relative',
+  },
+  episodeImageContainer: {
+    marginRight: 12,
+  },
+  episodeImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  episodeContent: {
+    flex: 1,
+    paddingRight: 24,
+  },
+  episodeTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  episodeDate: {
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  episodeDuration: {
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  episodeDescription: {
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  playIcon: {
+    position: 'absolute',
+    right: 12,
+    top: '50%',
+    marginTop: -12,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  statsText: {
+    fontSize: 12,
+    padding: 8,
+    textAlign: 'center',
+    opacity: 0.7,
+  }
+});
 }
 
 const styles = StyleSheet.create({
