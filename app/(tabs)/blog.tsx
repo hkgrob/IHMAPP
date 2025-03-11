@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator, View, Image, Alert } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator, View, Image, Alert, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { fetchWixBlogPosts, BlogPost } from '@/services/wixBlogService';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
 export default function BlogScreen() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -183,6 +184,11 @@ export default function BlogScreen() {
                 </TouchableOpacity>
               </ThemedView>
             ))}
+            {posts.length > 0 && (
+              <ThemedText style={styles.footerText}>
+                Showing {posts.length} posts
+              </ThemedText>
+            )}
           </>
         )}
       </ScrollView>
