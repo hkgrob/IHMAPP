@@ -15,6 +15,7 @@ export default function CounterScreen() {
   const [lastReset, setLastReset] = useState('');
   const iconColor = useThemeColor({}, 'icon');
   const tintColor = useThemeColor({}, 'tint');
+  const textColor = useThemeColor({}, 'text'); // Added for text color
 
   useEffect(() => {
     loadCounts();
@@ -115,7 +116,7 @@ export default function CounterScreen() {
             style={[styles.incrementButton, { backgroundColor: tintColor }]}
             onPress={incrementCount}
           >
-            <ThemedText style={styles.buttonText}>
+            <ThemedText style={styles.buttonText} lightColor="#000000" darkColor="#FFFFFF">
               I Made a Declaration
             </ThemedText>
           </TouchableOpacity>
