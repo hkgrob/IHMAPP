@@ -1,166 +1,140 @@
-import { StyleSheet, ScrollView, TouchableOpacity, Image, Linking, Platform, View, Text } from 'react-native';
-import { Link } from 'expo-router';
+import React from 'react';
+import { StyleSheet, TouchableOpacity, View, Image, ScrollView, Dimensions, Platform } from 'react-native';
+import { Link, Stack } from 'expo-router';
+import { BlurView } from 'expo-blur';
+import { StatusBar } from 'expo-status-bar';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import Svg, { Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
-import { FontAwesome } from '@expo/vector-icons';
+import Colors from '@/constants/Colors';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
+const { width } = Dimensions.get('window');
+const isSmallScreen = width < 380;
 
 export default function HomeScreen() {
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const tintColor = useThemeColor({}, 'tint');
+
   return (
     <ThemedView style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerSection}>
-          <ThemedText style={styles.title}>
-            Declare Your New Mindset
-          </ThemedText>
-          <ThemedText style={styles.subtitle}>
-            Track your daily declarations
-          </ThemedText>
-        </View>
+      <Stack.Screen options={{ headerShown: false }} />
 
-        <ThemedView style={styles.featureGrid}>
-          <Link href="/(tabs)/counter" asChild>
-            <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
-              <BlurView intensity={90} style={styles.featureButton} tint="light">
-                <View style={styles.featureTextContainer}>
-                  <ThemedView style={styles.iconContainer}>
-                    <Ionicons name="stopwatch-outline" size={32} color="blue" /> {/*Example themed color*/}
-                  </ThemedView>
-                  <ThemedText style={styles.featureText}>Declaration Counter</ThemedText>
-                </View>
-                <View style={styles.featureDescriptionContainer}>
-                  <ThemedText style={styles.featureDescription}>
-                    Track your progress
-                  </ThemedText>
-                  <Ionicons name="chevron-forward" size={20} color="gray" style={styles.chevron} /> {/*Example themed color*/}
-                </View>
-              </BlurView>
-            </TouchableOpacity>
-          </Link>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <SafeAreaView style={styles.safeArea}>
+          {/* Header */}
+          <View style={styles.headerContainer}>
+            <Image 
+              source={require('../../assets/images/IHM-Logo.png')} 
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <ThemedText style={styles.headerTitle}>Igniting Hope</ThemedText>
+          </View>
 
-          <Link href="/(tabs)/podcast" asChild>
-            <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
-              <BlurView intensity={90} style={styles.featureButton} tint="light">
-                <View style={styles.featureTextContainer}>
-                  <ThemedView style={styles.iconContainer}>
-                    <Ionicons name="mic-outline" size={32} color="orange" /> {/*Example themed color*/}
-                  </ThemedView>
-                  <ThemedText style={styles.featureText}>Podcast</ThemedText>
-                </View>
-                <View style={styles.featureDescriptionContainer}>
-                  <ThemedText style={styles.featureDescription}>
-                    Listen to spiritual teachings
-                  </ThemedText>
-                  <Ionicons name="chevron-forward" size={20} color="gray" style={styles.chevron} /> {/*Example themed color*/}
-                </View>
-              </BlurView>
-            </TouchableOpacity>
-          </Link>
+          {/* Welcome Banner */}
+          <View style={styles.welcomeBanner}>
+            <ThemedText style={styles.welcomeText}>
+              Welcome to your journey of transformation
+            </ThemedText>
+          </View>
 
-          <Link href="/(tabs)/blog" asChild>
-            <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
-              <BlurView intensity={90} style={styles.featureButton} tint="light">
-                <View style={styles.featureTextContainer}>
-                  <ThemedView style={styles.iconContainer}>
-                    <Ionicons name="newspaper-outline" size={32} color="green" /> {/*Example themed color*/}
-                  </ThemedView>
-                  <ThemedText style={styles.featureText}>Blog</ThemedText>
-                </View>
-                <View style={styles.featureDescriptionContainer}>
-                  <ThemedText style={styles.featureDescription}>
-                    Inspiration for your journey
-                  </ThemedText>
-                  <Ionicons name="chevron-forward" size={20} color="gray" style={styles.chevron} /> {/*Example themed color*/}
-                </View>
-              </BlurView>
-            </TouchableOpacity>
-          </Link>
+          {/* Feature Grid */}
+          <View style={styles.featureGrid}>
+            <FeatureButton 
+              title="Declarations" 
+              description="Daily affirmations"
+              icon="document-text-outline"
+              route="/(tabs)/declarations"
+              color="#4A90E2"
+            />
 
-          <Link href="/(tabs)/declarations" asChild>
-            <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
-              <BlurView intensity={90} style={styles.featureButton} tint="light">
-                <View style={styles.featureTextContainer}>
-                  <ThemedView style={styles.iconContainer}>
-                    <Ionicons name="book-outline" size={32} color="red" /> {/*Example themed color*/}
-                  </ThemedView>
-                  <ThemedText style={styles.featureText}>Daily Declarations</ThemedText>
-                </View>
-                <View style={styles.featureDescriptionContainer}>
-                  <ThemedText style={styles.featureDescription}>
-                    Speak life over yourself
-                  </ThemedText>
-                  <Ionicons name="chevron-forward" size={20} color="gray" style={styles.chevron} /> {/*Example themed color*/}
-                </View>
-              </BlurView>
-            </TouchableOpacity>
-          </Link>
+            <FeatureButton 
+              title="Counter" 
+              description="Track your progress"
+              icon="stopwatch-outline"
+              route="/(tabs)/counter"
+              color="#50E3C2"
+            />
 
-          <Link href="/(tabs)/stats" asChild>
-            <TouchableOpacity activeOpacity={0.7} style={styles.featureButtonWrapper}>
-              <BlurView intensity={90} style={styles.featureButton} tint="light">
-                <View style={styles.featureTextContainer}>
-                  <ThemedView style={[styles.iconContainer, { backgroundColor: 'rgba(74, 144, 226, 0.2)' }]}>
-                    <Ionicons name="stats-chart" size={32} color="blue" /> {/*Example themed color*/}
-                  </ThemedView>
-                  <ThemedText style={styles.featureText}>Statistics</ThemedText>
-                </View>
-                <View style={styles.featureDescriptionContainer}>
-                  <ThemedText style={styles.featureDescription}>
-                    View your progress
-                  </ThemedText>
-                  <Ionicons name="chevron-forward" size={20} color="gray" style={styles.chevron} /> {/*Example themed color*/}
-                </View>
-              </BlurView>
-            </TouchableOpacity>
-          </Link>
-        </ThemedView>
+            <FeatureButton 
+              title="Blog" 
+              description="Latest insights"
+              icon="newspaper-outline"
+              route="/(tabs)/blog"
+              color="#F5A623"
+            />
 
-        <ThemedView style={[styles.card, { backgroundColor: 'lightgray' }]}> {/*Example themed backgroundColor*/}
-          <ThemedText style={styles.cardTitle}>About Us</ThemedText>
-          <ThemedText style={styles.paragraph}>
-            Igniting Hope Ministries focuses on helping people renew their minds and transform their beliefs through daily declarations.
-          </ThemedText>
-          <TouchableOpacity 
-            style={styles.linkButton}
-            onPress={() => Linking.openURL('https://ignitinghope.com')}>
-            <ThemedText style={styles.linkText}>Visit our website</ThemedText>
-            <Ionicons name="arrow-forward" size={16} color="blue" /> {/*Example themed color*/}
-          </TouchableOpacity>
-        </ThemedView>
+            <FeatureButton 
+              title="Podcasts" 
+              description="Listen & grow"
+              icon="headset-outline"
+              route="/(tabs)/podcast"
+              color="#D87BFD"
+            />
+          </View>
 
-        <ThemedView style={styles.socialsContainer}>
-          <ThemedText style={styles.socialsTitle}>Find Us Online</ThemedText>
-          <View style={styles.socialsIconsContainer}>
-            <TouchableOpacity onPress={() => Linking.openURL('https://www.facebook.com/ignitinghope')}>
-              <View style={[styles.socialIcon, { backgroundColor: 'blue' }]}> {/*Example themed backgroundColor*/}
-                <FontAwesome name="facebook-f" size={24} color="white" />
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => Linking.openURL('https://www.instagram.com/ignitinghope/')}>
-              <View style={[styles.socialIcon, { backgroundColor: 'red' }]}> {/*Example themed backgroundColor*/}
-                <FontAwesome name="instagram" size={24} color="white" />
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => Linking.openURL('https://www.youtube.com/IgnitingHopeMinistries')}>
-              <View style={[styles.socialIcon, { backgroundColor: 'red' }]}> {/*Example themed backgroundColor*/}
-                <FontAwesome name="youtube-play" size={24} color="white" />
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => Linking.openURL('https://x.com/BacklundSteve')}>
-              <View style={[styles.socialIcon, { backgroundColor: 'black' }]}> {/*Example themed backgroundColor*/}
-                <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <Path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" fill="white" />
-                </Svg>
-              </View>
+          {/* Quote of the Day */}
+          <View style={styles.quoteContainer}>
+            <View style={styles.quoteIconContainer}>
+              <Ionicons name="quote" size={24} color={tintColor} />
+            </View>
+            <ThemedText style={styles.quoteText}>
+              "Your beliefs become your thoughts, your thoughts become your words, your words become your actions."
+            </ThemedText>
+            <ThemedText style={styles.quoteAuthor}>
+              — Daily Inspiration
+            </ThemedText>
+          </View>
+
+          {/* Getting Started Section */}
+          <View style={styles.gettingStartedContainer}>
+            <ThemedText style={styles.sectionTitle}>Getting Started</ThemedText>
+            <TouchableOpacity 
+              style={styles.startButton}
+              activeOpacity={0.8}
+              onPress={() => {}}
+            >
+              <ThemedText style={styles.startButtonText}>
+                Begin Your Journey
+              </ThemedText>
+              <Ionicons name="arrow-forward" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
-        </ThemedView>
-
+        </SafeAreaView>
       </ScrollView>
+
+      <StatusBar style="auto" />
     </ThemedView>
+  );
+}
+
+// Feature Button Component
+function FeatureButton({ title, description, icon, route, color }) {
+  return (
+    <Link href={route} asChild>
+      <TouchableOpacity 
+        activeOpacity={0.7} 
+        style={styles.featureButtonWrapper}
+      >
+        <BlurView intensity={90} style={styles.featureButton} tint="light">
+          <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
+            <Ionicons name={icon} size={28} color={color} />
+          </View>
+          <View style={styles.featureTextContainer}>
+            <ThemedText style={styles.featureTitle}>{title}</ThemedText>
+            <ThemedText style={styles.featureDescription}>{description}</ThemedText>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="gray" />
+        </BlurView>
+      </TouchableOpacity>
+    </Link>
   );
 }
 
@@ -171,175 +145,121 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  contentContainer: {
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  headerContainer: {
     padding: 20,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: Platform.OS === 'android' ? 30 : 10,
   },
-  headerSection: {
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 24,
+  logo: {
+    width: 40,
+    height: 40,
+    marginRight: 10,
   },
-  title: {
-    fontSize: 28,
+  headerTitle: {
+    fontSize: 24,
     fontWeight: 'bold',
-    marginTop: 16,
-    textAlign: 'center',
   },
-  subtitle: {
+  welcomeBanner: {
+    marginHorizontal: 20,
+    marginTop: 10,
+    marginBottom: 25,
+    padding: 20,
+    borderRadius: 15,
+    backgroundColor: '#FFA50020',
+    alignItems: 'center',
+  },
+  welcomeText: {
     fontSize: 18,
-    opacity: 0.8,
-    marginTop: 8,
-    marginBottom: 24,
+    fontWeight: '500',
     textAlign: 'center',
   },
   featureGrid: {
-    flexDirection: 'column',
-    marginBottom: 30,
+    paddingHorizontal: 20,
+    marginBottom: 25,
   },
   featureButtonWrapper: {
-    width: '100%',
     marginBottom: 16,
-    borderRadius: 16,
+    borderRadius: 15,
     overflow: 'hidden',
   },
   featureButton: {
-    width: '100%',
-    borderRadius: 16,
-    padding: 16,
-    paddingRight: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    overflow: 'hidden',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-      web: {
-        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
-      }
-    }),
+    padding: 15,
+    borderRadius: 15,
+    overflow: 'hidden',
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: 'rgba(52, 199, 89, 0.2)',
-    alignItems: 'center',
+    width: 50,
+    height: 50,
+    borderRadius: 12,
     justifyContent: 'center',
-    marginRight: 12,
-    flexShrink: 0,
+    alignItems: 'center',
+    marginRight: 15,
   },
   featureTextContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 0.45,
+    flex: 1,
   },
-  featureText: {
-    fontWeight: '600',
+  featureTitle: {
     fontSize: 18,
-    marginBottom: 5,
-    textAlign: 'left',
-    flexShrink: 1,
-  },
-  featureDescriptionContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    flex: 0.55,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   featureDescription: {
     fontSize: 14,
-    color: '#8E8E93',
-    fontWeight: '400',
+    opacity: 0.7,
+  },
+  quoteContainer: {
+    margin: 20,
+    padding: 20,
+    borderRadius: 15,
+    backgroundColor: '#F8F8F8',
+  },
+  quoteIconContainer: {
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  quoteText: {
+    fontSize: 16,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginBottom: 10,
+    lineHeight: 24,
+  },
+  quoteAuthor: {
+    fontSize: 14,
     textAlign: 'right',
-    paddingRight: 10,
-    flexShrink: 1,
+    opacity: 0.7,
   },
-  chevron: {
-    position: 'absolute',
-    right: 8,
-    alignSelf: 'center',
-    opacity: 0.6,
-  },
-  card: {
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 30,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-      web: {
-        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
-      }
-    }),
-  },
-  cardTitle: {
-    fontWeight: '700',
-    fontSize: 20,
-    marginBottom: 12,
-    letterSpacing: -0.5,
-  },
-  paragraph: {
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 16,
-  },
-  linkButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  linkText: {
-    fontWeight: '600',
-    fontSize: 15,
-    marginRight: 6,
-  },
-  socialsContainer: {
-    marginTop: 30,
-    marginBottom: 40,
-    paddingHorizontal: 20,
-    width: '100%',
+  gettingStartedContainer: {
+    margin: 20,
     alignItems: 'center',
   },
-  socialsTitle: {
+  sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
+    marginBottom: 15,
   },
-  socialsIconsContainer: {
+  startButton: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  socialIcon: {
-    width: 50,
-    height: 50,
+    backgroundColor: '#4A90E2',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     borderRadius: 25,
-    justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
+  startButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 8,
+  }
 });
