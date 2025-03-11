@@ -1,11 +1,11 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// The Wix Site ID for your site
-const SITE_ID = '9099b5e6-223e-4f2b-a71d-1ffac8658ea8'; 
+// Direct XML feed URL
+const BLOG_XML_FEED = 'https://www.ignitinghope.com/blog/blog-feed.xml';
 
-// Cache expiration time (1 minute for testing)
-const CACHE_EXPIRATION = 1 * 60 * 1000;
+// Cache expiration time (5 minutes)
+const CACHE_EXPIRATION = 5 * 60 * 1000;
 
 export interface BlogPost {
   id: string;
@@ -16,7 +16,7 @@ export interface BlogPost {
   imageUrl?: string;
 }
 
-// Fetches blog posts from Wix API with caching
+// Fetches blog posts from XML feed with caching
 export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
   try {
     // Check for cached data first
@@ -34,88 +34,46 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
     }
     
     console.log('Cache expired or not available, fetching fresh data');
-    
-    // Using the Wix site directly instead of the API
-    // This is a public URL anyone can access
-    const siteUrl = 'https://www.ignitinghope.com';
-    const blogUrl = `${siteUrl}/blog-feed`;
-    
-    console.log('Fetching blog from:', blogUrl);
+    console.log('Fetching blog from XML feed:', BLOG_XML_FEED);
     
     try {
-      const response = await fetch(blogUrl, {
+      const response = await fetch(BLOG_XML_FEED, {
         method: 'GET',
         headers: {
-          'Accept': 'application/json, text/plain, */*',
+          'Accept': 'application/xml, text/xml, */*',
           'User-Agent': 'Mozilla/5.0 (compatible; BlogReader/1.0)'
         }
       });
       
-      console.log('Response status:', response.status);
+      console.log('XML feed response status:', response.status);
       
       if (!response.ok) {
-        throw new Error(`Site response error: ${response.status}`);
+        throw new Error(`XML feed response error: ${response.status}`);
       }
       
-      const html = await response.text();
-      console.log('Received HTML length:', html.length);
+      const xmlData = await response.text();
+      console.log('Received XML data length:', xmlData.length);
       
-      // Parse the blog posts from HTML
-      // This is a simplified approach - parse out blog posts from the HTML
-      const blogPosts = parseHtmlForBlogPosts(html);
+      // Parse the RSS XML
+      const rssPosts = parseRssForBlogPosts(xmlData);
       
-      if (blogPosts.length > 0) {
-        console.log(`Successfully parsed ${blogPosts.length} blog posts`);
+      if (rssPosts.length > 0) {
+        console.log(`Successfully parsed ${rssPosts.length} posts from XML feed`);
         
         // Cache the successful data
-        await AsyncStorage.setItem('wix_blog_posts', JSON.stringify(blogPosts));
+        await AsyncStorage.setItem('wix_blog_posts', JSON.stringify(rssPosts));
         await AsyncStorage.setItem('wix_blog_cache_time', Date.now().toString());
         
-        return blogPosts;
+        return rssPosts;
       } else {
-        console.log('No blog posts found in the HTML');
-        throw new Error('No blog posts found');
+        console.log('No blog posts found in the XML feed');
+        throw new Error('No blog posts found in XML feed');
       }
-    } catch (siteError) {
-      console.error('Site scraping error:', siteError);
+    } catch (xmlError) {
+      console.error('XML feed error:', xmlError);
       
-      // Try another approach - fetch RSS feed
-      try {
-        const rssUrl = `${siteUrl}/blog-feed.xml`;
-        console.log('Trying RSS feed:', rssUrl);
-        
-        const rssResponse = await fetch(rssUrl, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/xml, text/xml, */*'
-          }
-        });
-        
-        if (!rssResponse.ok) {
-          throw new Error(`RSS feed error: ${rssResponse.status}`);
-        }
-        
-        const rssXml = await rssResponse.text();
-        console.log('Received RSS XML length:', rssXml.length);
-        
-        // Parse the RSS XML
-        const rssPosts = parseRssForBlogPosts(rssXml);
-        
-        if (rssPosts.length > 0) {
-          console.log(`Successfully parsed ${rssPosts.length} posts from RSS`);
-          
-          // Cache the successful data
-          await AsyncStorage.setItem('wix_blog_posts', JSON.stringify(rssPosts));
-          await AsyncStorage.setItem('wix_blog_cache_time', Date.now().toString());
-          
-          return rssPosts;
-        }
-      } catch (rssError) {
-        console.error('RSS feed error:', rssError);
-      }
-      
-      // If all attempts fail, use fallback data
-      console.log('Using fallback blog posts after all attempts failed');
+      // If the direct XML feed fails, use fallback data
+      console.log('Using fallback blog posts after XML feed attempt failed');
       return getFallbackBlogPosts();
     }
   } catch (error) {

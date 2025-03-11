@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator, View, Image, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,7 +22,7 @@ export default function BlogScreen() {
       setLoading(true);
       const blogPosts = await fetchWixBlogPosts();
       setPosts(blogPosts);
-      
+
       // Check if we're showing fallback data
       if (blogPosts.length === 4 && blogPosts[0].id === '1') {
         console.log('Showing fallback content');
@@ -49,37 +48,32 @@ export default function BlogScreen() {
 
   const handleRefresh = async () => {
     try {
-      setRefreshing(true);
-      setErrorMessage(null);
-
-      // Clear the cache
+      setLoading(true);
       console.log('Clearing blog cache...');
+      // Clear the cache
       await AsyncStorage.removeItem('wix_blog_posts');
       await AsyncStorage.removeItem('wix_blog_cache_time');
-      
-      // Reload the posts
-      console.log('Refreshing blog posts...');
-      const blogPosts = await fetchWixBlogPosts();
-      console.log(`Received ${blogPosts.length} posts after refresh`);
 
+      console.log('Refreshing blog posts...');
+      // Reload the posts
+      const blogPosts = await fetchWixBlogPosts();
       setPosts(blogPosts);
 
-      // Check if we're still showing fallback data
-      if (blogPosts.length === 4 && blogPosts[0].id === '1') {
-        console.log('Still showing fallback content after refresh');
-        setErrorMessage('Could not connect to blog service. Showing fallback content.');
-        Alert.alert('Warning', 'Could not fetch live blog posts. Showing fallback content.');
+      console.log(`Received ${blogPosts.length} posts after refresh`);
+
+      // Show different messages based on whether we got fallback data or real data
+      if (blogPosts.length > 0 && blogPosts[0].id !== '1') {
+        console.log('Showing fresh content after refresh');
+        Alert.alert('Success', 'Blog posts updated successfully!');
       } else {
-        console.log('Successfully refreshed to live blog posts');
-        setErrorMessage(null);
-        Alert.alert('Success', 'Blog posts refreshed successfully!');
+        console.log('Still showing fallback content after refresh');
+        Alert.alert('Notice', 'Using fallback blog content. Could not fetch latest posts.');
       }
     } catch (error) {
       console.error('Failed to refresh blog posts:', error);
-      setErrorMessage('Failed to refresh blog posts. Please try again later.');
       Alert.alert('Error', 'Failed to refresh blog posts. Please try again later.');
     } finally {
-      setRefreshing(false);
+      setLoading(false);
     }
   };
 
@@ -104,9 +98,17 @@ export default function BlogScreen() {
         }} 
       />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
-        <ThemedText style={styles.headerTitle}>Igniting Hope Blog</ThemedText>
-        <ThemedText style={styles.headerSubtitle}>Inspiration for your journey</ThemedText>
-        
+        <View style={styles.headerContainer}>
+          <ThemedText style={styles.headerTitle}>Igniting Hope Blog</ThemedText>
+          <ThemedText style={styles.headerSubtitle}>Inspiration for your journey</ThemedText>
+          <TouchableOpacity 
+            onPress={handleRefresh} 
+            style={styles.refreshButtonLarge}>
+            <Ionicons name="refresh-outline" size={20} color="#fff" />
+            <ThemedText style={styles.refreshButtonText}>Refresh</ThemedText>
+          </TouchableOpacity>
+        </View>
+
         {errorMessage && (
           <View style={styles.errorContainer}>
             <ThemedText style={styles.errorMessage}>{errorMessage}</ThemedText>
@@ -239,6 +241,28 @@ const styles = StyleSheet.create({
   refreshButton: {
     padding: 8,
     marginRight: 8,
+    marginTop: 8,
+  },
+  headerContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  refreshButtonLarge: {
+    backgroundColor: '#0066cc',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  refreshButtonText: {
+    color: '#fff',
+    marginLeft: 8,
+    fontWeight: '600',
   },
   errorContainer: {
     backgroundColor: '#fff8f8',
