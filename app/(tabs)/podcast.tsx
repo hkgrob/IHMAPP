@@ -77,18 +77,9 @@ export default function PodcastScreen() {
     }
   };
 
-  // The loadPodcasts function is already defined above, so we removed the duplicate declaration here
-  try {
-      const data = await fetchPodcastEpisodes();
-      setEpisodes(data);
-      setError(null);
-    } catch (err) {
-      setError('Failed to load podcast episodes. Please try again later.');
-      console.error('Error loading podcasts:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+  // Just using the loadPodcasts function already defined above
+  // The previous implementation had code outside of a function context which isn't valid
+  
   }, []);
 
   const onRefresh = useCallback(async () => {
