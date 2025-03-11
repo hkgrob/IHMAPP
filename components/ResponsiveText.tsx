@@ -10,9 +10,15 @@ interface ResponsiveTextProps {
   style?: TextStyle | TextStyle[];
   children: React.ReactNode;
   variant?: 'h1' | 'h2' | 'h3' | 'h4' | 'body' | 'caption';
+  numberOfLines?: number;
 }
 
-export default function ResponsiveText({ style, children, variant = 'body' }: ResponsiveTextProps) {
+export default function ResponsiveText({ 
+  style, 
+  children, 
+  variant = 'body', 
+  numberOfLines 
+}: ResponsiveTextProps) {
   return (
     <ThemedText 
       style={[
@@ -20,6 +26,7 @@ export default function ResponsiveText({ style, children, variant = 'body' }: Re
         styles[variant],
         Array.isArray(style) ? style : style ? [style] : null
       ]}
+      numberOfLines={numberOfLines}
     >
       {children}
     </ThemedText>
@@ -33,33 +40,40 @@ const styles = StyleSheet.create({
       android: { fontFamily: 'Roboto' },
       default: { fontFamily: 'System' }
     }),
+    flexWrap: 'wrap',
   },
   h1: {
     fontSize: 28 * scale,
     fontWeight: 'bold',
     marginBottom: 12,
+    flexWrap: 'wrap',
   },
   h2: {
     fontSize: 24 * scale,
     fontWeight: 'bold',
     marginBottom: 10,
+    flexWrap: 'wrap',
   },
   h3: {
     fontSize: 20 * scale,
     fontWeight: 'bold',
     marginBottom: 8,
+    flexWrap: 'wrap',
   },
   h4: {
     fontSize: 18 * scale,
     fontWeight: 'bold',
     marginBottom: 6,
+    flexWrap: 'wrap',
   },
   body: {
     fontSize: 16 * scale,
     lineHeight: 24 * scale,
+    flexWrap: 'wrap',
   },
   caption: {
     fontSize: 14 * scale,
     color: '#666',
+    flexWrap: 'wrap',
   },
 });

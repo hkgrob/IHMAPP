@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Platform, ScrollView, Pressable, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { StyleSheet, View, Platform, ScrollView, Pressable, TouchableOpacity, TextInput, Alert, Dimensions } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { DECLARATION_CATEGORIES } from '@/constants/DeclarationsData';
@@ -11,6 +11,12 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CustomDeclaration } from '@/types/declarations';
 import { Swipeable } from 'react-native-gesture-handler';
+import Collapsible from '@/components/Collapsible';
+import { MaterialIcons } from '@expo/vector-icons';
+import ResponsiveText from '@/components/ResponsiveText';
+
+const { width } = Dimensions.get('window');
+
 const SwipeableDeclaration = ({ item, onDelete, tintColor }: { item: CustomDeclaration, onDelete: (id: string) => void, tintColor: string }) => {
   const renderRightActions = () => {
     return (
@@ -23,7 +29,7 @@ const SwipeableDeclaration = ({ item, onDelete, tintColor }: { item: CustomDecla
   return (
     <Swipeable renderRightActions={renderRightActions}>
       <View style={styles.declarationItem}>
-        <View style={[styles.bullet, {backgroundColor: tintColor}]} />
+        <View style={[styles.bullet, { backgroundColor: tintColor }]} />
         <ThemedText style={styles.declarationText} numberOfLines={0} ellipsizeMode="tail">{item.text}</ThemedText>
       </View>
     </Swipeable>
@@ -37,6 +43,8 @@ export default function DeclarationsScreen() {
   const [newDeclaration, setNewDeclaration] = useState('');
   const colorScheme = useColorScheme();
   const tintColor = Colors[colorScheme].tint;
+  const [dailyCount, setDailyCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Load custom declarations from AsyncStorage
   useEffect(() => {
@@ -50,9 +58,26 @@ export default function DeclarationsScreen() {
         console.error('Error loading custom declarations:', error);
       }
     };
-
     loadCustomDeclarations();
+    loadCounts();
   }, []);
+
+  const loadCounts = async () => {
+    try {
+      const dailyString = await AsyncStorage.getItem('dailyDeclarationCount');
+      const totalString = await AsyncStorage.getItem('totalDeclarationCount');
+
+      if (dailyString) {
+        setDailyCount(parseInt(dailyString));
+      }
+
+      if (totalString) {
+        setTotalCount(parseInt(totalString));
+      }
+    } catch (error) {
+      console.error('Error loading counts:', error);
+    }
+  };
 
   const toggleCategory = (categoryId: string) => {
     if (Platform.OS === 'ios') {
@@ -87,18 +112,18 @@ export default function DeclarationsScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
 
-      const confirmDelete = Platform.OS === 'web' 
+      const confirmDelete = Platform.OS === 'web'
         ? window.confirm('Are you sure you want to delete this declaration?')
         : await new Promise((resolve) => {
-            Alert.alert(
-              'Delete Declaration',
-              'Are you sure you want to delete this declaration?',
-              [
-                { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
-                { text: 'Delete', onPress: () => resolve(true), style: 'destructive' }
-              ]
-            );
-          });
+          Alert.alert(
+            'Delete Declaration',
+            'Are you sure you want to delete this declaration?',
+            [
+              { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
+              { text: 'Delete', onPress: () => resolve(true), style: 'destructive' }
+            ]
+          );
+        });
 
       if (confirmDelete) {
         const updatedDeclarations = customDeclarations.filter(
@@ -114,6 +139,39 @@ export default function DeclarationsScreen() {
     }
   };
 
+  const incrementCounts = async () => {
+    try {
+      const newDailyCount = dailyCount + 1;
+      const newTotalCount = totalCount + 1;
+
+      await AsyncStorage.setItem('dailyDeclarationCount', newDailyCount.toString());
+      await AsyncStorage.setItem('totalDeclarationCount', newTotalCount.toString());
+
+      setDailyCount(newDailyCount);
+      setTotalCount(newTotalCount);
+    } catch (error) {
+      console.error('Error incrementing counts:', error);
+    }
+  };
+
+  const resetDaily = async () => {
+    try {
+      await AsyncStorage.setItem('dailyDeclarationCount', '0');
+      setDailyCount(0);
+    } catch (error) {
+      console.error('Error resetting daily count:', error);
+    }
+  };
+
+  const resetTotal = async () => {
+    try {
+      await AsyncStorage.setItem('totalDeclarationCount', '0');
+      setTotalCount(0);
+    } catch (error) {
+      console.error('Error resetting total count:', error);
+    }
+  };
+
   return (
     <ThemedView style={styles.container}>
       <ScrollView
@@ -121,25 +179,57 @@ export default function DeclarationsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerSection}>
-          <ThemedText type="title" style={styles.screenTitle}>Declarations</ThemedText>
+          <ResponsiveText variant="h2" style={styles.screenTitle}>Declarations</ResponsiveText>
           <ThemedText style={styles.description}>
             Daily declarations to strengthen your faith and renew your mind.
             Tap on a category to view declarations.
           </ThemedText>
         </View>
 
+        <View style={styles.countersContainer}>
+          <View style={styles.counterBox}>
+            <ResponsiveText variant="caption" style={styles.counterLabel}>Daily</ResponsiveText>
+            <ResponsiveText variant="h1" style={styles.counterValue}>{dailyCount}</ResponsiveText>
+          </View>
+          <View style={styles.counterBox}>
+            <ResponsiveText variant="caption" style={styles.counterLabel}>Total</ResponsiveText>
+            <ResponsiveText variant="h1" style={styles.counterValue}>{totalCount}</ResponsiveText>
+          </View>
+        </View>
+
+        <TouchableOpacity style={styles.incrementButton} onPress={incrementCounts}>
+          <Ionicons name="add-circle-outline" size={24} color="white" />
+          <Text style={styles.incrementButtonText}>Record Declaration</Text>
+        </TouchableOpacity>
+
+        <View style={styles.resetButtons}>
+          <TouchableOpacity style={styles.resetButton} onPress={resetDaily}>
+            <Text style={styles.resetButtonText}>Reset Daily</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.resetButton} onPress={resetTotal}>
+            <Text style={styles.resetButtonText}>Reset Total</Text>
+          </TouchableOpacity>
+        </View>
+
+
+        <View style={styles.tipContainer}>
+          <View style={styles.tipIconContainer}>
+            <Ionicons name="bulb-outline" size={24} color="#FFD700" />
+          </View>
+          <ResponsiveText variant="body" style={styles.tipText}>
+            Consistency is key! Aim to speak declarations aloud daily to build new neural pathways.
+          </ResponsiveText>
+        </View>
+
         <View style={styles.categoriesContainer}>
           {/* Custom Declarations Section */}
-          <View 
+          <View
             style={[
               styles.categoryContainer,
               expandedCategory === 'custom' && styles.activeCategory
             ]}
           >
-            <Pressable
-              onPress={() => toggleCategory('custom')}
-              style={styles.categoryHeader}
-            >
+            <Pressable onPress={() => toggleCategory('custom')} style={styles.categoryHeader}>
               <BlurView
                 intensity={80}
                 tint={colorScheme === 'dark' ? 'dark' : 'light'}
@@ -148,7 +238,7 @@ export default function DeclarationsScreen() {
                 <View style={styles.headerContent}>
                   <ThemedText style={styles.categoryTitle}>Custom Declarations</ThemedText>
                   <View style={styles.headerActions}>
-                    <View 
+                    <View
                       style={[
                         styles.iconBackground,
                         { backgroundColor: tintColor }
@@ -180,7 +270,7 @@ export default function DeclarationsScreen() {
                 {isAddingNew ? (
                   <View style={styles.addNewContainer}>
                     <TextInput
-                      style={[styles.newDeclarationInput, {borderColor: tintColor}]}
+                      style={[styles.newDeclarationInput, { borderColor: tintColor }]}
                       value={newDeclaration}
                       onChangeText={setNewDeclaration}
                       placeholder="Type your declaration..."
@@ -189,27 +279,27 @@ export default function DeclarationsScreen() {
                       autoFocus
                     />
                     <View style={styles.addNewActions}>
-                      <TouchableOpacity 
-                        style={[styles.addNewButton, styles.cancelButton]} 
+                      <TouchableOpacity
+                        style={[styles.addNewButton, styles.cancelButton]}
                         onPress={() => setIsAddingNew(false)}
                       >
                         <ThemedText style={styles.buttonText}>Cancel</ThemedText>
                       </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={[styles.addNewButton, {backgroundColor: tintColor}]} 
+                      <TouchableOpacity
+                        style={[styles.addNewButton, { backgroundColor: tintColor }]}
                         onPress={addCustomDeclaration}
                       >
-                        <ThemedText style={[styles.buttonText, {color: '#FFFFFF'}]}>Save</ThemedText>
+                        <ThemedText style={[styles.buttonText, { color: '#FFFFFF' }]}>Save</ThemedText>
                       </TouchableOpacity>
                     </View>
                   </View>
                 ) : (
-                  <TouchableOpacity 
-                    style={[styles.addButton, {borderColor: tintColor}]} 
+                  <TouchableOpacity
+                    style={[styles.addButton, { borderColor: tintColor }]}
                     onPress={() => setIsAddingNew(true)}
                   >
                     <Ionicons name="add" size={20} color={tintColor} />
-                    <ThemedText style={[styles.addButtonText, {color: tintColor}]}>
+                    <ThemedText style={[styles.addButtonText, { color: tintColor }]}>
                       Add New Declaration
                     </ThemedText>
                   </TouchableOpacity>
@@ -226,53 +316,22 @@ export default function DeclarationsScreen() {
 
           {/* Original Declaration Categories */}
           {DECLARATION_CATEGORIES.map((category) => (
-            <View 
-              key={category.id} 
-              style={[
-                styles.categoryContainer,
-                expandedCategory === category.id && styles.activeCategory
-              ]}
+            <Collapsible
+              key={category.id}
+              title={category.title}
+              subtitle={category.source}
             >
-              <Pressable
-                onPress={() => toggleCategory(category.id)}
-                style={styles.categoryHeader}
-              >
-                <BlurView
-                  intensity={80}
-                  tint={colorScheme === 'dark' ? 'dark' : 'light'}
-                  style={styles.blurContainer}
-                >
-                  <View style={styles.headerContent}>
-                    <ThemedText style={styles.categoryTitle}>{category.title}</ThemedText>
-                    <View style={styles.headerActions}>
-                      <View 
-                        style={[
-                          styles.iconBackground,
-                          { backgroundColor: tintColor }
-                        ]}
-                      >
-                        <Ionicons
-                          name={expandedCategory === category.id ? "chevron-up" : "chevron-down"}
-                          size={20}
-                          color="white"
-                        />
-                      </View>
+              <View style={styles.declarationsList}>
+                {category.declarations.map((declaration, index) => (
+                  <View key={index} style={styles.declarationItem}>
+                    <MaterialIcons name="format-quote" size={20} color="#777" style={styles.quoteIcon} />
+                    <View style={styles.declarationTextContainer}>
+                      <ResponsiveText style={styles.declarationText}>{declaration}</ResponsiveText>
                     </View>
                   </View>
-                </BlurView>
-              </Pressable>
-
-              {expandedCategory === category.id && (
-                <View style={styles.declarationsList}>
-                  {category.declarations.map((declaration, index) => (
-                    <View key={index} style={styles.declarationItem}>
-                      <View style={[styles.bullet, {backgroundColor: tintColor}]} />
-                      <ThemedText style={styles.declarationText}>{declaration}</ThemedText>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </View>
+                ))}
+              </View>
+            </Collapsible>
           ))}
         </View>
 
@@ -287,7 +346,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    padding: 16,
+    paddingBottom: 100,
   },
   headerSection: {
     marginBottom: 20,
@@ -296,12 +356,12 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 10,
-    flexWrap: 'wrap',
+    textAlign: 'center',
   },
   description: {
     fontSize: 16,
     marginBottom: 20,
-    flexWrap: 'wrap',
+    textAlign: 'center',
   },
   categoriesContainer: {
     paddingHorizontal: 16,
@@ -432,11 +492,84 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     marginTop: 16,
   },
-  deleteButton:{
+  deleteButton: {
     backgroundColor: '#FF3B30',
     justifyContent: 'center',
     alignItems: 'center',
     width: 70,
     height: '100%',
-  }
+  },
+  countersContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  counterBox: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    margin: 5,
+    alignItems: 'center',
+  },
+  counterLabel: {
+    marginBottom: 6,
+  },
+  counterValue: {
+    textAlign: 'center',
+  },
+  incrementButton: {
+    backgroundColor: '#0a7ea4',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  incrementButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  resetButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  resetButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 120, 120, 0.1)',
+  },
+  resetButtonText: {
+    color: '#FF3B30',
+    fontWeight: '500',
+  },
+  tipContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    alignItems: 'flex-start',
+  },
+  tipIconContainer: {
+    marginRight: 10,
+    marginTop: 2,
+  },
+  tipText: {
+    flex: 1,
+    flexWrap: 'wrap',
+  },
+  quoteIcon: {
+    marginRight: 6,
+    marginTop: 2,
+  },
+  declarationTextContainer: {
+    flex: 1,
+  },
+
 });
