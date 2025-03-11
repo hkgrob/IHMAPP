@@ -1,10 +1,12 @@
-import { StyleSheet, ScrollView, TouchableOpacity, Image, Linking, Platform } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Image, Linking, Platform, View } from 'react-native';
 import { Link } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
 import { HelloWave } from '@/components/HelloWave';
 import { BlurView } from 'expo-blur';
+import { FontAwesome } from '@expo/vector-icons';
+
 
 export default function HomeScreen() {
   return (
@@ -107,6 +109,33 @@ export default function HomeScreen() {
             <Ionicons name="arrow-forward" size={16} color="#007AFF" />
           </TouchableOpacity>
         </BlurView>
+
+        <View style={styles.socialsContainer}>
+          <ThemedText style={styles.socialsTitle}>Find Us Online</ThemedText>
+          <View style={styles.socialsIconsContainer}>
+            <TouchableOpacity onPress={() => Linking.openURL('https://www.facebook.com/ignitinghope')}>
+              <View style={styles.socialIcon}>
+                <FontAwesome name="facebook" size={24} color="white" />
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => Linking.openURL('https://www.instagram.com/ignitinghope/')}>
+              <View style={styles.socialIcon}>
+                <FontAwesome name="instagram" size={24} color="white" />
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => Linking.openURL('https://www.youtube.com/IgnitingHopeMinistries')}>
+              <View style={styles.socialIcon}>
+                <FontAwesome name="youtube" size={24} color="red" />
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => Linking.openURL('https://x.com/BacklundSteve')}>
+              <View style={styles.socialIcon}>
+                <FontAwesome name="twitter" size={24} color="skyblue" />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
       </ScrollView>
     </ThemedView>
   );
@@ -195,6 +224,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     alignSelf: 'center',
+    opacity: 0.6,
   },
   card: {
     borderRadius: 20,
@@ -239,5 +269,37 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 15,
     marginRight: 6,
+  },
+  socialsContainer: {
+    marginTop: 30,
+    marginBottom: 40,
+    paddingHorizontal: 20,
+    width: '100%',
+    alignItems: 'center',
+  },
+  socialsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  socialsIconsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  socialIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
 });
