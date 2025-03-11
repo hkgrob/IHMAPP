@@ -12,7 +12,11 @@
       height: 100%;
       overflow: hidden;
     }
-    #pdf-viewer {
+    #pdf-container {
+      width: 100%;
+      height: 100%;
+    }
+    #pdf-object {
       width: 100%;
       height: 100%;
       border: none;
@@ -20,18 +24,27 @@
   </style>
 </head>
 <body>
-  <iframe id="pdf-viewer" src=""></iframe>
+  <div id="pdf-container">
+    <object id="pdf-object" type="application/pdf" data="">
+      <p>It appears you don't have a PDF plugin for this browser. 
+      No problem... you can <a id="pdf-link" href="">click here to download the PDF file.</a></p>
+    </object>
+  </div>
+  
   <script>
-    window.onload = function() {
+    document.addEventListener('DOMContentLoaded', function() {
       const urlParams = new URLSearchParams(window.location.search);
-      const pdfName = urlParams.get('pdf');
-      if (pdfName) {
-        document.getElementById('pdf-viewer').src = pdfName;
-        document.title = pdfName.split('/').pop();
+      const pdfPath = urlParams.get('pdf');
+      
+      if (pdfPath) {
+        const decodedPath = decodeURIComponent(pdfPath);
+        document.getElementById('pdf-object').setAttribute('data', decodedPath);
+        document.getElementById('pdf-link').setAttribute('href', decodedPath);
+        document.title = decodedPath.split('/').pop();
       } else {
-        document.body.innerHTML = '<p>No PDF specified.</p>';
+        document.body.innerHTML = '<div style="padding: 20px;"><p>No PDF specified.</p></div>';
       }
-    };
+    });
   </script>
 </body>
 </html>

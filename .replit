@@ -76,3 +76,13 @@ value = "application/pdf"
 path = "/attached_assets/*.pdf"
 name = "Content-Disposition"
 value = "inline"
+
+[[deployment.responseHeaders]]
+path = "/attached_assets/*"
+name = "X-Content-Type-Options"
+value = "nosniff"
+
+[[deployment.responseHeaders]]
+path = "/attached_assets/*"
+name = "Access-Control-Allow-Origin"
+value = "*"
