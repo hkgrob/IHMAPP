@@ -42,14 +42,16 @@ export default function PodcastScreen() {
     loadPodcastEpisodes();
   }, [loadPodcastEpisodes]);
 
-  const openEpisode = async (url: string) => {
+  const [selectedEpisode, setSelectedEpisode] = useState<PodcastEpisode | null>(null);
+  
+  const openEpisode = (episode: PodcastEpisode) => {
     try {
       if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
       
-      // Open in external browser
-      await WebBrowser.openBrowserAsync(url);
+      // Set the selected episode to display in the embedded player
+      setSelectedEpisode(episode);
     } catch (error) {
       console.error('Error opening podcast episode:', error);
     }
@@ -71,7 +73,7 @@ export default function PodcastScreen() {
     <TouchableOpacity 
       style={styles.episodeCard}
       activeOpacity={0.7} 
-      onPress={() => openEpisode(item.audioUrl)}
+      onPress={() => openEpisode(item)}
     >
       <BlurView intensity={80} tint={isDark ? 'dark' : 'light'} style={styles.episodeCardInner}>
         {item.imageUrl ? (
@@ -151,6 +153,47 @@ export default function PodcastScreen() {
             </TouchableOpacity>
           }
         />
+      )}
+      
+      {selectedEpisode && (
+        <BlurView 
+          intensity={90} 
+          tint={isDark ? 'dark' : 'light'} 
+          style={styles.playerContainer}
+        >
+          <View style={styles.playerHeader}>
+            <ThemedText style={styles.playerTitle} numberOfLines={1}>
+              {selectedEpisode.title}
+            </ThemedText>
+            <TouchableOpacity 
+              onPress={() => setSelectedEpisode(null)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color={isDark ? "#fff" : "#333"} />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.audioPlayerWrapper}>
+            {Platform.OS === 'web' ? (
+              <audio 
+                src={selectedEpisode.audioUrl} 
+                controls 
+                style={styles.audioPlayer}
+                autoPlay
+              />
+            ) : (
+              <View style={styles.mobilePlayerFallback}>
+                <TouchableOpacity 
+                  onPress={() => WebBrowser.openBrowserAsync(selectedEpisode.audioUrl)}
+                  style={styles.mobilePlayButton}
+                >
+                  <Ionicons name="play-circle" size={40} color={isDark ? "#fff" : "#333"} />
+                  <ThemedText style={styles.mobilePlayText}>Play in Browser</ThemedText>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </BlurView>
       )}
     </ThemedView>
   );
@@ -242,6 +285,61 @@ const styles = StyleSheet.create({
   },
   visitPodcastText: {
     fontSize: 16,
+    fontWeight: '500',
+    marginRight: 5,
+  },
+  playerContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 15,
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 10,
+  },
+  playerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  playerTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    flex: 1,
+    marginRight: 10,
+  },
+  closeButton: {
+    padding: 5,
+  },
+  audioPlayerWrapper: {
+    width: '100%',
+    minHeight: 50,
+    marginBottom: 10,
+  },
+  audioPlayer: {
+    width: '100%',
+  },
+  mobilePlayerFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 15,
+  },
+  mobilePlayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+  },
+  mobilePlayText: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginLeft: 10,6,
     fontWeight: '500',
     marginRight: 8,
   },
