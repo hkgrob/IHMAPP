@@ -22,11 +22,11 @@ export default function DeclarationsScreen() {
   const handleDownload = async (filename: string) => {
     try {
       if (Platform.OS === 'web') {
-        // Direct approach for web with proper URL encoding
+        // Most direct approach for web - simple absolute path
         const encodedFilename = encodeURIComponent(filename);
-        const fullUrl = `/attached_assets/${encodedFilename}`;
-        console.log('Opening PDF at path:', fullUrl);
-        window.open(fullUrl, '_blank');
+        const pdfUrl = `/attached_assets/${encodedFilename}`;
+        console.log('Opening PDF at path:', pdfUrl);
+        window.open(pdfUrl, '_blank');
       } else {
         // For mobile platforms, use Sharing API
         const localUri = FileSystem.documentDirectory + filename;
