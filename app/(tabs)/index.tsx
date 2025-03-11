@@ -14,12 +14,14 @@ export default function HomeScreen() {
     <ThemedView style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
         <HelloWave />
-        <ThemedText style={styles.title}>
-          Declare Your New Mindset
-        </ThemedText>
-        <ThemedText style={styles.subtitle}>
-          Track your daily declarations
-        </ThemedText>
+        <View style={styles.headerSection}>
+          <ThemedText style={styles.title}>
+            Declare Your New Mindset
+          </ThemedText>
+          <ThemedText style={styles.subtitle}>
+            Track your daily declarations
+          </ThemedText>
+        </View>
 
         <ThemedView style={styles.featureGrid}>
           <Link href="/(tabs)/counter" asChild>
@@ -152,22 +154,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    padding: 24,
-    paddingTop: 20,
+    padding: 20,
+    alignItems: 'center',
+  },
+  headerSection: {
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 24,
   },
   title: {
-    fontSize: 34,
+    fontSize: 28,
     fontWeight: 'bold',
+    marginTop: 16,
     textAlign: 'center',
-    marginVertical: 10,
-    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 17,
+    fontSize: 18,
+    opacity: 0.8,
+    marginTop: 8,
+    marginBottom: 24,
     textAlign: 'center',
-    marginBottom: 30,
-    color: '#8E8E93',
-    fontWeight: '500',
   },
   featureGrid: {
     flexDirection: 'column',
