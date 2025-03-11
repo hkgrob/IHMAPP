@@ -126,12 +126,6 @@ export default function DeclarationsScreen() {
     }
   };
 
-  const deleteCustomDeclaration = async (id: string) => {
-    try {
-      if (Platform.OS === 'ios') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      }
-
       const confirmDelete = Platform.OS === 'web'
         ? window.confirm('Are you sure you want to delete this declaration?')
         : await new Promise((resolve) => {
