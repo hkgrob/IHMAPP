@@ -77,8 +77,8 @@ export default function PodcastScreen() {
     }
   };
 
-  const loadPodcasts = useCallback(async () => {
-    try {
+  // The loadPodcasts function is already defined above, so we removed the duplicate declaration here
+  try {
       const data = await fetchPodcastEpisodes();
       setEpisodes(data);
       setError(null);
