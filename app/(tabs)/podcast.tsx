@@ -1,25 +1,28 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
+import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl, Platform, Dimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemedText } from '@/components/ThemedText';
+import ResponsiveText from '@/components/ResponsiveText';
 import { ThemedView } from '@/components/ThemedView';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { fetchPodcastEpisodes, PodcastEpisode } from '@/services/podcastService';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
-import { Platform } from 'react-native';
+import MobileContainer from '@/components/MobileContainer';
 
 export default function PodcastScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
+  const { width } = Dimensions.get('window');
 
   const [episodes, setEpisodes] = useState<PodcastEpisode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedEpisode, setSelectedEpisode] = useState<PodcastEpisode | null>(null);
 
   const loadPodcastEpisodes = useCallback(async () => {
     try {
@@ -41,8 +44,6 @@ export default function PodcastScreen() {
   useEffect(() => {
     loadPodcastEpisodes();
   }, [loadPodcastEpisodes]);
-
-  const [selectedEpisode, setSelectedEpisode] = useState<PodcastEpisode | null>(null);
 
   const openEpisode = (episode: PodcastEpisode) => {
     try {
@@ -89,21 +90,21 @@ export default function PodcastScreen() {
         )}
 
         <View style={styles.episodeDetails}>
-          <ThemedText style={styles.episodeTitle} numberOfLines={2}>
+          <ResponsiveText variant="h4" style={styles.episodeTitle} numberOfLines={2}>
             {item.title}
-          </ThemedText>
+          </ResponsiveText>
 
-          <ThemedText style={styles.episodeDate}>
+          <ResponsiveText variant="caption" style={styles.episodeDate}>
             {item.publishDate} • {item.duration}
-          </ThemedText>
+          </ResponsiveText>
 
-          <ThemedText style={styles.episodeDescription} numberOfLines={3}>
+          <ResponsiveText style={styles.episodeDescription} numberOfLines={2}>
             {item.description}
-          </ThemedText>
+          </ResponsiveText>
 
           <View style={styles.playButtonContainer}>
             <Ionicons name="play-circle" size={20} color={isDark ? "#fff" : "#333"} />
-            <ThemedText style={styles.playButtonText}>Play Episode</ThemedText>
+            <ResponsiveText style={styles.playButtonText}>Play Episode</ResponsiveText>
           </View>
         </View>
       </BlurView>
@@ -111,86 +112,91 @@ export default function PodcastScreen() {
   );
 
   return (
-    <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+    <MobileContainer scrollable={false} padded={false}>
+      <ThemedView style={styles.container}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
-        {/* Header removed */}
-      </ScrollView>
-
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={isDark ? "#fff" : "#333"} />
-        </View>
-      ) : (
-        <FlatList
-          data={episodes}
-          renderItem={renderPodcastItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          refreshControl={
-            <RefreshControl 
-              refreshing={refreshing} 
-              onRefresh={handleRefresh}
-              tintColor={isDark ? "#fff" : "#333"}
-            />
-          }
-          ListFooterComponent={
-            <TouchableOpacity 
-              style={styles.visitPodcastButton}
-              activeOpacity={0.7}
-              onPress={visitPodcastSite}
-            >
-              <ThemedText style={styles.visitPodcastText}>
-                Visit Full Podcast Site
-              </ThemedText>
-              <Ionicons name="open-outline" size={18} color={isDark ? "#fff" : "#000"} />
-            </TouchableOpacity>
-          }
-        />
-      )}
-
-      {selectedEpisode && (
-        <BlurView 
-          intensity={90} 
-          tint={isDark ? 'dark' : 'light'} 
-          style={styles.playerContainer}
-        >
-          <View style={styles.playerHeader}>
-            <ThemedText style={styles.playerTitle} numberOfLines={1}>
-              {selectedEpisode.title}
-            </ThemedText>
-            <TouchableOpacity 
-              onPress={() => setSelectedEpisode(null)}
-              style={styles.closeButton}
-            >
-              <Ionicons name="close" size={24} color={isDark ? "#fff" : "#333"} />
-            </TouchableOpacity>
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={isDark ? "#fff" : "#333"} />
           </View>
-
-          <View style={styles.audioPlayerWrapper}>
-            {Platform.OS === 'web' ? (
-              <audio 
-                src={selectedEpisode.audioUrl} 
-                controls 
-                style={styles.audioPlayer}
-                autoPlay
+        ) : (
+          <FlatList
+            data={episodes}
+            renderItem={renderPodcastItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            refreshControl={
+              <RefreshControl 
+                refreshing={refreshing} 
+                onRefresh={handleRefresh}
+                tintColor={isDark ? "#fff" : "#333"}
               />
-            ) : (
-              <View style={styles.mobilePlayerFallback}>
-                <TouchableOpacity 
-                  onPress={() => WebBrowser.openBrowserAsync(selectedEpisode.audioUrl)}
-                  style={styles.mobilePlayButton}
-                >
-                  <Ionicons name="play-circle" size={40} color={isDark ? "#fff" : "#333"} />
-                  <ThemedText style={styles.mobilePlayText}>Play in Browser</ThemedText>
-                </TouchableOpacity>
+            }
+            ListHeaderComponent={
+              <View style={styles.headerContainer}>
+                <ResponsiveText variant="h2" style={styles.headerTitle}>
+                  Podcast
+                </ResponsiveText>
               </View>
-            )}
-          </View>
-        </BlurView>
-      )}
-    </ThemedView>
+            }
+            ListFooterComponent={
+              <TouchableOpacity 
+                style={styles.visitPodcastButton}
+                activeOpacity={0.7}
+                onPress={visitPodcastSite}
+              >
+                <ResponsiveText style={styles.visitPodcastText}>
+                  Visit Full Podcast Site
+                </ResponsiveText>
+                <Ionicons name="open-outline" size={18} color={isDark ? "#fff" : "#000"} />
+              </TouchableOpacity>
+            }
+          />
+        )}
+
+        {selectedEpisode && (
+          <BlurView 
+            intensity={90} 
+            tint={isDark ? 'dark' : 'light'} 
+            style={styles.playerContainer}
+          >
+            <View style={styles.playerHeader}>
+              <ResponsiveText style={styles.playerTitle} numberOfLines={1}>
+                {selectedEpisode.title}
+              </ResponsiveText>
+              <TouchableOpacity 
+                onPress={() => setSelectedEpisode(null)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color={isDark ? "#fff" : "#333"} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.audioPlayerWrapper}>
+              {Platform.OS === 'web' ? (
+                <audio 
+                  src={selectedEpisode.audioUrl} 
+                  controls 
+                  style={styles.audioPlayer}
+                  autoPlay
+                />
+              ) : (
+                <View style={styles.mobilePlayerFallback}>
+                  <TouchableOpacity 
+                    onPress={() => WebBrowser.openBrowserAsync(selectedEpisode.audioUrl)}
+                    style={styles.mobilePlayButton}
+                  >
+                    <Ionicons name="play-circle" size={40} color={isDark ? "#fff" : "#333"} />
+                    <ResponsiveText style={styles.mobilePlayText}>Play in Browser</ResponsiveText>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </BlurView>
+        )}
+      </ThemedView>
+    </MobileContainer>
   );
 }
 
@@ -198,11 +204,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollView: {
-    flex: 1,
+  headerContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 5,
   },
-  contentContainer: {
-    padding: 15,
+  headerTitle: {
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 8,
   },
   loadingContainer: {
     flex: 1,
@@ -210,24 +220,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listContent: {
-    padding: 15,
-    paddingTop: 5,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
   episodeCard: {
-    marginBottom: 15,
+    marginVertical: 8,
     borderRadius: 12,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   episodeCardInner: {
     flexDirection: 'row',
-    padding: 15,
+    padding: 12,
     alignItems: 'center',
   },
   episodeImage: {
-    width: 80,
-    height: 80,
+    width: 70,
+    height: 70,
     borderRadius: 8,
-    marginRight: 15,
+    marginRight: 12,
   },
   placeholderImage: {
     backgroundColor: '#5856D6',
@@ -236,29 +251,24 @@ const styles = StyleSheet.create({
   },
   episodeDetails: {
     flex: 1,
+    justifyContent: 'center',
   },
   episodeTitle: {
-    fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
   },
   episodeDate: {
-    fontSize: 12,
-    opacity: 0.6,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   episodeDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-    opacity: 0.8,
-    marginBottom: 8,
+    lineHeight: 18,
+    marginBottom: 6,
   },
   playButtonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   playButtonText: {
-    fontSize: 14,
     fontWeight: '500',
     marginLeft: 5,
   },
@@ -280,34 +290,30 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 15,
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
+    padding: 16,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 10,
+    shadowRadius: 4,
   },
   playerHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
   playerTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
     flex: 1,
+    fontWeight: 'bold',
     marginRight: 10,
   },
   closeButton: {
-    padding: 5,
+    padding: 4,
   },
   audioPlayerWrapper: {
     width: '100%',
-    minHeight: 50,
-    marginBottom: 10,
   },
   audioPlayer: {
     width: '100%',
@@ -315,18 +321,18 @@ const styles = StyleSheet.create({
   mobilePlayerFallback: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 15,
+    padding: 10,
   },
   mobilePlayButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(200, 200, 200, 0.2)',
     padding: 10,
+    borderRadius: 8,
   },
   mobilePlayText: {
-    fontSize: 16,
+    marginLeft: 8,
     fontWeight: '500',
-    marginLeft: 10,
-    marginRight: 8,
   },
 });
