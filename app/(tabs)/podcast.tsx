@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl, Platform, Dimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { BlurView } from 'expo-blur';
@@ -17,7 +17,11 @@ export default function PodcastScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
-  const { width } = Dimensions.get('window');
+  const { width, height } = Dimensions.get('window');
+  
+  // Add responsiveness checks
+  const isSmallDevice = width < 360;
+  const isLandscape = width > height;
 
   const [episodes, setEpisodes] = useState<PodcastEpisode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,7 +94,7 @@ export default function PodcastScreen() {
         )}
 
         <View style={styles.episodeDetails}>
-          <ResponsiveText variant="h4" style={styles.episodeTitle} numberOfLines={2}>
+          <ResponsiveText variant="h5" style={styles.episodeTitle} numberOfLines={2}>
             {item.title}
           </ResponsiveText>
 
@@ -98,13 +102,13 @@ export default function PodcastScreen() {
             {item.publishDate} • {item.duration}
           </ResponsiveText>
 
-          <ResponsiveText style={styles.episodeDescription} numberOfLines={2}>
+          <ResponsiveText variant="caption" style={styles.episodeDescription} numberOfLines={2}>
             {item.description}
           </ResponsiveText>
 
           <View style={styles.playButtonContainer}>
-            <Ionicons name="play-circle" size={20} color={isDark ? "#fff" : "#333"} />
-            <ResponsiveText style={styles.playButtonText}>Play Episode</ResponsiveText>
+            <Ionicons name="play-circle" size={18} color={isDark ? "#fff" : "#333"} />
+            <ResponsiveText variant="caption" style={styles.playButtonText}>Play Episode</ResponsiveText>
           </View>
         </View>
       </BlurView>
@@ -125,7 +129,14 @@ export default function PodcastScreen() {
             data={episodes}
             renderItem={renderPodcastItem}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[
+              styles.listContent,
+              { paddingBottom: insets.bottom + 20 }
+            ]}
+            showsVerticalScrollIndicator={false}
+            initialNumToRender={4}
+            maxToRenderPerBatch={6}
+            windowSize={5}
             refreshControl={
               <RefreshControl 
                 refreshing={refreshing} 
@@ -135,7 +146,10 @@ export default function PodcastScreen() {
             }
             ListHeaderComponent={
               <View style={styles.headerContainer}>
-                <ResponsiveText variant="h2" style={styles.headerTitle}>
+                <ResponsiveText 
+                  variant={isSmallDevice ? "h3" : "h2"} 
+                  style={styles.headerTitle}
+                >
                   Podcast
                 </ResponsiveText>
               </View>
@@ -146,10 +160,16 @@ export default function PodcastScreen() {
                 activeOpacity={0.7}
                 onPress={visitPodcastSite}
               >
-                <ResponsiveText style={styles.visitPodcastText}>
+                <ResponsiveText 
+                  style={[styles.visitPodcastText, isSmallDevice && { fontSize: 14 }]}
+                >
                   Visit Full Podcast Site
                 </ResponsiveText>
-                <Ionicons name="open-outline" size={18} color={isDark ? "#fff" : "#000"} />
+                <Ionicons 
+                  name="open-outline" 
+                  size={isSmallDevice ? 16 : 18} 
+                  color={isDark ? "#fff" : "#000"} 
+                />
               </TouchableOpacity>
             }
           />
@@ -220,11 +240,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: width < 360 ? 8 : 16,
     paddingBottom: 20,
   },
   episodeCard: {
-    marginVertical: 8,
+    marginVertical: 6,
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -235,14 +255,14 @@ const styles = StyleSheet.create({
   },
   episodeCardInner: {
     flexDirection: 'row',
-    padding: 12,
+    padding: width < 360 ? 8 : 12,
     alignItems: 'center',
   },
   episodeImage: {
-    width: 70,
-    height: 70,
+    width: width < 360 ? 60 : 70,
+    height: width < 360 ? 60 : 70,
     borderRadius: 8,
-    marginRight: 12,
+    marginRight: width < 360 ? 8 : 12,
   },
   placeholderImage: {
     backgroundColor: '#5856D6',
@@ -255,14 +275,17 @@ const styles = StyleSheet.create({
   },
   episodeTitle: {
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 2,
+    fontSize: width < 360 ? 14 : 16,
   },
   episodeDate: {
-    marginBottom: 4,
+    marginBottom: 2,
+    fontSize: width < 360 ? 11 : 12,
   },
   episodeDescription: {
-    lineHeight: 18,
-    marginBottom: 6,
+    lineHeight: width < 360 ? 16 : 18,
+    marginBottom: 4,
+    fontSize: width < 360 ? 11 : 12,
   },
   playButtonContainer: {
     flexDirection: 'row',
@@ -271,6 +294,7 @@ const styles = StyleSheet.create({
   playButtonText: {
     fontWeight: '500',
     marginLeft: 5,
+    fontSize: width < 360 ? 12 : 14,
   },
   visitPodcastButton: {
     flexDirection: 'row',
