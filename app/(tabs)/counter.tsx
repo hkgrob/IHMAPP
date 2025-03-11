@@ -6,7 +6,6 @@ import { ThemedView } from '@/components/ThemedView';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Header } from '@/components/Header';
-import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 import { Stack } from 'expo-router';
 import { ScrollView } from 'react-native';
@@ -66,24 +65,7 @@ export default function CounterScreen() {
     try {
       console.log('Increment button pressed');
 
-      // Play click sound
-      try {
-        const soundAsset = require('../../assets/sounds/click.mp3');
-        const { sound } = await Audio.Sound.createAsync(
-          soundAsset,
-          { shouldPlay: true }
-        );
-        // Unload sound after playing
-        sound.setOnPlaybackStatusUpdate(status => {
-          if (status.didJustFinish) {
-            sound.unloadAsync();
-          }
-        });
-      } catch (soundError) {
-        console.error('Error playing sound:', soundError);
-      }
-
-      // Add haptic feedback on iOS
+      // Add haptic feedback on iOS (keeping this functionality)
       if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
