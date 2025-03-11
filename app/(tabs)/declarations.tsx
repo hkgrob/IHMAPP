@@ -189,17 +189,32 @@ export default function DeclarationsScreen() {
         <View style={styles.countersContainer}>
           <View style={styles.counterBox}>
             <ResponsiveText variant="caption" style={styles.counterLabel}>Daily</ResponsiveText>
-            <ResponsiveText variant="h1" style={styles.counterValue}>{dailyCount}</ResponsiveText>
+            <ResponsiveText variant="h1" style={styles.counterValue}>{dailyCount || 0}</ResponsiveText>
           </View>
           <View style={styles.counterBox}>
             <ResponsiveText variant="caption" style={styles.counterLabel}>Total</ResponsiveText>
-            <ResponsiveText variant="h1" style={styles.counterValue}>{totalCount}</ResponsiveText>
+            <ResponsiveText variant="h1" style={styles.counterValue}>{totalCount || 0}</ResponsiveText>
           </View>
         </View>
 
-        <TouchableOpacity style={styles.incrementButton} onPress={incrementCounts}>
+        <TouchableOpacity style={styles.incrementButton} onPress={() => {
+          // Make sure we have values before incrementing
+          const newDailyCount = (dailyCount || 0) + 1;
+          const newTotalCount = (totalCount || 0) + 1;
+          setDailyCount(newDailyCount);
+          setTotalCount(newTotalCount);
+          // Save to AsyncStorage if needed
+          if (Platform.OS !== 'web') {
+            AsyncStorage.setItem('dailyCount', newDailyCount.toString());
+            AsyncStorage.setItem('totalCount', newTotalCount.toString());
+          }
+          // Provide haptic feedback if available
+          if (Haptics && Platform.OS !== 'web') {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          }
+        }}>
           <Ionicons name="add-circle-outline" size={24} color="white" />
-          <Text style={styles.incrementButtonText}>Record Declaration</Text>
+          <ThemedText style={styles.incrementButtonText}>Record Declaration</ThemedText>
         </TouchableOpacity>
 
         <View style={styles.resetButtons}>
@@ -322,11 +337,11 @@ export default function DeclarationsScreen() {
               subtitle={category.source}
             >
               <View style={styles.declarationsList}>
-                {category.declarations.map((declaration, index) => (
+                {category.declarations && category.declarations.map((declaration, index) => (
                   <View key={index} style={styles.declarationItem}>
                     <MaterialIcons name="format-quote" size={20} color="#777" style={styles.quoteIcon} />
                     <View style={styles.declarationTextContainer}>
-                      <ResponsiveText style={styles.declarationText}>{declaration}</ResponsiveText>
+                      <ResponsiveText style={styles.declarationText}>{declaration || ''}</ResponsiveText>
                     </View>
                   </View>
                 ))}
@@ -348,6 +363,42 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingBottom: 100,
+  },
+  incrementButton: {
+    backgroundColor: Colors.light.tint,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 24,
+  },
+  incrementButtonText: {
+    color: 'white',
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  countersContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+  },
+  counterBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 15,
+    borderRadius: 10,
+    minWidth: 120,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  counterLabel: {
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  counterValue: {
+    fontSize: 32,
+    fontWeight: 'bold',
   },
   headerSection: {
     marginBottom: 20,
