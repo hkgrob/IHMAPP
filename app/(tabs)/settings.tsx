@@ -14,8 +14,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const SettingsScreen = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState(new Date());
-  const [reminderTime2, setReminderTime2] = useState(new Date());
-  const [secondReminderEnabled, setSecondReminderEnabled] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [hapticEnabled, setHapticEnabled] = useState(true);
   const [sound, setSound] = useState(null);
@@ -134,23 +132,34 @@ const SettingsScreen = () => {
     if (Platform.OS === 'web' || !notificationsEnabled) return;
 
     try {
-      console.log('Canceling all scheduled notifications');
       await Notifications.cancelAllScheduledNotificationsAsync();
-
-      console.log('Scheduling first reminder at:', reminderTime.toLocaleTimeString());
-      await scheduleNotification(reminderTime, 'first-reminder');
-
-      if (secondReminderEnabled) {
-        console.log('Scheduling second reminder at:', reminderTime2.toLocaleTimeString());
-        await scheduleNotification(reminderTime2, 'second-reminder');
+      
+      const trigger = new Date(reminderTime);
+      const now = new Date();
+      
+      // If the time has already passed today, schedule for tomorrow
+      if (trigger < now) {
+        trigger.setDate(trigger.getDate() + 1);
       }
+      
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Daily Declaration Reminder",
+          body: "Time for your daily declaration!",
+          sound: soundEnabled ? true : false,
+        },
+        trigger: {
+          hour: trigger.getHours(),
+          minute: trigger.getMinutes(),
+          repeats: true,
+        },
+      });
 
-      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-      console.log('Scheduled notifications:', scheduled);
+      console.log('Scheduled daily reminder for:', trigger.toLocaleTimeString());
     } catch (error) {
-      console.error('Error scheduling notifications:', error);
+      console.error('Error scheduling notification:', error);
     }
-  }, [notificationsEnabled, reminderTime, reminderTime2, secondReminderEnabled, soundEnabled]);
+  }, [notificationsEnabled, reminderTime, soundEnabled]);
 
   const scheduleNotification = async (time, identifier) => {
     try {
@@ -345,7 +354,7 @@ const SettingsScreen = () => {
               </ThemedView>
               <TouchableOpacity onPress={() => setShowTimePicker(true)}>
                 <ThemedView style={styles.settingRow}>
-                  <ThemedText style={styles.settingText}>REMINDER TIME 1</ThemedText>
+                  <ThemedText style={styles.settingText}>DAILY REMINDER TIME</ThemedText>
                   <ThemedText style={styles.timeText}>{formatTime(reminderTime)}</ThemedText>
                 </ThemedView>
               </TouchableOpacity>
@@ -362,40 +371,6 @@ const SettingsScreen = () => {
                   )}
                 </View>
               )}
-              <TouchableOpacity onPress={() => setShowTimePicker2(true)}>
-                <ThemedView style={styles.settingRow}>
-                  <ThemedText style={styles.settingText}>REMINDER TIME 2</ThemedText>
-                  <ThemedText style={styles.timeText}>{formatTime(reminderTime2)}</ThemedText>
-                </ThemedView>
-              </TouchableOpacity>
-              {showTimePicker2 && (
-                <View>
-                  <DateTimePicker
-                    value={reminderTime2}
-                    mode="time"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={handleTimeChange2}
-                  />
-                  {Platform.OS === 'ios' && (
-                    <Button title="Done" onPress={() => setShowTimePicker2(false)} />
-                  )}
-                </View>
-              )}
-              <ThemedView style={styles.settingRow}>
-                <ThemedText style={styles.settingText}>ENABLE REMINDER 2</ThemedText>
-                <Switch
-                  value={secondReminderEnabled}
-                  onValueChange={(value) => {
-                    setSecondReminderEnabled(value);
-                    saveSettings('secondReminderEnabled', value);
-                    if (notificationsEnabled && value) {
-                      scheduleNotifications();
-                    }
-                  }}
-                  trackColor={{ false: '#767577', true: '#0a7ea4' }}
-                  thumbColor="#f4f3f4"
-                />
-              </ThemedView>
             </>
           ))}
           {renderSettingSection("FEEDBACK", "options-outline", (
