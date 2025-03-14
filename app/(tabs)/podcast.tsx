@@ -218,7 +218,7 @@ export default function PodcastScreen() {
               <ThemedText style={styles.podcastDuration}>
                 • {item.duration}
               </ThemedText>
-            </View>
+            </View>w>
 
             <ThemedText
               numberOfLines={2}
