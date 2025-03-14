@@ -1,25 +1,20 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl, Platform, Dimensions } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, FlatList, TouchableOpacity, View, ActivityIndicator, RefreshControl, Platform, Dimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
 import { fetchPodcastEpisodes } from '../../services/podcastService';
-import { Audio } from 'expo-av';
+import WebView from 'react-native-webview';
 
 export default function PodcastScreen() {
   const [podcasts, setPodcasts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-
-  // Audio state
-  const [sound, setSound] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [currentEpisodeId, setCurrentEpisodeId] = useState(null);
-  const [currentEpisodeTitle, setCurrentEpisodeTitle] = useState('');
-  const [loadingAudio, setLoadingAudio] = useState(false);
+  const [currentEpisodeEmbed, setCurrentEpisodeEmbed] = useState('');
 
   // Get screen width for responsive layout
   const screenWidth = Dimensions.get('window').width;
@@ -42,94 +37,27 @@ export default function PodcastScreen() {
     fetchPodcasts();
   }, [fetchPodcasts]);
 
-  // Cleanup sound when component unmounts
-  useEffect(() => {
-    return () => {
-      if (sound) {
-        console.log('Cleaning up sound');
-        sound.unloadAsync();
-      }
-    };
-  }, [sound]);
-
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchPodcasts();
   }, [fetchPodcasts]);
 
-  const handlePlayEpisode = async (url, episodeId, episodeTitle = '') => {
-    try {
-      setLoadingAudio(true);
-
-      // Same episode - toggle play/pause
-      if (episodeId === currentEpisodeId && sound) {
-        console.log('Toggling play state for current episode');
-
-        const status = await sound.getStatusAsync();
-        if (status.isLoaded) {
-          if (isPlaying) {
-            await sound.pauseAsync();
-            setIsPlaying(false);
-          } else {
-            await sound.playAsync();
-            setIsPlaying(true);
-          }
-        }
-        setLoadingAudio(false);
-        return;
-      }
-
-      // Unload previous sound
-      if (sound) {
-        console.log('Unloading previous sound');
-        await sound.unloadAsync();
-      }
-
-      console.log('Loading new sound:', url);
-
-      // Create and load new sound
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: url },
-        { shouldPlay: true },
-        (status) => {
-          if (status.didJustFinish) {
-            setIsPlaying(false);
-          }
-        }
-      );
-
-      setSound(newSound);
-      setIsPlaying(true);
+  const handlePlayEpisode = (episodeId, embedCode) => {
+    if (episodeId === currentEpisodeId) {
+      // Toggle off if the same episode
+      setCurrentEpisodeId(null);
+      setCurrentEpisodeEmbed('');
+    } else {
       setCurrentEpisodeId(episodeId);
-      setCurrentEpisodeTitle(episodeTitle);
-      setLoadingAudio(false);
-    } catch (err) {
-      console.error('Error playing podcast:', err);
-      alert(`Error playing podcast: ${err && err.message ? err.message : 'Could not play audio. Please try again.'}`);
-      setIsPlaying(false);
-      setCurrentEpisodeId(null);
-      setCurrentEpisodeTitle('');
-      if (sound) {
-        await sound.unloadAsync();
-        setSound(null);
-      }
-      setLoadingAudio(false);
-    }
-  };
-
-  const stopPlayback = async () => {
-    if (sound) {
-      await sound.unloadAsync();
-      setSound(null);
-      setIsPlaying(false);
-      setCurrentEpisodeId(null);
-      setCurrentEpisodeTitle('');
+      setCurrentEpisodeEmbed(embedCode);
     }
   };
 
   const renderPodcastItem = ({ item }) => {
-    const isCurrentlyPlaying = currentEpisodeId === item.id && isPlaying;
-    const isLoading = loadingAudio && currentEpisodeId === item.id;
+    const isCurrentlyPlaying = currentEpisodeId === item.id;
+
+    // Create embed code using the item's URL
+    const embedUrl = `https://www.podbean.com/player-v2/?i=${getPodbeanId(item.audioUrl)}&from=pb6admin&share=0&download=0&rtl=0&fonts=Arial&skin=60a0c8&font-color=auto&logo_link=podcast_page&btn-skin=60a0c8`;
 
     return (
       <View style={styles.podcastItem}>
@@ -159,30 +87,65 @@ export default function PodcastScreen() {
 
           <TouchableOpacity
             style={styles.playButton}
-            onPress={() => handlePlayEpisode(item.audioUrl, item.id, item.title)}
-            disabled={isLoading}
+            onPress={() => handlePlayEpisode(item.id, embedUrl)}
           >
-            {isLoading ? (
-              <>
-                <ActivityIndicator size="small" color="#0a7ea4" />
-                <ThemedText style={styles.playButtonText}>Loading...</ThemedText>
-              </>
-            ) : (
-              <>
-                <Ionicons
-                  name={isCurrentlyPlaying ? "pause-circle" : "play-circle"}
-                  size={22}
-                  color="#0a7ea4"
-                />
-                <ThemedText style={styles.playButtonText}>
-                  {isCurrentlyPlaying ? 'Pause Episode' : 'Play Episode'}
-                </ThemedText>
-              </>
-            )}
+            <Ionicons
+              name={isCurrentlyPlaying ? "pause-circle" : "play-circle"}
+              size={22}
+              color="#0a7ea4"
+            />
+            <ThemedText style={styles.playButtonText}>
+              {isCurrentlyPlaying ? 'Close Player' : 'Play Episode'}
+            </ThemedText>
           </TouchableOpacity>
+
+          {isCurrentlyPlaying && Platform.OS === 'web' && (
+            <View style={styles.embedContainer}>
+              <iframe 
+                title={item.title}
+                src={embedUrl}
+                width="100%" 
+                height="150" 
+                frameBorder="0" 
+                scrolling="no"
+                style={{
+                  border: 'none',
+                  minWidth: 'min(100%, 430px)',
+                  height: '150px'
+                }}
+                loading="lazy"
+              />
+            </View>
+          )}
+
+          {isCurrentlyPlaying && Platform.OS !== 'web' && (
+            <View style={styles.embedContainer}>
+              <WebView
+                source={{ uri: embedUrl }}
+                style={{ height: 150, width: '100%' }}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                scrollEnabled={false}
+              />
+            </View>
+          )}
         </View>
       </View>
     );
+  };
+
+  // Helper function to extract Podbean ID from URL
+  const getPodbeanId = (url) => {
+    // Extract the ID from something like "https://mcdn.podbean.com/mf/web/j2j8ta69uhqubdme/The-Road-to-Lacking-Nothing-Part-2.mp3"
+    // Format will be something like "qzn8t-184238d-pb"
+    // For now, let's use a fallback ID when we can't parse it
+    try {
+      const filename = url.split('/').pop();
+      const id = filename.split('.')[0].substring(0, 12);
+      return `${id.substring(0, 5)}-${id.substring(5, 12)}-pb`;
+    } catch (err) {
+      return "qzn8t-184238d-pb"; // Fallback ID
+    }
   };
 
   if (loading && !refreshing) {
@@ -217,10 +180,7 @@ export default function PodcastScreen() {
         data={podcasts}
         renderItem={renderPodcastItem}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={[
-          styles.listContent,
-          currentEpisodeId ? { paddingBottom: 100 } : {} // Add padding when player is visible
-        ]}
+        contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -234,43 +194,6 @@ export default function PodcastScreen() {
           </View>
         }
       />
-
-      {currentEpisodeId && (
-        <View style={styles.audioPlayer}>
-          <View style={styles.playerContent}>
-            <View style={styles.playerInfo}>
-              <ThemedText style={styles.episodeTitle} numberOfLines={1}>
-                {currentEpisodeTitle}
-              </ThemedText>
-            </View>
-
-            <View style={styles.playerControls}>
-              <TouchableOpacity 
-                onPress={() => {
-                  if (sound && isPlaying) {
-                    sound.pauseAsync();
-                    setIsPlaying(false);
-                  } else if (sound) {
-                    sound.playAsync();
-                    setIsPlaying(true);
-                  }
-                }}
-                style={styles.mainPlayButton}
-              >
-                <Ionicons 
-                  name={isPlaying ? "pause-circle" : "play-circle"} 
-                  size={40} 
-                  color="#0a7ea4" 
-                />
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={stopPlayback}>
-                <Ionicons name="close-circle" size={28} color="#0a7ea4" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
     </ThemedView>
   );
 }
@@ -401,39 +324,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.7,
   },
-  audioPlayer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#fff',
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-  },
-  playerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  playerInfo: {
-    flex: 1,
-    marginRight: 10,
-  },
-  episodeTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  playerControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  mainPlayButton: {
-    marginRight: 15,
-  },
+  embedContainer: {
+    width: '100%',
+    height: 150,
+    marginTop: 10,
+    marginBottom: 10,
+  }
 });
