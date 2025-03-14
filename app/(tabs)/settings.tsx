@@ -41,11 +41,15 @@ export default function SettingsScreen() {
   }, []);
 
   useEffect(() => {
-    if (notificationsEnabled && Platform.OS !== 'web') {
-      scheduleNotification();
-    } else {
-      Notifications.cancelAllScheduledNotificationsAsync();
-    }
+    const updateNotifications = async () => {
+      if (notificationsEnabled && Platform.OS !== 'web') {
+        const { status } = await Notifications.getPermissionsAsync();
+        if (status === 'granted') {
+          await scheduleNotification();
+        }
+      }
+    };
+    updateNotifications();
   }, [notificationsEnabled, reminderTime, reminderTime2, secondReminderEnabled]);
 
   const loadSettings = async () => {
@@ -192,22 +196,26 @@ export default function SettingsScreen() {
 
   const toggleNotifications = async (value) => {
     try {
+      if (value) {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert(
+              "Notification Permission",
+              "Please enable notifications for this app in your device settings to receive reminders.",
+              [{ text: "OK" }]
+            );
+            return;
+          }
+        }
+      }
+
       setNotificationsEnabled(value);
       await saveSettings('notificationsEnabled', value);
 
-      if (value) {
-        const status = await registerForPushNotificationsAsync();
-        if (status !== 'granted') {
-          Alert.alert(
-            "Notification Permission",
-            "Please enable notifications for this app in your device settings to receive reminders.",
-            [{ text: "OK" }]
-          );
-          setNotificationsEnabled(false);
-          await saveSettings('notificationsEnabled', false);
-        } 
-        // We'll let the useEffect handle scheduling instead of doing it here
-      } else {
+      if (!value) {
         await Notifications.cancelAllScheduledNotificationsAsync();
       }
     } catch (error) {
