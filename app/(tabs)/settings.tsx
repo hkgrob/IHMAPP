@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, ScrollView, Switch, TouchableOpacity, Alert, Linking, Platform, FlatList, View, Modal, Dimensions } from 'react-native';
+import { StyleSheet, ScrollView, Switch, TouchableOpacity, Alert, Linking, Platform, View, Modal, Dimensions } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
@@ -191,9 +191,28 @@ export default function SettingsScreen() {
   };
 
   const toggleNotifications = async (value) => {
-    setNotificationsEnabled(value);
-    await saveSettings('notificationsEnabled', value);
-    if (value) await registerForPushNotificationsAsync();
+    try {
+      setNotificationsEnabled(value);
+      await saveSettings('notificationsEnabled', value);
+
+      if (value) {
+        const status = await registerForPushNotificationsAsync();
+        if (status !== 'granted') {
+          Alert.alert(
+            "Notification Permission",
+            "Please enable notifications for this app in your device settings to receive reminders.",
+            [{ text: "OK" }]
+          );
+          setNotificationsEnabled(false);
+          await saveSettings('notificationsEnabled', false);
+        } 
+        // We'll let the useEffect handle scheduling instead of doing it here
+      } else {
+        await Notifications.cancelAllScheduledNotificationsAsync();
+      }
+    } catch (error) {
+      console.error('Error toggling notifications:', error);
+    }
   };
 
   const toggleSound = async (value) => {
@@ -293,10 +312,10 @@ export default function SettingsScreen() {
     </BlurView>
   );
 
-  const ScrollableTimePicker = ({ isVisible, onConfirm, onCancel, initialTime }) => {
-    const selectedHourRef = useRef(initialTime ? parseInt(initialTime.split(':')[0]) : 8);
-    const selectedMinuteRef = useRef(initialTime ? parseInt(initialTime.split(':')[1].split(' ')[0]) : 0);
-    const selectedPeriodRef = useRef(initialTime ? initialTime.split(' ')[1] : 'AM');
+  const SimpleTimePicker = ({ isVisible, onConfirm, onCancel, initialTime }) => {
+    const [selectedHour, setSelectedHour] = useState(initialTime ? parseInt(initialTime.split(':')[0]) : 8);
+    const [selectedMinute, setSelectedMinute] = useState(initialTime ? parseInt(initialTime.split(':')[1].split(' ')[0]) : 0);
+    const [selectedPeriod, setSelectedPeriod] = useState(initialTime ? initialTime.split(' ')[1] : 'AM');
 
     const hours = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
     const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
@@ -304,38 +323,14 @@ export default function SettingsScreen() {
 
     const handleConfirm = () => {
       const date = new Date();
-      let hours24 = selectedHourRef.current;
-      if (selectedPeriodRef.current === 'PM' && selectedHourRef.current < 12) hours24 += 12;
-      if (selectedPeriodRef.current === 'AM' && selectedHourRef.current === 12) hours24 = 0;
+      let hours24 = selectedHour;
+      if (selectedPeriod === 'PM' && selectedHour < 12) hours24 += 12;
+      if (selectedPeriod === 'AM' && selectedHour === 12) hours24 = 0;
       date.setHours(hours24);
-      date.setMinutes(parseInt(selectedMinuteRef.current));
+      date.setMinutes(parseInt(selectedMinute));
       date.setSeconds(0);
       onConfirm(date);
     };
-
-    const renderItem = (list, selectedValue, onSelect) => ({ item }) => (
-      <TouchableOpacity
-        style={[styles.pickerItem, parseInt(item) === selectedValue && styles.selectedItem]}
-        onPress={() => onSelect(parseInt(item))}
-      >
-        <ThemedText style={parseInt(item) === selectedValue && styles.selectedText}>
-          {item}
-        </ThemedText>
-      </TouchableOpacity>
-    );
-
-
-    const renderPeriodItem = ({ item }) => (
-      <TouchableOpacity
-        style={[styles.pickerItem, item === selectedPeriodRef.current && styles.selectedItem]}
-        onPress={() => selectedPeriodRef.current = item}
-      >
-        <ThemedText style={item === selectedPeriodRef.current && styles.selectedText}>
-          {item}
-        </ThemedText>
-      </TouchableOpacity>
-    );
-
 
     if (!isVisible) return null;
 
@@ -345,30 +340,54 @@ export default function SettingsScreen() {
           <BlurView intensity={90} tint="light" style={styles.pickerContainer}>
             <ThemedText style={styles.pickerTitle}>Select Time</ThemedText>
             <View style={styles.pickerRowContainer}>
-              <FlatList
-                data={hours}
-                renderItem={renderItem(hours, selectedHourRef.current, (val) => selectedHourRef.current = val)}
-                keyExtractor={item => item}
-                style={styles.pickerColumn}
-                initialScrollIndex={selectedHourRef.current -1}
-                getItemLayout={(data, index) => ({ length: 44, offset: 44 * index, index })}
-              />
-              <FlatList
-                data={minutes}
-                renderItem={renderItem(minutes, selectedMinuteRef.current, (val) => selectedMinuteRef.current = val)}
-                keyExtractor={item => item}
-                style={styles.pickerColumn}
-                initialScrollIndex={selectedMinuteRef.current}
-                getItemLayout={(data, index) => ({ length: 44, offset: 44 * index, index })}
-              />
-              <FlatList
-                data={periods}
-                renderItem={renderPeriodItem}
-                keyExtractor={item => item}
-                style={[styles.pickerColumn, {height: 88}]}
-                initialScrollIndex={periods.findIndex(p => p === selectedPeriodRef.current)}
-                getItemLayout={(data, index) => ({ length: 44, offset: 44 * index, index })}
-              />
+              <View style={styles.pickerColumn}>
+                <ThemedText style={styles.pickerColumnLabel}>Hour</ThemedText>
+                <ScrollView style={styles.simplePickerList}>
+                  {hours.map(hour => (
+                    <TouchableOpacity
+                      key={hour}
+                      style={[styles.pickerItem, selectedHour === parseInt(hour) && styles.selectedItem]}
+                      onPress={() => setSelectedHour(parseInt(hour))}
+                    >
+                      <ThemedText style={[styles.pickerItemText, selectedHour === parseInt(hour) && styles.selectedText]}>
+                        {hour}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+              <View style={styles.pickerColumn}>
+                <ThemedText style={styles.pickerColumnLabel}>Minute</ThemedText>
+                <ScrollView style={styles.simplePickerList}>
+                  {minutes.map(minute => (
+                    <TouchableOpacity
+                      key={minute}
+                      style={[styles.pickerItem, selectedMinute === parseInt(minute) && styles.selectedItem]}
+                      onPress={() => setSelectedMinute(parseInt(minute))}
+                    >
+                      <ThemedText style={[styles.pickerItemText, selectedMinute === parseInt(minute) && styles.selectedText]}>
+                        {minute}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+              <View style={[styles.pickerColumn, styles.periodContainer]}>
+                <ThemedText style={styles.pickerColumnLabel}>Period</ThemedText>
+                <View>
+                  {periods.map(period => (
+                    <TouchableOpacity
+                      key={period}
+                      style={[styles.periodItem, selectedPeriod === period && styles.selectedItem]}
+                      onPress={() => setSelectedPeriod(period)}
+                    >
+                      <ThemedText style={[styles.pickerItemText, selectedPeriod === period && styles.selectedText]}>
+                        {period}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
             </View>
             <View style={styles.pickerButtonContainer}>
               <TouchableOpacity style={styles.pickerButton} onPress={onCancel}>
@@ -424,13 +443,13 @@ export default function SettingsScreen() {
                 thumbColor="#f4f3f4"
               />
             </ThemedView>
-            <ScrollableTimePicker
+            <SimpleTimePicker
               isVisible={isTimePickerVisible}
               onConfirm={handleTimeConfirm}
               onCancel={() => setTimePickerVisible(false)}
               initialTime={reminderTime}
             />
-            <ScrollableTimePicker
+            <SimpleTimePicker
               isVisible={isTimePickerVisible2}
               onConfirm={handleTimeConfirm2}
               onCancel={() => setTimePickerVisible2(false)}
@@ -493,34 +512,22 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: width * 0.04,
-    paddingTop: height * 0.02,
-    paddingBottom: height * 0.02
+    padding: width * 0.04,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginTop: height * 0.03,
-    marginBottom: height * 0.03,
-    textAlign: 'center',
-  },
-  scrollView: {
-    flex: 1,
-    width: '100%',
+  scrollViewContent: {
+    paddingBottom: height * 0.1,
   },
   section: {
+    marginBottom: height * 0.04,
     borderRadius: 16,
-    marginBottom: height * 0.025,
     overflow: 'hidden',
-    width: '100%',
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: width * 0.04,
     paddingVertical: height * 0.015,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(150, 150, 150, 0.2)',
+    paddingHorizontal: width * 0.04,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
   },
   sectionTitle: {
     fontSize: 18,
@@ -531,29 +538,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: height * 0.018,
     paddingHorizontal: width * 0.04,
-    paddingVertical: height * 0.015,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(150, 150, 150, 0.1)',
-    width: '100%',
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
-  dangerButton: {
+  timeText: {
+    fontSize: 16,
+    color: '#0a7ea4',
+  },
+  buttonContainer: {
+    marginTop: height * 0.04,
+  },
+  resetButton: {
+    backgroundColor: '#FF3B30',
+    paddingVertical: height * 0.015,
     paddingHorizontal: width * 0.04,
-    paddingVertical: height * 0.02,
+    borderRadius: 8,
     alignItems: 'center',
   },
-  dangerButtonText: {
-    color: '#FF3B30',
+  resetButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '600',
-  },
-  linkButton: {
-    paddingHorizontal: width * 0.04,
-    paddingVertical: height * 0.02,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(150, 150, 150, 0.1)',
-  },
-  linkButtonText: {
-    color: '#0a7ea4',
   },
   modalOverlay: {
     flex: 1,
@@ -563,6 +570,7 @@ const styles = StyleSheet.create({
   },
   pickerContainer: {
     width: Math.min(width * 0.85, 400),
+    maxHeight: height * 0.7,
     borderRadius: 16,
     paddingHorizontal: width * 0.05,
     paddingVertical: height * 0.02,
@@ -585,23 +593,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: width * 0.02,
   },
-  pickerLabel: {
+  pickerColumnLabel: {
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 8,
+    textAlign: 'center',
   },
-  pickerList: {
-    height: height * 0.18,
+  simplePickerList: {
+    height: 150,
     width: '100%',
-  },
-  pickerListContent: {
-    paddingVertical: height * 0.05,
   },
   pickerItem: {
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 8,
+    marginVertical: 2,
+  },
+  pickerItemText: {
+    fontSize: 16,
+    textAlign: 'center',
   },
   selectedItem: {
     backgroundColor: 'rgba(0, 122, 255, 0.1)',
@@ -610,10 +621,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#007AFF',
   },
+  periodContainer: {
+    height: 150,
+    justifyContent: 'center',
+  },
+  periodItem: {
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    marginVertical: 10,
+  },
   pickerButtonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
+    marginTop: 10,
   },
   pickerButton: {
     flex: 1,
