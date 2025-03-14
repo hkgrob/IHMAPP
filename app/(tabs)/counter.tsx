@@ -136,43 +136,66 @@ export default function CounterPage() {
     await AsyncStorage.setItem('totalCount', newTotalCount.toString());
   };
 
-  const resetCounter = async (type) => {
-    const title = type === 'daily' ? 'Reset Daily Count' : 'Reset Total Count';
-    const message = type === 'daily' 
-      ? 'Are you sure you want to reset your daily count to zero?' 
-      : 'Are you sure you want to reset your total count to zero? This cannot be undone.';
+  // Tracking for long press timing
+  const [pressTimer, setPressTimer] = useState(null);
+  const [resetting, setResetting] = useState('');
+  const [resetProgress, setResetProgress] = useState(0);
+  const RESET_DURATION = 2000; // 2 seconds hold time
+  
+  const startResetTimer = (type) => {
+    console.log(`Starting reset timer for ${type}`);
+    setResetting(type);
+    setResetProgress(0);
     
-    Alert.alert(
-      title,
-      message,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              if (type === 'daily') {
-                await AsyncStorage.setItem('dailyCount', '0');
-                setDailyCount(0);
-                Alert.alert('Success', 'Daily count reset');
-              } else if (type === 'total') {
-                await AsyncStorage.setItem('totalCount', '0');
-                setTotalCount(0);
-                Alert.alert('Success', 'Total count reset');
-              }
-            } catch (error) {
-              console.error('Error resetting counter:', error);
-              Alert.alert('Error', 'Could not reset counter');
-            }
-          }
+    // Start incrementing progress
+    const timer = setInterval(() => {
+      setResetProgress(prev => {
+        const newProgress = prev + (100 / (RESET_DURATION / 100));
+        if (newProgress >= 100) {
+          clearInterval(timer);
+          performReset(type);
+          return 0;
         }
-      ],
-      { cancelable: false }
-    );
+        return newProgress;
+      });
+    }, 100);
+    
+    setPressTimer(timer);
+  };
+  
+  const cancelResetTimer = () => {
+    if (pressTimer) {
+      console.log('Canceling reset timer');
+      clearInterval(pressTimer);
+      setPressTimer(null);
+      setResetting('');
+      setResetProgress(0);
+    }
+  };
+  
+  const performReset = async (type) => {
+    console.log(`Performing reset for ${type}`);
+    try {
+      if (type === 'daily') {
+        await AsyncStorage.setItem('dailyCount', '0');
+        setDailyCount(0);
+        if (Platform.OS !== 'web') {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      } else if (type === 'total') {
+        await AsyncStorage.setItem('totalCount', '0');
+        setTotalCount(0);
+        if (Platform.OS !== 'web') {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      }
+    } catch (error) {
+      console.error('Error resetting counter:', error);
+      Alert.alert('Error', 'Could not reset counter');
+    } finally {
+      setResetting('');
+      setResetProgress(0);
+    }
   };
 
   return (
@@ -206,17 +229,41 @@ export default function CounterPage() {
 
             <View style={styles.resetContainer}>
               <TouchableOpacity
-                style={styles.resetButton}
-                onPress={() => resetCounter('daily')}
+                style={[
+                  styles.resetButton,
+                  resetting === 'daily' && styles.resettingButton
+                ]}
+                onPressIn={() => startResetTimer('daily')}
+                onPressOut={cancelResetTimer}
+                delayLongPress={2000}
               >
-                <ThemedText style={styles.resetButtonText}>Reset Daily</ThemedText>
+                <ThemedText style={styles.resetButtonText}>
+                  {resetting === 'daily' 
+                    ? `Resetting... ${Math.round(resetProgress)}%` 
+                    : 'Hold to Reset Daily'}
+                </ThemedText>
+                {resetting === 'daily' && (
+                  <View style={[styles.progressBar, { width: `${resetProgress}%` }]} />
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.resetButton}
-                onPress={() => resetCounter('total')}
+                style={[
+                  styles.resetButton,
+                  resetting === 'total' && styles.resettingButton
+                ]}
+                onPressIn={() => startResetTimer('total')}
+                onPressOut={cancelResetTimer}
+                delayLongPress={2000}
               >
-                <ThemedText style={styles.resetButtonText}>Reset Total</ThemedText>
+                <ThemedText style={styles.resetButtonText}>
+                  {resetting === 'total' 
+                    ? `Resetting... ${Math.round(resetProgress)}%` 
+                    : 'Hold to Reset Total'}
+                </ThemedText>
+                {resetting === 'total' && (
+                  <View style={[styles.progressBar, { width: `${resetProgress}%` }]} />
+                )}
               </TouchableOpacity>
             </View>
           </ThemedView>
@@ -308,9 +355,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#ccc',
+    position: 'relative',
+    overflow: 'hidden',
   },
   resetButtonText: {
     fontSize: 16,
+    zIndex: 2,
+  },
+  resettingButton: {
+    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+  },
+  progressBar: {
+    position: 'absolute',
+    height: '100%',
+    backgroundColor: 'rgba(255, 59, 48, 0.2)',
+    left: 0,
+    bottom: 0,
+    zIndex: 1,
   },
   tipContainer: {
     marginTop: 30,
