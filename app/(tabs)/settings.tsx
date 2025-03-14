@@ -316,13 +316,19 @@ export default function SettingsScreen() {
 
   const toggleHaptic = async (value) => {
     setHapticEnabled(value);
+    console.log('Setting haptic enabled to:', value);
+    // Store as string 'true' or 'false'
     await saveSettings('hapticEnabled', value.toString());
+    
     // Test haptic when enabled
     if (value && Platform.OS !== 'web') {
       try {
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        console.log('Haptic test triggered successfully');
       } catch (error) {
         console.error('Error with haptic feedback:', error);
+        // Fallback to basic vibration
+        Vibration.vibrate(50);
       }
     }
   };

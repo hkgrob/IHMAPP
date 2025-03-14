@@ -89,6 +89,8 @@ export default function CounterPage() {
     // Get latest settings
     const soundEnabled = await AsyncStorage.getItem('soundEnabled');
     const hapticEnabled = await AsyncStorage.getItem('hapticEnabled');
+    
+    console.log('Settings values:', { soundEnabled, hapticEnabled });
 
     // Play sound if enabled and available
     if (soundEnabled !== 'false' && sound) {
@@ -100,15 +102,19 @@ export default function CounterPage() {
       }
     }
 
-    // Add haptic feedback if enabled
-    if (hapticEnabled !== 'false' && Platform.OS !== 'web') {
+    // Add haptic feedback if enabled (treat null, undefined, or 'true' as enabled)
+    if ((hapticEnabled === 'true' || hapticEnabled === null) && Platform.OS !== 'web') {
+      console.log('Triggering haptic feedback');
       try {
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        console.log('Haptic feedback triggered');
       } catch (error) {
         console.error('Error with haptic feedback:', error);
         // Fallback to basic vibration
         Vibration.vibrate(50);
       }
+    } else {
+      console.log('Haptic feedback not triggered:', { hapticEnabled, platform: Platform.OS });
     }
 
     // Update counts
