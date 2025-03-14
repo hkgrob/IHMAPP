@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl, Platform, Dimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -13,7 +12,7 @@ export default function PodcastScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  
+
   // Get screen width for responsive layout
   const screenWidth = Dimensions.get('window').width;
 
@@ -123,7 +122,7 @@ export default function PodcastScreen() {
           fontWeight: 'bold',
         },
       }} />
-      
+
       <FlatList
         data={podcasts}
         ListHeaderComponent={() => (
@@ -152,6 +151,8 @@ export default function PodcastScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 30 : Platform.OS === 'web' ? 30 : 20,
   },
   pageTitle: {
     fontSize: 22,

@@ -608,29 +608,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: width * 0.04, // 4% of screen width for responsive padding
-    paddingVertical: height * 0.01,   // Reduced from 0.02 to 0.01 (~10px on 1000px height screen)
+    paddingTop: height * 0.02, //Added paddingTop
+    paddingBottom: height * 0.02 //Added paddingBottom
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginTop: height * 0.03, // Reduced from 0.07 to 0.03 (~30px on 1000px height screen)
+    marginTop: height * 0.03, 
     marginBottom: height * 0.03,
     textAlign: 'center',
   },
   scrollView: {
     flex: 1,
-    width: '100%', // Ensure ScrollView takes full width
+    width: '100%', 
   },
   section: {
     borderRadius: 16,
-    marginBottom: height * 0.025, // Responsive margin
+    marginBottom: height * 0.025, 
     overflow: 'hidden',
-    width: '100%', // Full width for sections
+    width: '100%', 
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: width * 0.04, // Responsive padding
+    paddingHorizontal: width * 0.04, // Responsive padding
+    paddingVertical: height * 0.015, //Added paddingTop and paddingBottom
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(150, 150, 150, 0.2)',
   },
@@ -643,13 +645,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: width * 0.04, // Responsive padding
+    paddingHorizontal: width * 0.04, // Responsive padding
+    paddingVertical: height * 0.015, //Added paddingTop and paddingBottom
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(150, 150, 150, 0.1)',
-    width: '100%', // Ensure rows take full width
+    width: '100%', 
   },
   dangerButton: {
-    padding: width * 0.04,
+    paddingHorizontal: width * 0.04, // Responsive padding
+    paddingVertical: height * 0.02, //Added paddingTop and paddingBottom
     alignItems: 'center',
   },
   dangerButtonText: {
@@ -657,7 +661,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   linkButton: {
-    padding: width * 0.04,
+    paddingHorizontal: width * 0.04, // Responsive padding
+    paddingVertical: height * 0.02, //Added paddingTop and paddingBottom
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(150, 150, 150, 0.1)',
   },
@@ -672,9 +677,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   pickerContainer: {
-    width: Math.min(width * 0.85, 400), // Max width of 400px, or 85% of screen
+    width: Math.min(width * 0.85, 400), 
     borderRadius: 16,
-    padding: width * 0.05, // Responsive padding
+    paddingHorizontal: width * 0.05, // Responsive padding
+    paddingVertical: height * 0.02, //Added paddingTop and paddingBottom
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
   pickerTitle: {
@@ -687,12 +693,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: height * 0.025,
-    width: '100%', // Ensure full width
+    width: '100%', 
   },
   pickerColumn: {
     flex: 1,
     alignItems: 'center',
-    marginHorizontal: width * 0.02, // Responsive spacing between columns
+    marginHorizontal: width * 0.02, 
   },
   pickerLabel: {
     fontSize: 14,
@@ -700,11 +706,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   pickerList: {
-    height: height * 0.18, // 18% of screen height for picker
+    height: height * 0.18, 
     width: '100%',
   },
   pickerListContent: {
-    paddingVertical: height * 0.05, // Responsive padding
+    paddingVertical: height * 0.05, 
   },
   pickerItem: {
     height: 44,
