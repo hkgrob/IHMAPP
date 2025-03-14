@@ -241,16 +241,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 20,
     marginBottom: 8,
-    paddingHorizontal: 16, // Ensure consistent horizontal padding
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 35 : 20,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 8,
-    lineHeight: 34, // Ensure text renders fully
-    paddingTop: 5, // Small padding to align text
-    width: '100%', // Ensure text takes full width for centering
+    lineHeight: 36,
+    width: '100%',
   },
   headerSubtitle: {
     fontSize: 16,
