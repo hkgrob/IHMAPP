@@ -14,8 +14,7 @@ export default function PodcastScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [currentEpisodeId, setCurrentEpisodeId] = useState(null);
-  const [currentEpisodeEmbed, setCurrentEpisodeEmbed] = useState('');
-
+  
   // Get screen width for responsive layout
   const screenWidth = Dimensions.get('window').width;
 
@@ -42,22 +41,17 @@ export default function PodcastScreen() {
     fetchPodcasts();
   }, [fetchPodcasts]);
 
-  const handlePlayEpisode = (episodeId, embedCode) => {
+  const handlePlayEpisode = (episodeId) => {
     if (episodeId === currentEpisodeId) {
       // Toggle off if the same episode
       setCurrentEpisodeId(null);
-      setCurrentEpisodeEmbed('');
     } else {
       setCurrentEpisodeId(episodeId);
-      setCurrentEpisodeEmbed(embedCode);
     }
   };
 
   const renderPodcastItem = ({ item }) => {
     const isCurrentlyPlaying = currentEpisodeId === item.id;
-
-    // Create embed code using the item's URL
-    const embedUrl = `https://www.podbean.com/player-v2/?i=${getPodbeanId(item.audioUrl)}&from=pb6admin&share=0&download=0&rtl=0&fonts=Arial&skin=60a0c8&font-color=auto&logo_link=podcast_page&btn-skin=60a0c8`;
 
     return (
       <View style={styles.podcastItem}>
@@ -87,7 +81,7 @@ export default function PodcastScreen() {
 
           <TouchableOpacity
             style={styles.playButton}
-            onPress={() => handlePlayEpisode(item.id, embedUrl)}
+            onPress={() => handlePlayEpisode(item.id)}
           >
             <Ionicons
               name={isCurrentlyPlaying ? "pause-circle" : "play-circle"}
@@ -99,34 +93,24 @@ export default function PodcastScreen() {
             </ThemedText>
           </TouchableOpacity>
 
-          {isCurrentlyPlaying && Platform.OS === 'web' && (
+          {isCurrentlyPlaying && (
             <View style={styles.embedContainer}>
-              <iframe 
-                title={item.title}
-                src={embedUrl}
-                width="100%" 
-                height="150" 
-                frameBorder="0" 
-                scrolling="no"
-                style={{
-                  border: 'none',
-                  minWidth: 'min(100%, 430px)',
-                  height: '150px'
-                }}
-                loading="lazy"
-              />
-            </View>
-          )}
-
-          {isCurrentlyPlaying && Platform.OS !== 'web' && (
-            <View style={styles.embedContainer}>
-              <WebView
-                source={{ uri: embedUrl }}
-                style={{ height: 150, width: '100%' }}
-                javaScriptEnabled={true}
-                domStorageEnabled={true}
-                scrollEnabled={false}
-              />
+              {Platform.OS === 'web' ? (
+                <audio 
+                  controls
+                  src={item.audioUrl}
+                  style={{ width: '100%', height: 40 }}
+                  autoPlay
+                />
+              ) : (
+                <WebView
+                  source={{ uri: `https://mediaplayer.vercel.app/?url=${encodeURIComponent(item.audioUrl)}` }}
+                  style={{ height: 150, width: '100%' }}
+                  javaScriptEnabled={true}
+                  domStorageEnabled={true}
+                  scrollEnabled={false}
+                />
+              )}
             </View>
           )}
         </View>
@@ -134,19 +118,7 @@ export default function PodcastScreen() {
     );
   };
 
-  // Helper function to extract Podbean ID from URL
-  const getPodbeanId = (url) => {
-    // Extract the ID from something like "https://mcdn.podbean.com/mf/web/j2j8ta69uhqubdme/The-Road-to-Lacking-Nothing-Part-2.mp3"
-    // Format will be something like "qzn8t-184238d-pb"
-    // For now, let's use a fallback ID when we can't parse it
-    try {
-      const filename = url.split('/').pop();
-      const id = filename.split('.')[0].substring(0, 12);
-      return `${id.substring(0, 5)}-${id.substring(5, 12)}-pb`;
-    } catch (err) {
-      return "qzn8t-184238d-pb"; // Fallback ID
-    }
-  };
+  // No longer needed since we're using direct audio URLs
 
   if (loading && !refreshing) {
     return (
