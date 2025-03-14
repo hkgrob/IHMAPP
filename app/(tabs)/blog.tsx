@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     marginBottom: 8,
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 35 : 20,
+    paddingTop: Platform.OS === 'ios' ? 45 : 20,
   },
   headerTitle: {
     fontSize: 28,
@@ -251,6 +251,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     lineHeight: 36,
     width: '100%',
+    alignSelf: 'center',
+    marginHorizontal: 'auto',
   },
   headerSubtitle: {
     fontSize: 16,
