@@ -1,5 +1,5 @@
-import React from 'react';
-import { StyleSheet, TouchableOpacity, View, ScrollView, Dimensions, Platform, Linking, StatusBar as RNStatusBar } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, TouchableOpacity, View, ScrollView, Dimensions, Platform, Linking, Text } from 'react-native';
 import { Link, Stack } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { StatusBar } from 'expo-status-bar';
@@ -9,6 +9,9 @@ import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '@/constants/Colors';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Audio } from 'expo-av';
+import * as Haptics from 'expo-haptics';
 
 const { width, height } = Dimensions.get('window');
 const isSmallScreen = width < 380;
@@ -16,12 +19,68 @@ const paddingHorizontal = width * 0.05;
 const scaleFontSize = (size) => Math.round(size * (width / 375));
 
 // Get the status bar height for proper spacing
-const STATUSBAR_HEIGHT = RNStatusBar.currentHeight || (Platform.OS === 'ios' ? 44 : 0);
+const STATUSBAR_HEIGHT = StatusBar.currentHeight || (Platform.OS === 'ios' ? 44 : 0);
 
 export default function HomeScreen() {
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const tintColor = useThemeColor({}, 'tint');
+  const [count, setCount] = useState(0);
+  const [sound, setSound] = useState();
+
+  useEffect(() => {
+    const loadCount = async () => {
+      try {
+        const storedCount = await AsyncStorage.getItem('counter');
+        if (storedCount !== null) {
+          setCount(parseInt(storedCount));
+        }
+      } catch (e) {
+        console.error("Error loading count:", e);
+      }
+    };
+    loadCount();
+  }, []);
+
+  useEffect(() => {
+    const saveCount = async () => {
+      try {
+        await AsyncStorage.setItem('counter', count.toString());
+      } catch (e) {
+        console.error("Error saving count:", e);
+      }
+    };
+    saveCount();
+  }, [count]);
+
+  useEffect(() => {
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, [sound]);
+
+  const handlePress = async () => {
+    setCount(count + 1);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    try {
+      if (sound) {
+        await sound.replayAsync();
+      }
+    } catch (error) {
+      console.error("Error playing sound:", error);
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      const { sound } = await Audio.Sound.createAsync(
+        require('@/assets/sounds/click.mp3') // Replace with your sound file
+      );
+      setSound(sound);
+    })();
+  }, []);
 
   return (
     <ThemedView style={[styles.container, { backgroundColor }]}>
@@ -29,7 +88,7 @@ export default function HomeScreen() {
 
       {/* SafeAreaView for content, but allow background to stretch to edges */}
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <ScrollView 
+        <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -46,32 +105,33 @@ export default function HomeScreen() {
 
           {/* Feature Grid */}
           <View style={styles.featureGrid}>
-            <FeatureButton 
-              title="Counter" 
-              description="Track your progress"
-              icon="stopwatch-outline"
-              route="/(tabs)/counter"
-              color="#50E3C2"
-            />
+            <TouchableOpacity
+              onPress={handlePress}
+              style={styles.clickerButtonWrapper}
+            >
+              <BlurView intensity={90} style={styles.clickerButton} tint="light">
+                  <Text style={styles.clickerButtonText}>Click to Declare</Text>
+              </BlurView>
+            </TouchableOpacity>
 
-            <FeatureButton 
-              title="Podcasts" 
+            <FeatureButton
+              title="Podcasts"
               description="Listen & grow"
               icon="headset-outline"
               route="/(tabs)/podcast"
               color="#D87BFD"
             />
 
-            <FeatureButton 
-              title="Blog" 
+            <FeatureButton
+              title="Blog"
               description="Latest insights"
               icon="newspaper-outline"
               route="/(tabs)/blog"
               color="#F5A623"
             />
 
-            <FeatureButton 
-              title="Declarations" 
+            <FeatureButton
+              title="Declarations"
               description="Daily affirmations"
               icon="document-text-outline"
               route="/(tabs)/declarations"
@@ -82,7 +142,7 @@ export default function HomeScreen() {
           {/* Getting Started Section */}
           <View style={styles.gettingStartedContainer}>
             <ThemedText style={styles.sectionTitle}>Visit our website</ThemedText>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.startButton}
               activeOpacity={0.8}
               onPress={() => Linking.openURL('https://ignitinghope.com')}
@@ -105,8 +165,8 @@ export default function HomeScreen() {
 function FeatureButton({ title, description, icon, route, color }) {
   return (
     <Link href={route} asChild>
-      <TouchableOpacity 
-        activeOpacity={0.7} 
+      <TouchableOpacity
+        activeOpacity={0.7}
         style={styles.featureButtonWrapper}
       >
         <BlurView intensity={90} style={styles.featureButton} tint="light">
@@ -220,4 +280,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginRight: 8,
   },
+  clickerButtonWrapper: {
+    marginBottom: 16,
+    borderRadius: 15,
+    overflow: 'hidden',
+  },
+  clickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: isSmallScreen ? 10 : 15,
+    borderRadius: 15,
+    overflow: 'hidden',
+    backgroundColor: '#50E3C2'
+  },
+  clickerButtonText: {
+    fontSize: scaleFontSize(18),
+    fontWeight: '600',
+    color: 'white',
+    textAlign: 'center'
+  }
 });
