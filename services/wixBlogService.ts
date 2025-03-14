@@ -16,6 +16,78 @@ export interface BlogPost {
   imageUrl?: string;
 }
 
+// Fetch individual blog post content
+export const fetchBlogContentById = async (id: string, link: string): Promise<string> => {
+  try {
+    // Check for cached content
+    const cachedContent = await AsyncStorage.getItem(`wix_blog_content_${id}`);
+    
+    if (cachedContent) {
+      console.log(`Using cached content for blog post ${id}`);
+      return cachedContent;
+    }
+    
+    console.log(`Fetching content for blog post ${id} from ${link}`);
+    
+    // Try to fetch the blog post content using a CORS proxy
+    const corsProxies = [
+      'https://corsproxy.io/?',
+      'https://cors-anywhere.herokuapp.com/',
+      'https://api.allorigins.win/raw?url='
+    ];
+    
+    let response = null;
+    let htmlContent = '';
+    
+    // Try each proxy until one works
+    for (const proxy of corsProxies) {
+      try {
+        response = await fetch(proxy + encodeURIComponent(link), {
+          method: 'GET',
+          headers: {
+            'Accept': 'text/html, application/xhtml+xml, */*'
+          }
+        });
+        
+        if (response.ok) {
+          htmlContent = await response.text();
+          
+          // Try to extract the main content from the HTML
+          const contentMatch = htmlContent.match(/<article[^>]*>([\s\S]*?)<\/article>/) || 
+                              htmlContent.match(/<div[^>]*class="[^"]*post-content[^"]*"[^>]*>([\s\S]*?)<\/div>/) ||
+                              htmlContent.match(/<div[^>]*class="[^"]*blog-post-content[^"]*"[^>]*>([\s\S]*?)<\/div>/);
+          
+          if (contentMatch && contentMatch[1]) {
+            // Clean up the content (remove HTML tags but keep paragraphs)
+            const cleanContent = contentMatch[1]
+              .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+              .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+              .replace(/<[^>]*>/g, '\n')
+              .replace(/\n+/g, '\n\n')
+              .trim();
+            
+            // Cache the content
+            await AsyncStorage.setItem(`wix_blog_content_${id}`, cleanContent);
+            
+            return cleanContent;
+          }
+          
+          break;
+        }
+      } catch (proxyError) {
+        console.error(`Error with proxy ${proxy}:`, proxyError);
+      }
+    }
+    
+    // If we couldn't extract the content properly, return a placeholder
+    return "We couldn't fetch the full content. Please check the original post on our website.";
+    
+  } catch (error) {
+    console.error('Error fetching blog content:', error);
+    return "An error occurred while fetching the blog content. Please try again later.";
+  }
+};
+
 // Fetches blog posts from XML feed with caching
 export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
   try {
