@@ -113,7 +113,7 @@ export default function PodcastScreen() {
     <ThemedView style={styles.container}>
       <StatusBar style="auto" />
       <Stack.Screen options={{ 
-        title: "Podcasts",
+        title: "Steve Backlund Podcasts",
         headerLargeTitle: true,
       }} />
       <FlatList
