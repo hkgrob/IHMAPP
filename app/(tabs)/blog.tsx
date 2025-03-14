@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, View, Image, ActivityIndicator } from 'react-native';
+import { StyleSheet, FlatList, TouchableOpacity, View, Image, ActivityIndicator, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Stack } from 'expo-router';
@@ -7,8 +7,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
+import { fetchWixBlogPosts, BlogPost } from '../../services/wixBlogService';
 
-// Sample blog data (replace with your actual API or data source)
+// Fallback blog data in case API fails
 const BLOG_POSTS = [
   {
     id: '1',
@@ -54,17 +55,36 @@ const BLOG_POSTS = [
 
 export default function BlogScreen() {
   const [loading, setLoading] = useState(true);
-  const [blogPosts, setBlogPosts] = useState(BLOG_POSTS);
+  const [refreshing, setRefreshing] = useState(false);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    // Simulate loading blog posts
-    setTimeout(() => {
+  const fetchBlogData = useCallback(async () => {
+    try {
+      setError(null);
+      const posts = await fetchWixBlogPosts();
+      console.log('Fetched blog posts:', posts.length);
+      setBlogPosts(posts);
+    } catch (err) {
+      console.error('Error fetching blog posts:', err);
+      setError('Failed to load blog posts. Please try again.');
+    } finally {
       setLoading(false);
-    }, 1000);
+      setRefreshing(false);
+    }
   }, []);
 
-  const handleBlogPostPress = (post) => {
+  useEffect(() => {
+    fetchBlogData();
+  }, [fetchBlogData]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchBlogData();
+  }, [fetchBlogData]);
+
+  const handleBlogPostPress = (post: BlogPost) => {
     // Navigate to the blog post screen with all necessary data
     router.push({
       pathname: '/blog-post',
@@ -73,7 +93,7 @@ export default function BlogScreen() {
         title: post.title,
         excerpt: post.excerpt,
         date: post.date,
-        imageUrl: post.imageUrl,
+        imageUrl: post.imageUrl || '',
         link: post.link
       }
     });
@@ -128,26 +148,96 @@ export default function BlogScreen() {
           headerShown: true,
         }}
       />
-      <FlatList
-        data={blogPosts}
-        renderItem={renderBlogPost}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          <View style={styles.header}>
-            <ThemedText style={styles.headerTitle}>Latest Blog Posts</ThemedText>
-            <ThemedText style={styles.headerSubtitle}>
-              Insights and inspiration for your journey
-            </ThemedText>
-          </View>
-        }
-      />
+      {loading && !refreshing ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0a7ea4" />
+          <ThemedText style={styles.loadingText}>Loading blog posts...</ThemedText>
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={48} color="#0a7ea4" />
+          <ThemedText style={styles.errorText}>{error}</ThemedText>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchBlogData}>
+            <ThemedText style={styles.retryButtonText}>Retry</ThemedText>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={blogPosts}
+          renderItem={renderBlogPost}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#0a7ea4"
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <ThemedText style={styles.emptyText}>No blog posts available</ThemedText>
+            </View>
+          }
+          ListHeaderComponent={
+            <View style={styles.header}>
+              <ThemedText style={styles.headerTitle}>Latest Blog Posts</ThemedText>
+              <ThemedText style={styles.headerSubtitle}>
+                Insights and inspiration for your journey
+              </ThemedText>
+            </View>
+          }
+        />
+      )}
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: '#0a7ea4',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
+    opacity: 0.7,
+  },
   container: {
     flex: 1,
     padding: 16,

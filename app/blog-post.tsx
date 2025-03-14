@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, ScrollView, ActivityIndicator, View, Image, Platform, SafeAreaView, Linking } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
@@ -23,7 +22,7 @@ export default function BlogPostScreen() {
     if (Platform.OS !== 'web' && Platform.OS !== 'ios' && Platform.OS !== 'android') {
       setWebViewSupported(false);
     }
-    
+
     // Simulate loading content
     setTimeout(() => {
       setLoading(false);
@@ -83,12 +82,29 @@ export default function BlogPostScreen() {
                   <Ionicons name="newspaper" size={42} color="#fff" />
                 </LinearGradient>
               )}
-              
+
               <ThemedText style={styles.blogTitle}>{title as string}</ThemedText>
               <ThemedText style={styles.blogDate}>{date as string}</ThemedText>
               <ThemedText style={styles.blogExcerpt}>{excerpt as string}</ThemedText>
-              
-              {webViewSupported ? (
+
+              {Platform.OS === 'web' ? (
+                <View style={styles.webViewContainer}>
+                  <WebView
+                    source={{ uri: link as string }}
+                    style={styles.webView}
+                    startInLoadingState={true}
+                    renderLoading={() => (
+                      <View style={styles.webViewLoading}>
+                        <ActivityIndicator size="large" color="#0a7ea4" />
+                      </View>
+                    )}
+                    onError={(e) => {
+                      console.error('WebView error:', e);
+                      setError('Failed to load blog content. Please try again later.');
+                    }}
+                  />
+                </View>
+              ) : Platform.OS === 'ios' || Platform.OS === 'android' ? (
                 <View style={styles.webViewContainer}>
                   <WebView
                     source={{ uri: link as string }}
@@ -118,7 +134,7 @@ export default function BlogPostScreen() {
                   </ThemedText>
                 </View>
               )}
-              
+
               {error && (
                 <View style={styles.errorContainer}>
                   <Ionicons name="alert-circle-outline" size={32} color="#ff6b00" />
