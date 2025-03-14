@@ -2,7 +2,12 @@
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import { v4 as uuidv4 } from 'uuid';
+
+// Simple ID generator to replace uuid which has crypto dependency issues on some mobile platforms
+const generateId = () => {
+  return 'reminder_' + Math.random().toString(36).substring(2, 11) + 
+         '_' + Date.now().toString(36);
+};
 
 // Constants
 const REMINDERS_STORAGE_KEY = 'declaration_reminders';
@@ -131,7 +136,7 @@ export const addReminder = async (time?: Date): Promise<Reminder | null> => {
     
     // Create reminder object
     const newReminder: Reminder = {
-      id: uuidv4(),
+      id: generateId(),
       enabled: true,
       time: reminderTime,
       title: 'Declaration Reminder',
