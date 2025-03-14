@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: Platform.OS === 'web' ? 20 : 16,
-    paddingTop: Platform.OS === 'ios' ? 30 : Platform.OS === 'web' ? 30 : 20,
+    paddingTop: 0, // Removed padding from top
     paddingBottom: Platform.OS === 'ios' ? 40 : 20,
   },
   pageTitle: {
