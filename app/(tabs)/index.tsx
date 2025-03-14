@@ -12,6 +12,8 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
+import { useColorScheme } from '@/hooks/useColorScheme'; // Added import
+
 
 const { width, height } = Dimensions.get('window');
 const isSmallScreen = width < 380;
@@ -20,6 +22,93 @@ const scaleFontSize = (size) => Math.round(size * (width / 375));
 
 // Get the status bar height for proper spacing
 const STATUSBAR_HEIGHT = StatusBar.currentHeight || (Platform.OS === 'ios' ? 44 : 0);
+
+const Counter = () => {
+  const [dailyCount, setDailyCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [sound, setSound] = useState();
+  const colorScheme = useColorScheme();
+  const buttonColor = colorScheme === 'dark' ? Colors.dark.tint : Colors.light.tint;
+
+  useEffect(() => {
+    loadCounts();
+    loadSound();
+    return () => {
+      if (sound) sound.unloadAsync();
+    };
+  }, []);
+
+  const loadSound = async () => {
+    try {
+      const { sound } = await Audio.Sound.createAsync(require('@/assets/sounds/click.mp3'));
+      setSound(sound);
+    } catch (error) {
+      console.error('Error loading sound:', error);
+    }
+  };
+
+  const loadCounts = async () => {
+    try {
+      const storedDailyCount = await AsyncStorage.getItem('dailyCount');
+      const storedTotalCount = await AsyncStorage.getItem('totalCount');
+      const storedLastReset = await AsyncStorage.getItem('lastReset');
+
+      if (storedTotalCount) setTotalCount(parseInt(storedTotalCount, 10));
+
+      if (storedLastReset) {
+        const lastResetDate = new Date(storedLastReset);
+        const today = new Date();
+
+        if (today.toDateString() !== lastResetDate.toDateString()) {
+          setDailyCount(0);
+          await AsyncStorage.setItem('lastReset', today.toString());
+          await AsyncStorage.setItem('dailyCount', '0');
+        } else if (storedDailyCount) {
+          setDailyCount(parseInt(storedDailyCount, 10));
+        }
+      } else {
+        await AsyncStorage.setItem('lastReset', new Date().toString());
+      }
+    } catch (error) {
+      console.error('Error loading counts:', error);
+    }
+  };
+
+  const incrementCounter = async () => {
+    try {
+      const soundEnabled = await AsyncStorage.getItem('soundEnabled');
+      const hapticEnabled = await AsyncStorage.getItem('hapticEnabled');
+
+      if (soundEnabled !== 'false' && sound) {
+        await sound.replayAsync();
+      }
+
+      if (hapticEnabled !== 'false' && Platform.OS !== 'web') {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+
+      const newDailyCount = dailyCount + 1;
+      const newTotalCount = totalCount + 1;
+
+      setDailyCount(newDailyCount);
+      setTotalCount(newTotalCount);
+
+      await AsyncStorage.setItem('dailyCount', newDailyCount.toString());
+      await AsyncStorage.setItem('totalCount', newTotalCount.toString());
+    } catch (error) {
+      console.error('Error incrementing counter:', error);
+    }
+  };
+
+  return (
+    <TouchableOpacity
+      style={[styles.countButton, { backgroundColor: buttonColor }]}
+      onPress={incrementCounter}
+    >
+      <Text style={styles.buttonText}>Click to declare</Text>
+    </TouchableOpacity>
+  );
+};
 
 export default function HomeScreen() {
   const backgroundColor = useThemeColor({}, 'background');
@@ -105,6 +194,7 @@ export default function HomeScreen() {
 
           {/* Feature Grid */}
           <View style={styles.featureGrid}>
+            <Counter /> {/* Added Counter component */}
             <TouchableOpacity
               onPress={handlePress}
               style={styles.clickerButtonWrapper}
@@ -294,6 +384,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#50E3C2'
   },
   clickerButtonText: {
+    fontSize: scaleFontSize(18),
+    fontWeight: '600',
+    color: 'white',
+    textAlign: 'center'
+  },
+  countButton: {
+    marginBottom: 16,
+    borderRadius: 15,
+    padding: isSmallScreen ? 10 : 15,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  buttonText: {
     fontSize: scaleFontSize(18),
     fontWeight: '600',
     color: 'white',
