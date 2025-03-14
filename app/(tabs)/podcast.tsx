@@ -112,19 +112,14 @@ export default function PodcastScreen() {
     <ThemedView style={styles.container}>
       <StatusBar style="auto" />
       <Stack.Screen options={{ 
-        title: "Steve Backlund Podcasts",
-        headerLargeTitle: true,
-        headerStyle: {
-          backgroundColor: '#0a7ea4',
-        },
-        headerTintColor: '#fff',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
+        headerShown: false,
       }} />
 
       <FlatList
         data={podcasts}
+        ListHeaderComponent={() => (
+          <ThemedText style={styles.pageTitle}>Steve Backlund Podcasts</ThemedText>
+        )}
         renderItem={renderPodcastItem}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
