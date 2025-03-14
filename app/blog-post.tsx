@@ -71,7 +71,6 @@ export default function BlogPostScreen() {
               
               <ThemedText style={styles.blogTitle}>{title as string}</ThemedText>
               <ThemedText style={styles.blogDate}>{date as string}</ThemedText>
-              <ThemedText style={styles.blogExcerpt}>{excerpt as string}</ThemedText>
               
               {/* Web view to load the actual blog content */}
               <View style={styles.webViewContainer}>
