@@ -456,29 +456,34 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#fff',
+    width: '100%',
   },
   container: {
     flex: 1,
-    paddingHorizontal: 0, // Remove horizontal padding to allow full width
     backgroundColor: '#fff',
+    width: '100%',
   },
   scrollView: {
     flex: 1,
+    width: '100%',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
-    marginTop: 10,
+    marginTop: Platform.OS === 'ios' ? 40 : 10,
+    paddingHorizontal: 16,
     textAlign: 'center',
     color: '#000',
   },
   section: {
     marginBottom: 20,
-    marginHorizontal: 16, // Add margin to prevent sticking to edges
+    marginHorizontal: 16,
     borderRadius: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
     overflow: 'hidden',
+    width: Platform.OS === 'ios' ? '92%' : undefined,
+    alignSelf: 'center',
   },
   sectionHeader: {
     flexDirection: 'row',
