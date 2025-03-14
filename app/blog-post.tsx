@@ -61,11 +61,11 @@ export default function BlogPostScreen() {
               <ThemedText style={styles.blogTitle}>{title as string}</ThemedText>
               <ThemedText style={styles.blogDate}>{date as string}</ThemedText>
 
-              {error || content.includes("We couldn't fetch the full content") ? (
+              {error ? (
                 <View style={styles.errorContainer}>
                   <Ionicons name="newspaper-outline" size={48} color="#0a7ea4" />
                   <ThemedText style={styles.errorText}>
-                    {error || "We couldn't load the full blog post content on this device."}
+                    {error}
                   </ThemedText>
 
                   <View style={styles.infoContainer}>
