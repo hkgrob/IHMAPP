@@ -322,35 +322,18 @@ export default function SettingsScreen() {
     const valueToStore = value ? 'true' : 'false';
     
     try {
+      // Save setting to AsyncStorage
       await AsyncStorage.setItem('hapticEnabled', valueToStore);
       console.log('Saved haptic setting:', valueToStore);
       
-      // Test haptic when enabled and not on web
+      // Test haptic when enabled
       if (value && Platform.OS !== 'web') {
-        console.log('Testing haptic feedback after toggle');
-        
-        try {
-          // Force a stronger haptic for testing to ensure it's noticeable
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          console.log('Haptic test triggered successfully with notification type');
-          
-          // Also try impact type as fallback
-          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-          console.log('Haptic test also succeeded with impact type');
-        } catch (hapticError) {
-          console.error('Error with haptic feedback test:', hapticError);
-          
-          // Try vibration as fallback
-          try {
-            Vibration.vibrate(100);
-            console.log('Fallback vibration triggered during test');
-          } catch (vibError) {
-            console.error('Vibration fallback also failed:', vibError);
-          }
-        }
+        // Use notification type for more noticeable feedback during test
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        console.log('Haptic test triggered');
       }
-    } catch (storageError) {
-      console.error('Error saving haptic setting:', storageError);
+    } catch (error) {
+      console.error('Error saving haptic setting:', error);
       Alert.alert('Settings Error', 'Failed to save haptic setting');
     }
   };
