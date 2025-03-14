@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Text, View, StyleSheet, TouchableOpacity, Dimensions, Vibration, Alert, ScrollView, StatusBar, Platform } from 'react-native';
+import { Text, View, StyleSheet, TouchableOpacity, Dimensions, Vibration, Alert, ScrollView, Platform } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -20,6 +20,7 @@ export default function CounterPage() {
   const lastResetDate = useRef(new Date());
 
   useEffect(() => {
+    initializeSettings();
     loadCounts();
     loadSound();
 
@@ -30,12 +31,27 @@ export default function CounterPage() {
     };
   }, []);
 
+  const initializeSettings = async () => {
+    try {
+      const hapticSetting = await AsyncStorage.getItem('hapticEnabled');
+      if (hapticSetting === null) {
+        await AsyncStorage.setItem('hapticEnabled', 'true');
+      }
+      const soundSetting = await AsyncStorage.getItem('soundEnabled');
+      if (soundSetting === null) {
+        await AsyncStorage.setItem('soundEnabled', 'true');
+      }
+    } catch (error) {
+      console.error('Error initializing settings:', error);
+    }
+  };
+
   const loadSound = async () => {
     try {
-      console.log('Loading sound asset in counter:', require('@/assets/sounds/click.mp3'));
+      console.log('Loading sound asset:', require('@/assets/sounds/click.mp3'));
       const { sound } = await Audio.Sound.createAsync(require('@/assets/sounds/click.mp3'));
       setSound(sound);
-      console.log('Sound loaded successfully in counter');
+      console.log('Sound loaded successfully');
     } catch (error) {
       console.error('Error loading sound:', error);
     }
@@ -47,18 +63,15 @@ export default function CounterPage() {
       const storedTotalCount = await AsyncStorage.getItem('totalCount');
       const storedLastReset = await AsyncStorage.getItem('lastReset');
 
-      console.log('Loading counts:', {storedTotalCount, storedDailyCount, storedLastReset});
+      console.log('Loading counts:', { storedTotalCount, storedDailyCount, storedLastReset });
 
-      if (storedTotalCount) {
-        setTotalCount(parseInt(storedTotalCount, 10));
-      }
+      if (storedTotalCount) setTotalCount(parseInt(storedTotalCount, 10));
 
       if (storedLastReset) {
         lastResetDate.current = new Date(storedLastReset);
         const today = new Date();
 
         if (today.toDateString() !== lastResetDate.current.toDateString()) {
-          // Reset daily count if it's a new day
           setDailyCount(0);
           lastResetDate.current = today;
           await AsyncStorage.setItem('lastReset', today.toString());
@@ -67,7 +80,6 @@ export default function CounterPage() {
           setDailyCount(parseInt(storedDailyCount, 10));
         }
       } else {
-        // First time app is used, store today's date
         await AsyncStorage.setItem('lastReset', new Date().toString());
       }
     } catch (error) {
@@ -75,79 +87,66 @@ export default function CounterPage() {
     }
   };
 
-  const playSound = async () => {
-    try {
-      if (sound) {
-        await sound.replayAsync();
-      }
-    } catch (error) {
-      console.error('Error playing sound:', error);
-    }
-  };
-
   const incrementCounter = async () => {
-    // Get latest settings
     const soundEnabled = await AsyncStorage.getItem('soundEnabled');
     const hapticEnabled = await AsyncStorage.getItem('hapticEnabled');
 
-    console.log('Settings values:', { soundEnabled, hapticEnabled });
+    console.log('Settings:', { soundEnabled, hapticEnabled });
 
-    // Play sound if enabled and available
+    // Sound feedback
     if (soundEnabled !== 'false' && sound) {
       try {
         await sound.replayAsync();
-        console.log('Playing sound');
+        console.log('Sound played successfully');
       } catch (error) {
         console.error('Error playing sound:', error);
       }
     }
 
-    // Add haptic feedback if enabled
-    if (Platform.OS !== 'web') {
-      console.log('Haptic setting value:', hapticEnabled);
-
-      // If haptic is not explicitly disabled ('false'), we should enable it
-      if (hapticEnabled !== 'false') {
-        console.log('Haptic feedback enabled, attempting to trigger');
+    // Haptic feedback
+    if (Platform.OS !== 'web' && hapticEnabled !== 'false') {
+      try {
+        console.log('Attempting haptic feedback');
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        console.log('Haptic feedback triggered');
+      } catch (error) {
+        console.error('Haptic feedback failed:', error);
         try {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          console.log('Haptic feedback success');
-        } catch (error) {
-          console.error('Haptic error, falling back to vibration:', error);
-          // Fallback to basic vibration
-          Vibration.vibrate(50);
+          await Vibration.vibrate(50);
+          console.log('Fallback vibration triggered');
+        } catch (vibError) {
+          console.error('Vibration fallback failed:', vibError);
         }
-      } else {
-        console.log('Haptic feedback disabled in settings');
       }
-    } else {
-      console.log('Haptics not available on web');
     }
 
     // Update counts
     const newDailyCount = dailyCount + 1;
     const newTotalCount = totalCount + 1;
-
     setDailyCount(newDailyCount);
     setTotalCount(newTotalCount);
 
-    // Save to storage
-    await AsyncStorage.setItem('dailyCount', newDailyCount.toString());
-    await AsyncStorage.setItem('totalCount', newTotalCount.toString());
+    try {
+      await AsyncStorage.multiSet([
+        ['dailyCount', newDailyCount.toString()],
+        ['totalCount', newTotalCount.toString()]
+      ]);
+    } catch (error) {
+      console.error('Error saving counts:', error);
+    }
   };
 
-  // Tracking for long press timing
+  // Reset functionality
   const [pressTimer, setPressTimer] = useState(null);
   const [resetting, setResetting] = useState('');
   const [resetProgress, setResetProgress] = useState(0);
-  const RESET_DURATION = 2000; // 2 seconds hold time
-  
+  const RESET_DURATION = 2000;
+
   const startResetTimer = (type) => {
     console.log(`Starting reset timer for ${type}`);
     setResetting(type);
     setResetProgress(0);
-    
-    // Start incrementing progress
+
     const timer = setInterval(() => {
       setResetProgress(prev => {
         const newProgress = prev + (100 / (RESET_DURATION / 100));
@@ -159,10 +158,10 @@ export default function CounterPage() {
         return newProgress;
       });
     }, 100);
-    
+
     setPressTimer(timer);
   };
-  
+
   const cancelResetTimer = () => {
     if (pressTimer) {
       console.log('Canceling reset timer');
@@ -172,22 +171,20 @@ export default function CounterPage() {
       setResetProgress(0);
     }
   };
-  
+
   const performReset = async (type) => {
     console.log(`Performing reset for ${type}`);
     try {
       if (type === 'daily') {
         await AsyncStorage.setItem('dailyCount', '0');
         setDailyCount(0);
-        if (Platform.OS !== 'web') {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
       } else if (type === 'total') {
         await AsyncStorage.setItem('totalCount', '0');
         setTotalCount(0);
-        if (Platform.OS !== 'web') {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
+      }
+
+      if (Platform.OS !== 'web') {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (error) {
       console.error('Error resetting counter:', error);
