@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TouchableOpacity, Platform, Alert, Dimensions, Text } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Platform, Alert, Dimensions, Text, StatusBar } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -243,6 +243,7 @@ export default function CounterScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <StatusBar style="auto" />
       <Stack.Screen
         options={{
           title: 'Declaration Counter',
@@ -256,105 +257,107 @@ export default function CounterScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <ThemedView style={styles.counterContainer}>
-          <ThemedText style={styles.title} numberOfLines={2} adjustsFontSizeToFit>
-            Declaration Counter
-          </ThemedText>
+        <ThemedView style={styles.content}> {/* Added content wrapper */}
+          <ThemedView style={styles.counterContainer}>
+            <ThemedText style={styles.title} numberOfLines={2} adjustsFontSizeToFit>
+              Declaration Counter
+            </ThemedText>
 
-          <ThemedView style={styles.statsContainer}>
-            <ThemedView style={[styles.statCard, { backgroundColor: 'rgba(144, 238, 144, 0.3)' }]}>
-              <ThemedText style={styles.statLabel} numberOfLines={1}>Daily</ThemedText>
-              <Text 
-                style={[styles.statValue, { fontSize: baseFontSize }]} 
-                adjustsFontSizeToFit
-                minimumFontScale={0.5}
-                maxFontSizeMultiplier={1.2}
-              >
-                {dailyCount.toString()}
-              </Text>
+            <ThemedView style={styles.statsContainer}>
+              <ThemedView style={[styles.statCard, { backgroundColor: 'rgba(144, 238, 144, 0.3)' }]}>
+                <ThemedText style={styles.statLabel} numberOfLines={1}>Daily</ThemedText>
+                <Text 
+                  style={[styles.statValue, { fontSize: baseFontSize }]} 
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.5}
+                  maxFontSizeMultiplier={1.2}
+                >
+                  {dailyCount.toString()}
+                </Text>
+              </ThemedView>
+
+              <ThemedView style={[styles.statCard, { backgroundColor: 'rgba(144, 238, 144, 0.3)' }]}>
+                <ThemedText style={styles.statLabel} numberOfLines={1}>Total</ThemedText>
+                <Text 
+                  style={[styles.statValue, { fontSize: baseFontSize }]} 
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.5}
+                  maxFontSizeMultiplier={1.2}
+                >
+                  {totalCount.toString()}
+                </Text>
+              </ThemedView>
             </ThemedView>
 
-            <ThemedView style={[styles.statCard, { backgroundColor: 'rgba(144, 238, 144, 0.3)' }]}>
-              <ThemedText style={styles.statLabel} numberOfLines={1}>Total</ThemedText>
+            <TouchableOpacity
+              style={[styles.incrementButton, { backgroundColor: tintColor }]}
+              onPress={incrementCount}
+            >
               <Text 
-                style={[styles.statValue, { fontSize: baseFontSize }]} 
-                adjustsFontSizeToFit
-                minimumFontScale={0.5}
-                maxFontSizeMultiplier={1.2}
+                style={[styles.buttonText, { color: '#000000', textAlign: 'center' }]} 
+                numberOfLines={1}
               >
-                {totalCount.toString()}
+                Click!
               </Text>
+            </TouchableOpacity>
+
+            <ThemedView style={[
+              styles.resetContainer,
+              isSmallScreen && styles.resetContainerSmall
+            ]}>
+              <TouchableOpacity 
+                style={[
+                  styles.resetButton, 
+                  { borderColor: tintColor },
+                  isSmallScreen && styles.resetButtonSmall
+                ]} 
+                onPress={resetDailyCount}
+              >
+                <ThemedText 
+                  style={[
+                    styles.resetText, 
+                    { color: tintColor },
+                    isSmallScreen && styles.resetTextSmall
+                  ]}
+                  numberOfLines={1}
+                >
+                  Reset Daily
+                </ThemedText>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[
+                  styles.resetButton, 
+                  { borderColor: tintColor },
+                  isSmallScreen && styles.resetButtonSmall
+                ]} 
+                onPress={resetTotalCount}
+              >
+                <ThemedText 
+                  style={[
+                    styles.resetText, 
+                    { color: tintColor },
+                    isSmallScreen && styles.resetTextSmall
+                  ]}
+                  numberOfLines={1}
+                >
+                  Reset Total
+                </ThemedText>
+              </TouchableOpacity>
             </ThemedView>
           </ThemedView>
 
-          <TouchableOpacity
-            style={[styles.incrementButton, { backgroundColor: tintColor }]}
-            onPress={incrementCount}
-          >
-            <Text 
-              style={[styles.buttonText, { color: '#000000', textAlign: 'center' }]} 
-              numberOfLines={1}
-            >
-              Click!
-            </Text>
-          </TouchableOpacity>
-
-          <ThemedView style={[
-            styles.resetContainer,
-            isSmallScreen && styles.resetContainerSmall
-          ]}>
-            <TouchableOpacity 
-              style={[
-                styles.resetButton, 
-                { borderColor: tintColor },
-                isSmallScreen && styles.resetButtonSmall
-              ]} 
-              onPress={resetDailyCount}
-            >
-              <ThemedText 
-                style={[
-                  styles.resetText, 
-                  { color: tintColor },
-                  isSmallScreen && styles.resetTextSmall
-                ]}
-                numberOfLines={1}
-              >
-                Reset Daily
+          <View style={styles.tipsContainer}>
+            <BlurView intensity={90} tint={Platform.OS === 'ios' ? 'default' : 'light'} style={styles.tipsCard}>
+              <ThemedText style={styles.tipsTitle} numberOfLines={1}>
+                <Ionicons name="bulb-outline" size={18} color="#FFCC00" /> Tip
               </ThemedText>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[
-                styles.resetButton, 
-                { borderColor: tintColor },
-                isSmallScreen && styles.resetButtonSmall
-              ]} 
-              onPress={resetTotalCount}
-            >
-              <ThemedText 
-                style={[
-                  styles.resetText, 
-                  { color: tintColor },
-                  isSmallScreen && styles.resetTextSmall
-                ]}
-                numberOfLines={1}
-              >
-                Reset Total
+              <ThemedText style={styles.tipsText} numberOfLines={4}>
+                Consistency is key! Aim to speak declarations aloud daily to build new neural pathways.
               </ThemedText>
-            </TouchableOpacity>
-          </ThemedView>
-        </ThemedView>
-
-        <View style={styles.tipsContainer}>
-          <BlurView intensity={90} tint={Platform.OS === 'ios' ? 'default' : 'light'} style={styles.tipsCard}>
-            <ThemedText style={styles.tipsTitle} numberOfLines={1}>
-              <Ionicons name="bulb-outline" size={18} color="#FFCC00" /> Tip
-            </ThemedText>
-            <ThemedText style={styles.tipsText} numberOfLines={4}>
-              Consistency is key! Aim to speak declarations aloud daily to build new neural pathways.
-            </ThemedText>
-          </BlurView>
-        </View>
+            </BlurView>
+          </View>
+        </ThemedView> {/* Closed content wrapper */}
       </ScrollView>
     </ThemedView>
   );
@@ -365,8 +368,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-start',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 30 : Platform.OS === 'web' ? 30 : 20,
+    paddingTop: Platform.OS === 'ios' ? 40 : Platform.OS === 'web' ? 40 : 30, //Increased paddingTop for better spacing
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+    width: '100%'
   },
   scrollContent: {
     padding: 20,
