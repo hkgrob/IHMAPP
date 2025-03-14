@@ -1,12 +1,15 @@
+
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { configureNotifications, scheduleAllNotifications } from '@/services/notificationService';
-import * as Notifications from 'expo-notifications';
+import { View, StyleSheet, Platform } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useColorScheme } from '../hooks/useColorScheme';
+import { configureNotifications, scheduleAllNotifications } from '../services/notificationService';
+import { Header } from '../components/Header';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -27,19 +30,17 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
-  // Initialize notifications
+  // Initialize notifications for mobile only
   useEffect(() => {
     const initNotifications = async () => {
       try {
-        // Configure notification handler
-        await configureNotifications();
+        if (Platform.OS !== 'web') {
+          // Configure notification handler
+          await configureNotifications();
 
-        // Schedule notifications based on saved settings
-        await scheduleAllNotifications();
-
-        // Log any existing notifications for debugging
-        const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-        console.log('Existing scheduled notifications:', scheduled.length);
+          // Schedule notifications based on saved settings
+          await scheduleAllNotifications();
+        }
       } catch (error) {
         console.error('Error initializing notifications:', error);
       }

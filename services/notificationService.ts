@@ -1,26 +1,26 @@
 
 import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-interface NotificationTime {
+// Storage key
+const NOTIFICATION_SETTINGS_KEY = 'notification_settings';
+
+// Types
+export interface NotificationTime {
   hour: number;
   minute: number;
 }
 
-interface NotificationSettings {
+export interface NotificationSettings {
   enabled: boolean;
   morningTime: NotificationTime;
   eveningTime: NotificationTime;
   sound: boolean;
 }
 
-// Storage keys
-const NOTIFICATION_SETTINGS_KEY = 'notification_settings';
-
 // Default notification settings
-const DEFAULT_SETTINGS: NotificationSettings = {
+export const DEFAULT_SETTINGS: NotificationSettings = {
   enabled: false,
   morningTime: { hour: 8, minute: 0 },
   eveningTime: { hour: 20, minute: 0 },
@@ -29,6 +29,8 @@ const DEFAULT_SETTINGS: NotificationSettings = {
 
 // Configure notifications handler
 export const configureNotifications = async () => {
+  if (Platform.OS === 'web') return;
+  
   // Set handler for how notifications should be handled when app is in foreground
   await Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -50,29 +52,24 @@ export const configureNotifications = async () => {
   }
 };
 
-// Request permissions
+// Request permissions (simplified)
 export const requestNotificationPermissions = async (): Promise<boolean> => {
   if (Platform.OS === 'web') return false;
 
-  if (!Device.isDevice) {
-    console.log('Must use physical device for notifications');
+  try {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    return finalStatus === 'granted';
+  } catch (error) {
+    console.error('Error requesting notification permissions:', error);
     return false;
   }
-
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-
-  if (finalStatus !== 'granted') {
-    console.log('Failed to get notification permissions');
-    return false;
-  }
-
-  return true;
 };
 
 // Save notification settings
@@ -97,6 +94,8 @@ export const getNotificationSettings = async (): Promise<NotificationSettings> =
 
 // Schedule all notifications
 export const scheduleAllNotifications = async (): Promise<void> => {
+  if (Platform.OS === 'web') return;
+  
   try {
     const settings = await getNotificationSettings();
     
@@ -126,10 +125,6 @@ export const scheduleAllNotifications = async (): Promise<void> => {
       settings.eveningTime,
       settings.sound
     );
-    
-    // For debugging
-    const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-    console.log('Scheduled notifications:', scheduledNotifications);
   } catch (error) {
     console.error('Error scheduling notifications:', error);
   }
@@ -142,45 +137,51 @@ const scheduleNotification = async (
   body: string,
   time: NotificationTime,
   withSound: boolean
-): Promise<string> => {
-  // Create trigger date for daily notification at specified time
-  const now = new Date();
-  const triggerDate = new Date(now);
-  triggerDate.setHours(time.hour);
-  triggerDate.setMinutes(time.minute);
-  triggerDate.setSeconds(0);
-  triggerDate.setMilliseconds(0);
+): Promise<string | null> => {
+  if (Platform.OS === 'web') return null;
   
-  // If time has already passed today, schedule for tomorrow
-  if (triggerDate <= now) {
-    triggerDate.setDate(triggerDate.getDate() + 1);
-  }
-  
-  console.log(`Scheduling ${identifier} for:`, triggerDate.toLocaleString());
+  try {
+    // Create trigger date for daily notification at specified time
+    const now = new Date();
+    const triggerDate = new Date(now);
+    triggerDate.setHours(time.hour);
+    triggerDate.setMinutes(time.minute);
+    triggerDate.setSeconds(0);
+    triggerDate.setMilliseconds(0);
+    
+    // If time has already passed today, schedule for tomorrow
+    if (triggerDate <= now) {
+      triggerDate.setDate(triggerDate.getDate() + 1);
+    }
+    
+    console.log(`Scheduling ${identifier} for:`, triggerDate.toLocaleString());
 
-  // Schedule the notification
-  return await Notifications.scheduleNotificationAsync({
-    identifier,
-    content: {
-      title,
-      body,
-      sound: withSound ? 'default' : null,
-      // Priority settings for iOS
-      priority: 'high',
-      // Extra data
-      data: { type: 'declaration_reminder' },
-    },
-    trigger: {
-      // Set channel ID for Android
-      channelId: Platform.OS === 'android' ? 'declarations-reminders' : undefined,
-      date: triggerDate,
-      repeats: true,
-    },
-  });
+    // Schedule the notification
+    return await Notifications.scheduleNotificationAsync({
+      identifier,
+      content: {
+        title,
+        body,
+        sound: withSound ? 'default' : null,
+        priority: 'high',
+        data: { type: 'declaration_reminder' },
+      },
+      trigger: {
+        channelId: Platform.OS === 'android' ? 'declarations-reminders' : undefined,
+        date: triggerDate,
+        repeats: true,
+      },
+    });
+  } catch (error) {
+    console.error(`Error scheduling ${identifier} notification:`, error);
+    return null;
+  }
 };
 
 // Cancel all notifications
 export const cancelAllNotifications = async (): Promise<void> => {
+  if (Platform.OS === 'web') return;
+  
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
     console.log('All notifications cancelled');

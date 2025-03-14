@@ -18,10 +18,10 @@ import {
   getNotificationSettings,
   saveNotificationSettings,
   scheduleAllNotifications,
-  cancelAllNotifications,
   formatTimeDisplay,
   dateToNotificationTime,
-  notificationTimeToDate
+  notificationTimeToDate,
+  NotificationSettings as NotificationSettingsType
 } from '../services/notificationService';
 
 export const NotificationSettings = () => {
@@ -48,8 +48,6 @@ export const NotificationSettings = () => {
       setMorningTime(notificationTimeToDate(settings.morningTime));
       setEveningTime(notificationTimeToDate(settings.eveningTime));
       setSoundEnabled(settings.sound);
-      
-      console.log('Loaded notification settings:', settings);
     } catch (error) {
       console.error('Error loading notification settings:', error);
     }
@@ -82,7 +80,7 @@ export const NotificationSettings = () => {
   // Toggle notifications
   const toggleNotifications = async (value) => {
     try {
-      if (value) {
+      if (value && Platform.OS !== 'web') {
         // Request permissions if enabling
         const permissionGranted = await requestNotificationPermissions();
         
@@ -100,12 +98,13 @@ export const NotificationSettings = () => {
       updateSettings({ enabled: value });
       
       // Provide haptic feedback
-      Haptics.notificationAsync(
-        value 
-          ? Haptics.NotificationFeedbackType.Success 
-          : Haptics.NotificationFeedbackType.Warning
-      );
-
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(
+          value 
+            ? Haptics.NotificationFeedbackType.Success 
+            : Haptics.NotificationFeedbackType.Warning
+        );
+      }
     } catch (error) {
       console.error('Error toggling notifications:', error);
     }
@@ -121,19 +120,36 @@ export const NotificationSettings = () => {
   const updateSettings = async (updatedValues) => {
     try {
       const currentSettings = await getNotificationSettings();
-      const newSettings = { ...currentSettings, ...updatedValues };
+      const newSettings = { ...currentSettings, ...updatedValues } as NotificationSettingsType;
       
       await saveNotificationSettings(newSettings);
-      await scheduleAllNotifications();
       
-      console.log('Updated notification settings:', newSettings);
+      if (Platform.OS !== 'web') {
+        await scheduleAllNotifications();
+      }
     } catch (error) {
       console.error('Error updating notification settings:', error);
     }
   };
 
+  // Web notification message
+  const renderWebNoticeMessage = () => {
+    if (Platform.OS === 'web') {
+      return (
+        <View style={styles.webNotice}>
+          <ThemedText style={styles.webNoticeText}>
+            Notifications are designed for mobile devices. Please install the app on your iOS or Android device for the best experience.
+          </ThemedText>
+        </View>
+      );
+    }
+    return null;
+  };
+
   return (
     <View style={styles.container}>
+      {renderWebNoticeMessage()}
+      
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Ionicons name="notifications" size={24} color="#0a7ea4" />
@@ -157,7 +173,7 @@ export const NotificationSettings = () => {
               onPress={() => {
                 if (Platform.OS === 'ios') {
                   setShowMorningPicker(true);
-                } else {
+                } else if (Platform.OS === 'android') {
                   setShowMorningPicker(true);
                 }
               }}
@@ -176,7 +192,7 @@ export const NotificationSettings = () => {
               onPress={() => {
                 if (Platform.OS === 'ios') {
                   setShowEveningPicker(true);
-                } else {
+                } else if (Platform.OS === 'android') {
                   setShowEveningPicker(true);
                 }
               }}
@@ -316,6 +332,17 @@ const styles = StyleSheet.create({
   },
   timeIcon: {
     marginLeft: 8,
+  },
+  webNotice: {
+    backgroundColor: '#FFDDB0',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  webNoticeText: {
+    fontSize: 14,
+    color: '#805B10',
+    textAlign: 'center',
   },
   // Modal styles for iOS
   modalContainer: {
