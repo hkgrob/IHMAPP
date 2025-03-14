@@ -137,20 +137,42 @@ export default function CounterPage() {
   };
 
   const resetCounter = async (type) => {
-    try {
-      if (type === 'daily') {
-        await AsyncStorage.setItem('dailyCount', '0');
-        setDailyCount(0);
-        Alert.alert('Success', 'Daily count reset');
-      } else if (type === 'total') {
-        await AsyncStorage.setItem('totalCount', '0');
-        setTotalCount(0);
-        Alert.alert('Success', 'Total count reset');
-      }
-    } catch (error) {
-      console.error('Error resetting counter:', error);
-      Alert.alert('Error', 'Could not reset counter');
-    }
+    // Show confirmation dialog first
+    const title = type === 'daily' ? 'Reset Daily Count' : 'Reset Total Count';
+    const message = type === 'daily' 
+      ? 'Are you sure you want to reset your daily count to zero?' 
+      : 'Are you sure you want to reset your total count to zero? This cannot be undone.';
+    
+    Alert.alert(
+      title,
+      message,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              if (type === 'daily') {
+                await AsyncStorage.setItem('dailyCount', '0');
+                setDailyCount(0);
+                Alert.alert('Success', 'Daily count reset');
+              } else if (type === 'total') {
+                await AsyncStorage.setItem('totalCount', '0');
+                setTotalCount(0);
+                Alert.alert('Success', 'Total count reset');
+              }
+            } catch (error) {
+              console.error('Error resetting counter:', error);
+              Alert.alert('Error', 'Could not reset counter');
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (
