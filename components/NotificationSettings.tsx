@@ -86,9 +86,20 @@ export const NotificationSettings = () => {
       const defaultTime = new Date();
       defaultTime.setHours(9, 0, 0, 0);
       
+      // If the current time is after 9 AM, set for tomorrow
+      const now = new Date();
+      if (now.getHours() >= 9 && now.getMinutes() >= 0) {
+        defaultTime.setDate(defaultTime.getDate() + 1);
+      }
+      
+      // First add reminder to storage only (no scheduling yet)
       const newReminder = await addReminder(defaultTime);
       if (newReminder) {
+        // Update UI with new reminder
         setReminders(prev => [...prev, newReminder]);
+        
+        // Apply all reminders once (prevents duplicate notifications)
+        console.log('Scheduling notifications after adding new reminder');
         await applyAllReminders();
       }
     } catch (error) {

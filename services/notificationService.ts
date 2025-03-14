@@ -156,6 +156,9 @@ export const addReminder = async (time?: Date): Promise<Reminder | null> => {
     const saved = await saveReminders(reminders);
     if (!saved) return null;
     
+    // Important: Don't schedule here - let the caller call applyAllReminders
+    // This prevents duplicate notifications
+    
     return newReminder;
   } catch (error) {
     console.error('Error adding reminder:', error);
@@ -240,25 +243,43 @@ export const scheduleReminder = async (reminder: Reminder): Promise<string | nul
     
     console.log(`Next notification will trigger in ${hoursTillTrigger}h ${minutesTillTrigger}m (${triggerDate.toLocaleString()})`);
     
+    // For debugging
+    const formattedTriggerTime = `${triggerDate.toLocaleTimeString()} on ${triggerDate.toLocaleDateString()}`;
+    console.log(`Will schedule notification to trigger at: ${formattedTriggerTime}`);
+    
+    // Set up a more reliable trigger method - use seconds from now
+    const secondsFromNow = Math.max(1, Math.floor((triggerDate.getTime() - now.getTime()) / 1000));
+    console.log(`That's ${secondsFromNow} seconds from now`);
+    
     // First schedule the one-time notification for the next occurrence
     return await Notifications.scheduleNotificationAsync({
       content: {
         title: reminder.title,
         body: reminder.body,
         sound: true,
-        data: { id: reminder.id },
+        data: { id: reminder.id, scheduledFor: triggerDate.toISOString() },
       },
       trigger: {
-        date: triggerDate,
+        seconds: secondsFromNow,
         repeats: false,
       },
       identifier: reminder.id,
     }).then(id => {
-      // Then schedule the recurring daily notification
+      console.log(`Successfully scheduled next notification with ID: ${id}`);
+      
+      // Log all scheduled notifications for debugging
+      Notifications.getAllScheduledNotificationsAsync().then(notifications => {
+        console.log(`Total scheduled notifications: ${notifications.length}`);
+        notifications.forEach(n => {
+          console.log(`- ID: ${n.identifier}, Trigger: ${JSON.stringify(n.trigger)}`);
+        });
+      });
+      
+      // Then schedule the recurring daily notification starting after the first one
       Notifications.scheduleNotificationAsync({
         content: {
           title: reminder.title,
-          body: reminder.body,
+          body: reminder.body, 
           sound: true,
           data: { id: `${reminder.id}_recurring` },
         },
@@ -306,19 +327,42 @@ export const applyAllReminders = async (): Promise<boolean> => {
     let scheduledCount = 0;
     for (const reminder of reminders) {
       if (reminder.enabled) {
+        console.log(`Scheduling reminder ID ${reminder.id} for ${formatTime(reminder.time)}`);
         const id = await scheduleReminder(reminder);
-        if (id) scheduledCount++;
+        if (id) {
+          scheduledCount++;
+          console.log(`Successfully scheduled reminder ID: ${id}`);
+        } else {
+          console.error(`Failed to schedule reminder ID: ${reminder.id}`);
+        }
         
         // Add a small delay between scheduling to prevent rate limiting
         await new Promise(resolve => setTimeout(resolve, 300));
+      } else {
+        console.log(`Skipping disabled reminder ID ${reminder.id}`);
       }
     }
     
     console.log(`Successfully scheduled ${scheduledCount} of ${reminders.length} reminders`);
     
-    // Log what's scheduled (for debugging)
+    // Log detailed info about what's scheduled (for debugging)
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
     console.log(`Verification: System shows ${scheduled.length} scheduled notifications`);
+    
+    if (scheduled.length > 0) {
+      console.log('Scheduled notifications details:');
+      scheduled.forEach((notification, index) => {
+        const trigger = notification.trigger as any;
+        const content = notification.content;
+        console.log(`[${index + 1}] ID: ${notification.identifier}`);
+        console.log(`    Title: ${content.title}`);
+        console.log(`    Body: ${content.body}`);
+        console.log(`    Trigger: ${JSON.stringify(trigger)}`);
+        if (content.data && content.data.scheduledFor) {
+          console.log(`    Scheduled for: ${new Date(content.data.scheduledFor).toLocaleString()}`);
+        }
+      });
+    }
     
     return true;
   } catch (error) {
