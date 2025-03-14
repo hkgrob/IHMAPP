@@ -1,6 +1,5 @@
-
-import React from 'react';
-import { StyleSheet, ScrollView, View, Platform, Linking, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, ScrollView, View, Platform, Linking, TouchableOpacity, Switch } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +8,9 @@ import { ThemedText } from '../../components/ThemedText';
 import { NotificationSettings } from '../../components/NotificationSettings';
 
 export default function SettingsScreen() {
+  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(true);
+  const [hapticFeedbackEnabled, setHapticFeedbackEnabled] = useState(true);
+
   const openEmail = () => {
     Linking.openURL('mailto:info@ignitinghope.com?subject=App%20Feedback');
   };
@@ -42,42 +44,29 @@ export default function SettingsScreen() {
         {/* Feedback Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="chatbubble-outline" size={24} color="#0a7ea4" />
+            <Ionicons name="chatbubble-ellipses-outline" size={24} color="#0a7ea4" />
             <ThemedText style={styles.sectionTitle}>FEEDBACK</ThemedText>
           </View>
+
           <View style={styles.settingItem}>
             <ThemedText style={styles.settingLabel}>SOUND EFFECTS</ThemedText>
-            <View style={styles.toggleContainer}>
-              <View style={[styles.toggleOption, styles.toggleActive]}>
-                <ThemedText style={styles.toggleText}>On</ThemedText>
-              </View>
-              <View style={styles.toggleOption}>
-                <ThemedText style={styles.toggleText}>Off</ThemedText>
-              </View>
-            </View>
+            <Switch
+              value={soundEffectsEnabled}
+              onValueChange={setSoundEffectsEnabled}
+              trackColor={{ false: '#767577', true: '#0a7ea4' }}
+              thumbColor="#f4f3f4"
+            />
           </View>
+
           <View style={styles.settingItem}>
             <ThemedText style={styles.settingLabel}>HAPTIC FEEDBACK</ThemedText>
-            <View style={styles.toggleContainer}>
-              <View style={[styles.toggleOption, styles.toggleActive]}>
-                <ThemedText style={styles.toggleText}>On</ThemedText>
-              </View>
-              <View style={styles.toggleOption}>
-                <ThemedText style={styles.toggleText}>Off</ThemedText>
-              </View>
-            </View>
+            <Switch
+              value={hapticFeedbackEnabled}
+              onValueChange={setHapticFeedbackEnabled}
+              trackColor={{ false: '#767577', true: '#0a7ea4' }}
+              thumbColor="#f4f3f4"
+            />
           </View>
-        </View>
-
-        {/* Data Management Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="server-outline" size={24} color="#0a7ea4" />
-            <ThemedText style={styles.sectionTitle}>DATA MANAGEMENT</ThemedText>
-          </View>
-          <TouchableOpacity style={styles.button}>
-            <ThemedText style={styles.buttonText}>Reset All Data</ThemedText>
-          </TouchableOpacity>
         </View>
 
         {/* About Section */}
@@ -86,38 +75,17 @@ export default function SettingsScreen() {
             <Ionicons name="information-circle-outline" size={24} color="#0a7ea4" />
             <ThemedText style={styles.sectionTitle}>ABOUT</ThemedText>
           </View>
-          <View style={styles.aboutGrid}>
-            <TouchableOpacity style={styles.aboutItem}>
-              <Ionicons name="home-outline" size={24} color="#0a7ea4" />
-              <ThemedText style={styles.aboutItemText}>Home</ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.aboutItem}>
-              <Ionicons name="help-circle-outline" size={24} color="#0a7ea4" />
-              <ThemedText style={styles.aboutItemText}>Help</ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.aboutItem}>
-              <Ionicons name="document-text-outline" size={24} color="#0a7ea4" />
-              <ThemedText style={styles.aboutItemText}>Privacy</ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.aboutItem}>
+
+          <View style={styles.aboutLinks}>
+            <TouchableOpacity style={styles.aboutLink} onPress={openEmail}>
               <Ionicons name="mail-outline" size={24} color="#0a7ea4" />
-              <ThemedText style={styles.aboutItemText}>Contact</ThemedText>
+              <ThemedText style={styles.aboutLinkText}>Contact Us</ThemedText>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.aboutItem}>
-              <Ionicons name="star-outline" size={24} color="#0a7ea4" />
-              <ThemedText style={styles.aboutItemText}>Rate Us</ThemedText>
+
+            <TouchableOpacity style={styles.aboutLink} onPress={openPrivacyPolicy}>
+              <Ionicons name="document-text-outline" size={24} color="#0a7ea4" />
+              <ThemedText style={styles.aboutLinkText}>Privacy Policy</ThemedText>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.aboutItem}>
-              <Ionicons name="settings-outline" size={24} color="#0a7ea4" />
-              <ThemedText style={styles.aboutItemText}>App Info</ThemedText>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.versionInfo}>
-            <ThemedText style={styles.versionText}>Version 1.0.0</ThemedText>
-            <ThemedText style={styles.copyrightText}>
-              © {new Date().getFullYear()} Igniting Hope Ministries
-            </ThemedText>
           </View>
         </View>
       </ScrollView>
@@ -127,37 +95,27 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, 
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    flex: 1,
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
   },
   scrollView: {
-    flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
   header: {
-    marginBottom: 24,
-    alignItems: 'center',
+    marginBottom: 20,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#0a7ea4',
+    marginBottom: 10,
   },
   section: {
-    marginBottom: 24,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    marginBottom: 25,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 15,
   },
   sectionTitle: {
     fontSize: 16,
@@ -169,76 +127,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 10,
+    marginBottom: 10,
   },
   settingLabel: {
-    fontSize: 14,
-    color: '#333',
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    borderRadius: 14,
-    backgroundColor: '#e0e0e0',
-    padding: 2,
-  },
-  toggleOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  toggleActive: {
-    backgroundColor: '#0a7ea4',
-  },
-  toggleText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#333',
-  },
-  button: {
-    backgroundColor: '#ff6b00',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginVertical: 8,
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
     fontSize: 16,
+    fontWeight: '500',
   },
-  aboutGrid: {
+  aboutLinks: {
+    backgroundColor: '#f8f8f8',
+    borderRadius: 10,
+    padding: 15,
+  },
+  aboutLink: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  aboutItem: {
-    width: '30%',
     alignItems: 'center',
-    marginBottom: 16,
-    padding: 10,
+    paddingVertical: 12,
   },
-  aboutItemText: {
-    marginTop: 6,
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  versionInfo: {
-    marginTop: 16,
-    alignItems: 'center',
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  versionText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  copyrightText: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 4,
+  aboutLinkText: {
+    marginLeft: 15,
+    fontSize: 16,
   },
 });

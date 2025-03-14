@@ -93,7 +93,9 @@ export const NotificationSettings = () => {
       }
     } catch (error) {
       console.error('Error adding reminder:', error);
-      Alert.alert('Error', 'Failed to add reminder');
+      Alert.alert('Error', 'Failed to add reminder', [
+        { text: 'OK' }
+      ]);
     } finally {
       setRefreshing(false);
     }
