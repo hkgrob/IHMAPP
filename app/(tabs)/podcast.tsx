@@ -381,7 +381,7 @@ export default function PodcastScreen() {
                   clearInterval(positionUpdateTimer.current);
                 }
               }}>
-                <Ionicons name="pause-circle" size={24} color="#0a7ea4" />
+                <Ionicons name="close-circle" size={24} color="#0a7ea4" />
               </TouchableOpacity>
             </View>
           </View>
