@@ -51,11 +51,9 @@ export default function PodcastScreen() {
     return (
       <View style={styles.podcastItem}>
         <View style={styles.podcastContent}>
-          <Image 
-            source={{ uri: item.imageUrl || 'https://podcast.ignitinghope.com/images/default.jpg' }} 
-            style={styles.podcastImage} 
-            resizeMode="cover"
-          />
+          <View style={styles.podcastImagePlaceholder}>
+            <Ionicons name="mic" size={42} color="#fff" />
+          </View>
 
           <View style={styles.podcastInfo}>
             <ThemedText style={styles.podcastTitle}>{item.title}</ThemedText>
@@ -81,7 +79,7 @@ export default function PodcastScreen() {
               style={styles.playButton}
               onPress={() => handlePlayEpisode(item.audioUrl)}
             >
-              <Ionicons name="play-circle" size={22} color="#FF6B00" />
+              <Ionicons name="play-circle" size={22} color="#0a7ea4" />
               <ThemedText style={styles.playButtonText}>Play Episode</ThemedText>
             </TouchableOpacity>
           </View>
@@ -93,7 +91,7 @@ export default function PodcastScreen() {
   if (loading && !refreshing) {
     return (
       <ThemedView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF6B00" />
+        <ActivityIndicator size="large" color="#0a7ea4" />
         <ThemedText style={styles.loadingText}>Loading podcasts...</ThemedText>
       </ThemedView>
     );
@@ -102,7 +100,7 @@ export default function PodcastScreen() {
   if (error) {
     return (
       <ThemedView style={styles.errorContainer}>
-        <Ionicons name="alert-circle-outline" size={48} color="#FF6B00" />
+        <Ionicons name="alert-circle-outline" size={48} color="#0a7ea4" />
         <ThemedText style={styles.errorText}>{error}</ThemedText>
         <TouchableOpacity style={styles.retryButton} onPress={fetchPodcasts}>
           <ThemedText style={styles.retryButtonText}>Retry</ThemedText>
@@ -127,7 +125,7 @@ export default function PodcastScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#FF6B00"
+            tintColor="#0a7ea4"
           />
         }
         ListEmptyComponent={
@@ -166,10 +164,12 @@ const styles = StyleSheet.create({
   podcastContent: {
     flexDirection: 'column',
   },
-  podcastImage: {
+  podcastImagePlaceholder: {
     width: '100%',
     height: 180,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#0a7ea4',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   podcastInfo: {
     padding: 16,
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 8,
-    color: '#FF6B00',
+    color: '#0a7ea4',
   },
   loadingContainer: {
     flex: 1,
