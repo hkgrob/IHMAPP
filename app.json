@@ -9,7 +9,7 @@
       "android",
       "web"
     ],
-    "icon": "./assets/images/fire-icon.png",
+    "icon": "./attached_assets/Fire.png",
     "scheme": "myapp",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -22,7 +22,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/fire-icon.png",
+        "foregroundImage": "./attached_assets/Fire.png",
         "backgroundColor": "#FF6700"
       },
       "package": "com.hkgrob.biblestudyapp"
