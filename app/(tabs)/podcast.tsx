@@ -125,9 +125,6 @@ export default function PodcastScreen() {
 
       <FlatList
         data={podcasts}
-        ListHeaderComponent={() => (
-          <ThemedText style={styles.pageTitle}>Steve Backlund Podcasts</ThemedText>
-        )}
         renderItem={renderPodcastItem}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
@@ -151,8 +148,9 @@ export default function PodcastScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
+    padding: Platform.OS === 'web' ? 20 : 16,
     paddingTop: Platform.OS === 'ios' ? 30 : Platform.OS === 'web' ? 30 : 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
   },
   pageTitle: {
     fontSize: 22,
