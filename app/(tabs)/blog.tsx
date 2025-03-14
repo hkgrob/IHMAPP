@@ -291,11 +291,11 @@ const styles = StyleSheet.create({
   },
   blogImage: {
     width: '100%',
-    height: 180,
+    height: 60, // Reduced from 180px
   },
   blogImagePlaceholder: {
     width: '100%',
-    height: 120,
+    height: 60, // Reduced from 120px
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(10, 126, 164, 0.1)',
