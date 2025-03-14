@@ -68,12 +68,20 @@ export default function BlogPostScreen() {
                 <View style={styles.errorContainer}>
                   <Ionicons name="alert-circle-outline" size={48} color="#0a7ea4" />
                   <ThemedText style={styles.errorText}>{error}</ThemedText>
-                  <TouchableOpacity 
-                    style={[styles.readMoreButton, { marginTop: 20 }]}
-                    onPress={loadBlogContent}
-                  >
-                    <ThemedText style={styles.readMoreText}>Try Again</ThemedText>
-                  </TouchableOpacity>
+                  <View style={styles.buttonContainer}>
+                    <TouchableOpacity 
+                      style={[styles.readMoreButton, { marginTop: 20 }]}
+                      onPress={loadBlogContent}
+                    >
+                      <ThemedText style={styles.readMoreText}>Try Again</ThemedText>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.readMoreButton, { marginTop: 20, marginLeft: 10 }]}
+                      onPress={() => Linking.openURL(link as string)}
+                    >
+                      <ThemedText style={styles.readMoreText}>View on Website</ThemedText>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ) : content.includes("We couldn't fetch the full content") ? (
                 <View style={styles.errorContainer}>
@@ -83,7 +91,7 @@ export default function BlogPostScreen() {
                     style={[styles.readMoreButton, { marginTop: 20 }]}
                     onPress={() => Linking.openURL(link as string)}
                   >
-                    <ThemedText style={styles.readMoreText}>Read Full Article</ThemedText>
+                    <ThemedText style={styles.readMoreText}>Read on Website</ThemedText>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -165,6 +173,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     textAlign: 'center',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
   },
   contentContainer: {
     marginTop: 16,

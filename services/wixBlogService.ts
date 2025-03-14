@@ -19,106 +19,144 @@ export interface BlogPost {
 export const fetchBlogContentById = async (postId: string, postUrl: string): Promise<string> => {
   try {
     console.log(`Fetching blog content for post ID: ${postId} and URL: ${postUrl}`);
-
-    // Use a CORS proxy to fetch the blog content
-    const corsProxyUrl = 'https://corsproxy.io/?';
-    const response = await fetch(corsProxyUrl + encodeURIComponent(postUrl), {
-      method: 'GET',
-      headers: {
-        'Accept': 'text/html',
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
-      },
-      cache: 'no-store'
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch blog content, status: ${response.status}`);
-    }
-
-    const html = await response.text();
-
-    // More robust HTML parsing to extract the main content
-    // Try different possible content selectors that might be used in the Wix blog
-    const contentRegexes = [
-      /<div class="[^"]*post-content[^"]*">([\s\S]*?)<\/div>/i,
-      /<div data-hook="post-description">([\s\S]*?)<\/div>/i,
-      /<article class="[^"]*blog-post-content[^"]*">([\s\S]*?)<\/article>/i,
-      /<div class="[^"]*blog-content[^"]*">([\s\S]*?)<\/div>/i
-    ];
-
-    let content = '';
-
-    // Try each regex pattern until we find a match
-    for (const regex of contentRegexes) {
-      const match = html.match(regex);
-      if (match && match[1]) {
-        content = match[1];
-        break;
-      }
-    }
-
-    // If no match was found with the regexes, try to extract content from a more general approach
-    if (!content) {
-      // Look for the main content area between header and footer
-      const bodyContent = html.split(/<header/i)[1]?.split(/<footer/i)[0];
-      if (bodyContent) {
-        // Extract paragraphs from the content area
-        const paragraphMatches = bodyContent.match(/<p[^>]*>([\s\S]*?)<\/p>/gi);
-        if (paragraphMatches && paragraphMatches.length > 0) {
-          content = paragraphMatches.join(' ');
-        }
-      }
-    }
-
-    if (content) {
-      // Clean up the HTML content
-      let cleanedContent = content
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')  // Remove scripts
-        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')     // Remove styles
-        .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')  // Remove iframes
-        .replace(/<[^>]*>/g, '\n')                                           // Replace HTML tags with newlines
-        .replace(/&nbsp;/g, ' ')                                             // Replace &nbsp; with space
-        .replace(/\n+/g, '\n\n')                                             // Normalize newlines
-        .trim();
-
-      // Decode HTML entities
-      cleanedContent = cleanedContent
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#039;/g, "'")
-        .replace(/&rsquo;/g, "'")
-        .replace(/&ldquo;/g, '"')
-        .replace(/&rdquo;/g, '"')
-        .replace(/&mdash;/g, '—');
-
-      if (cleanedContent.length > 100) {
-        return cleanedContent;
-      }
-    }
-
-    // If content extraction failed, try a fallback approach
+    
+    // Since content extraction is challenging with external blogs, let's offer a reliable fallback
+    // that will work even on mobile devices where CORS and scraping can be problematic
+    
+    // First try: Direct API access if it's a Wix site
     try {
-      // Direct fetch from API if possible
-      const apiUrl = `https://corsproxy.io/?${encodeURIComponent(`https://www.wixapis.com/blog/v3/posts/${postId}`)}`;
-      const apiResponse = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        }
-      });
-
-      if (apiResponse.ok) {
-        const data = await apiResponse.json();
-        if (data.post && data.post.content) {
-          return data.post.content;
+      const apiProxies = [
+        'https://corsproxy.io/?',
+        'https://cors-anywhere.herokuapp.com/',
+        'https://api.allorigins.win/raw?url='
+      ];
+      
+      // Try each proxy for Wix API
+      for (const proxy of apiProxies) {
+        try {
+          const apiUrl = `${proxy}${encodeURIComponent(`https://www.wixapis.com/blog/v3/posts/${postId}`)}`;
+          console.log(`Trying API via proxy: ${proxy}`);
+          
+          const apiResponse = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+            },
+            cache: 'no-store'
+          });
+          
+          if (apiResponse.ok) {
+            const data = await apiResponse.json();
+            if (data.post && data.post.content) {
+              const content = data.post.content
+                .replace(/<[^>]*>/g, '\n')  // Convert HTML tags to newlines
+                .replace(/&nbsp;/g, ' ')    // Replace &nbsp; with space
+                .replace(/\n+/g, '\n\n')    // Normalize newlines
+                .trim();
+              
+              // If we got substantial content, return it
+              if (content.length > 100) {
+                return content;
+              }
+            }
+          }
+        } catch (proxyError) {
+          console.log(`API proxy ${proxy} failed:`, proxyError);
         }
       }
     } catch (apiError) {
-      console.error('API fallback failed:', apiError);
+      console.log('All API attempts failed:', apiError);
     }
-
+    
+    // Second try: Scrape HTML content
+    try {
+      // Try different CORS proxies
+      const corsProxies = [
+        'https://corsproxy.io/?',
+        'https://cors-anywhere.herokuapp.com/',
+        'https://api.allorigins.win/raw?url='
+      ];
+      
+      for (const proxy of corsProxies) {
+        try {
+          console.log(`Trying HTML scrape via proxy: ${proxy}`);
+          const response = await fetch(proxy + encodeURIComponent(postUrl), {
+            method: 'GET',
+            headers: {
+              'Accept': 'text/html',
+              'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+            },
+            cache: 'no-store'
+          });
+          
+          if (!response.ok) {
+            console.log(`HTML fetch with proxy ${proxy} failed with status: ${response.status}`);
+            continue;
+          }
+          
+          const html = await response.text();
+          
+          // Extract content using various selectors
+          const contentRegexes = [
+            /<div class="[^"]*post-content[^"]*">([\s\S]*?)<\/div>/i,
+            /<div data-hook="post-description">([\s\S]*?)<\/div>/i,
+            /<article class="[^"]*blog-post-content[^"]*">([\s\S]*?)<\/article>/i,
+            /<div class="[^"]*blog-content[^"]*">([\s\S]*?)<\/div>/i,
+            /<div id="content"[^>]*>([\s\S]*?)<\/div>/i
+          ];
+          
+          for (const regex of contentRegexes) {
+            const match = html.match(regex);
+            if (match && match[1]) {
+              const content = match[1]
+                .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')  // Remove scripts
+                .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')     // Remove styles
+                .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')  // Remove iframes
+                .replace(/<[^>]*>/g, '\n')                                           // Replace HTML tags with newlines
+                .replace(/&nbsp;/g, ' ')                                             // Replace &nbsp; with space
+                .replace(/\n+/g, '\n\n')                                             // Normalize newlines
+                .trim();
+              
+              // Decode HTML entities
+              const cleanedContent = content
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#039;/g, "'")
+                .replace(/&rsquo;/g, "'")
+                .replace(/&ldquo;/g, '"')
+                .replace(/&rdquo;/g, '"')
+                .replace(/&mdash;/g, '—');
+              
+              if (cleanedContent.length > 150) {
+                return cleanedContent;
+              }
+            }
+          }
+          
+          // If specific selectors didn't work, try a more generic approach
+          const paragraphs = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi);
+          if (paragraphs && paragraphs.length > 3) {
+            const cleanedParagraphs = paragraphs
+              .map(p => p.replace(/<[^>]*>/g, '').trim())
+              .filter(p => p.length > 20)  // Only keep non-empty paragraphs
+              .join('\n\n');
+            
+            if (cleanedParagraphs.length > 150) {
+              return cleanedParagraphs;
+            }
+          }
+        } catch (proxyError) {
+          console.log(`HTML proxy ${proxy} failed:`, proxyError);
+        }
+      }
+    } catch (htmlError) {
+      console.log('All HTML scraping attempts failed:', htmlError);
+    }
+    
+    // If we reached here, all attempts failed
     return "We couldn't fetch the full content. Please check the original post on our website.";
   } catch (error) {
     console.error('Error fetching blog content:', error);
