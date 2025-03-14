@@ -216,6 +216,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 120,
   },
   statLabel: {
     fontSize: 18,
@@ -225,6 +227,9 @@ const styles = StyleSheet.create({
     fontSize: 40,
     fontWeight: 'bold',
     marginTop: 8,
+    textAlign: 'center',
+    includeFontPadding: false,
+    lineHeight: 48,
   },
   countButton: {
     width: '100%',
