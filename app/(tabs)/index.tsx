@@ -164,7 +164,7 @@ export default function HomeScreen() {
 
       const storedDailyCount = await AsyncStorage.getItem('dailyCount');
       const storedTotalCount = await AsyncStorage.getItem('totalCount');
-      
+
       const newDailyCount = (parseInt(storedDailyCount || '0', 10) + 1);
       const newTotalCount = (parseInt(storedTotalCount || '0', 10) + 1);
 
@@ -209,11 +209,9 @@ export default function HomeScreen() {
           <View style={styles.featureGrid}>
             <TouchableOpacity
               onPress={handlePress}
-              style={styles.clickerButtonWrapper}
+              style={[styles.countButton, { backgroundColor: '#0a7ea4' }]}
             >
-              <BlurView intensity={90} style={styles.clickerButton} tint="light">
-                  <Text style={styles.clickerButtonText}>Click to Declare</Text>
-              </BlurView>
+              <Text style={styles.buttonText}>Click to Declare</Text>
             </TouchableOpacity>
 
             <FeatureButton
@@ -428,7 +426,8 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: isSmallScreen ? 10 : 15,
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    backgroundColor: '#0a7ea4'
   },
   buttonText: {
     fontSize: scaleFontSize(18),
