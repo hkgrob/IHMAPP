@@ -6,33 +6,30 @@ import { ThemedView } from '../components/ThemedView';
 import { useGlobalSearchParams, Stack, useRouter } from 'expo-router';
 import { useThemeColor } from '../hooks/useThemeColor';
 import { Ionicons } from '@expo/vector-icons';
+import { fetchBlogContentById } from '../services/wixBlogService';
 
 export default function BlogPostScreen() {
   const params = useGlobalSearchParams();
-  const { id, title, excerpt, date, imageUrl, link } = params;
+  const { id, title, date, link } = params;
   const [loading, setLoading] = useState(true);
   const [content, setContent] = useState('');
   const [error, setError] = useState(null);
-  const backgroundColor = useThemeColor({}, 'background');
-  const textColor = useThemeColor({}, 'text');
   const router = useRouter();
 
   useEffect(() => {
-    fetchBlogContent();
+    loadBlogContent();
   }, []);
 
-  const fetchBlogContent = async () => {
+  const loadBlogContent = async () => {
     try {
-      // Import needs to be inside function to avoid circular dependency
-      const { fetchBlogContentById } = require('../services/wixBlogService');
-      
-      // Fetch the blog content using our service
+      setLoading(true);
       const blogContent = await fetchBlogContentById(id as string, link as string);
       setContent(blogContent);
-      setLoading(false);
+      setError(null);
     } catch (err) {
       console.error('Error fetching blog content:', err);
       setError('Failed to load blog content. Please try again later.');
+    } finally {
       setLoading(false);
     }
   };
@@ -158,13 +155,5 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
-  },
-  webViewContainer: {
-    flex: 1,
-    height: Platform.OS === 'web' ? 800 : '100%',
-    marginTop: 16,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#f5f5f7',
   },
 });
