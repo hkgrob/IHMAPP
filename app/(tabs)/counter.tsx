@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Text, View, StyleSheet, TouchableOpacity, Dimensions, Vibration, Alert, ScrollView, StatusBar } from 'react-native';
+import { Text, View, StyleSheet, TouchableOpacity, Dimensions, Vibration, Alert, ScrollView, StatusBar, Platform } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -7,6 +7,7 @@ import { Colors } from '@/constants/Colors';
 import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
 
@@ -85,24 +86,41 @@ export default function CounterPage() {
   };
 
   const incrementCounter = async () => {
-    try {
-      // Play sound and vibrate
-      playSound();
-      Vibration.vibrate(50);
+    // Get latest settings
+    const soundEnabled = await AsyncStorage.getItem('soundEnabled');
+    const hapticEnabled = await AsyncStorage.getItem('hapticEnabled');
 
-      // Update counts
-      const newDailyCount = dailyCount + 1;
-      const newTotalCount = totalCount + 1;
-
-      setDailyCount(newDailyCount);
-      setTotalCount(newTotalCount);
-
-      // Save to storage
-      await AsyncStorage.setItem('dailyCount', newDailyCount.toString());
-      await AsyncStorage.setItem('totalCount', newTotalCount.toString());
-    } catch (error) {
-      console.error('Error incrementing counter:', error);
+    // Play sound if enabled and available
+    if (soundEnabled !== 'false' && sound) {
+      try {
+        await sound.replayAsync();
+        console.log('Playing sound');
+      } catch (error) {
+        console.error('Error playing sound:', error);
+      }
     }
+
+    // Add haptic feedback if enabled
+    if (hapticEnabled !== 'false' && Platform.OS !== 'web') {
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } catch (error) {
+        console.error('Error with haptic feedback:', error);
+        // Fallback to basic vibration
+        Vibration.vibrate(50);
+      }
+    }
+
+    // Update counts
+    const newDailyCount = dailyCount + 1;
+    const newTotalCount = totalCount + 1;
+
+    setDailyCount(newDailyCount);
+    setTotalCount(newTotalCount);
+
+    // Save to storage
+    await AsyncStorage.setItem('dailyCount', newDailyCount.toString());
+    await AsyncStorage.setItem('totalCount', newTotalCount.toString());
   };
 
   const resetCounter = async (type) => {

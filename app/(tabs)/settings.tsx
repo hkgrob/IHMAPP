@@ -9,6 +9,7 @@ import { BlurView } from 'expo-blur';
 import { StatusBar } from 'expo-status-bar';
 import { Audio } from 'expo-av';
 import * as Notifications from 'expo-notifications';
+import * as Haptics from 'expo-haptics';
 
 // Get screen dimensions
 const { width, height } = Dimensions.get('window');
@@ -274,9 +275,17 @@ export default function SettingsScreen() {
     }
   };
 
-  const toggleSound = (value) => {
+  const toggleSound = async (value) => {
     setSoundEnabled(value);
-    saveSettings('soundEnabled', value);
+    await saveSettings('soundEnabled', value.toString());
+    // Test sound when enabled
+    if (value && sound) {
+      try {
+        await sound.replayAsync();
+      } catch (error) {
+        console.error('Error playing test sound:', error);
+      }
+    }
   };
 
   const showTimePicker = () => {
@@ -305,9 +314,17 @@ export default function SettingsScreen() {
     }
   };
 
-  const toggleHaptic = (value) => {
+  const toggleHaptic = async (value) => {
     setHapticEnabled(value);
-    saveSettings('hapticEnabled', value);
+    await saveSettings('hapticEnabled', value.toString());
+    // Test haptic when enabled
+    if (value && Platform.OS !== 'web') {
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } catch (error) {
+        console.error('Error with haptic feedback:', error);
+      }
+    }
   };
 
   const resetAllData = () => {
