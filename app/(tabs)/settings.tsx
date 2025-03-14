@@ -357,6 +357,9 @@ const SettingsScreen = () => {
                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                     onChange={handleTimeChange}
                   />
+                  {Platform.OS === 'ios' && (
+                    <Button title="Done" onPress={() => setShowTimePicker(false)} />
+                  )}
                 </View>
               )}
               <TouchableOpacity onPress={() => setShowTimePicker2(true)}>
@@ -373,6 +376,9 @@ const SettingsScreen = () => {
                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                     onChange={handleTimeChange2}
                   />
+                  {Platform.OS === 'ios' && (
+                    <Button title="Done" onPress={() => setShowTimePicker2(false)} />
+                  )}
                 </View>
               )}
               <ThemedView style={styles.settingRow}>
