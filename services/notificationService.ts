@@ -24,7 +24,6 @@ export async function configureNotifications() {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
     
-    // Only ask if permissions have not been determined
     if (existingStatus !== 'granted') {
       console.log('Requesting notification permissions...');
       const { status } = await Notifications.requestPermissionsAsync();
@@ -63,10 +62,17 @@ export async function getNotificationTimes() {
 }
 
 // Save notification times
-export async function saveNotificationTimes(morningTime: { hour: number, minute: number }, eveningTime: { hour: number, minute: number }) {
+export async function saveNotificationTimes(morningTime, eveningTime) {
   try {
     await AsyncStorage.setItem(NOTIFICATION_MORNING_TIME_KEY, JSON.stringify(morningTime));
     await AsyncStorage.setItem(NOTIFICATION_EVENING_TIME_KEY, JSON.stringify(eveningTime));
+    
+    // If notifications are enabled, reschedule them with new times
+    const enabled = await areNotificationsEnabled();
+    if (enabled) {
+      await scheduleAllNotifications();
+    }
+    
     return true;
   } catch (error) {
     console.error('Error saving notification times:', error);
@@ -86,7 +92,7 @@ export async function areNotificationsEnabled() {
 }
 
 // Set notifications enabled state
-export async function setNotificationsEnabled(enabled: boolean) {
+export async function setNotificationsEnabled(enabled) {
   try {
     await AsyncStorage.setItem(NOTIFICATIONS_ENABLED_KEY, enabled ? 'true' : 'false');
     
@@ -99,54 +105,6 @@ export async function setNotificationsEnabled(enabled: boolean) {
     return true;
   } catch (error) {
     console.error('Error setting notifications enabled:', error);
-    return false;
-  }
-}
-
-// Schedule morning notification
-async function scheduleMorningNotification(time: { hour: number, minute: number }) {
-  try {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Morning Declarations",
-        body: "It's time for your morning declarations! Start your day with positivity.",
-        sound: true,
-      },
-      trigger: {
-        hour: time.hour,
-        minute: time.minute,
-        repeats: true,
-      },
-      identifier: 'morning-declaration',
-    });
-    console.log(`Morning notification scheduled for ${time.hour}:${time.minute}`);
-    return true;
-  } catch (error) {
-    console.error('Error scheduling morning notification:', error);
-    return false;
-  }
-}
-
-// Schedule evening notification
-async function scheduleEveningNotification(time: { hour: number, minute: number }) {
-  try {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Evening Declarations",
-        body: "It's time for your evening declarations! End your day with powerful affirmations.",
-        sound: true,
-      },
-      trigger: {
-        hour: time.hour,
-        minute: time.minute,
-        repeats: true,
-      },
-      identifier: 'evening-declaration',
-    });
-    console.log(`Evening notification scheduled for ${time.hour}:${time.minute}`);
-    return true;
-  } catch (error) {
-    console.error('Error scheduling evening notification:', error);
     return false;
   }
 }
@@ -172,9 +130,33 @@ export async function scheduleAllNotifications() {
     // Get notification times
     const { morningTime, eveningTime } = await getNotificationTimes();
     
-    // Schedule notifications
-    await scheduleMorningNotification(morningTime);
-    await scheduleEveningNotification(eveningTime);
+    // Schedule morning notification
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Morning Declarations",
+        body: "It's time for your morning declarations! Start your day with positivity.",
+      },
+      trigger: {
+        hour: morningTime.hour,
+        minute: morningTime.minute,
+        repeats: true,
+      },
+      identifier: 'morning-declaration',
+    });
+    
+    // Schedule evening notification
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Evening Declarations",
+        body: "It's time for your evening declarations! End your day with powerful affirmations.",
+      },
+      trigger: {
+        hour: eveningTime.hour,
+        minute: eveningTime.minute,
+        repeats: true,
+      },
+      identifier: 'evening-declaration',
+    });
     
     console.log('All notifications scheduled successfully');
     return true;
@@ -187,13 +169,15 @@ export async function scheduleAllNotifications() {
 // Cancel all scheduled notifications
 export async function cancelAllNotifications() {
   if (Platform.OS === 'web') {
-    return;
+    return false;
   }
 
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
     console.log('All notifications cancelled');
+    return true;
   } catch (error) {
     console.error('Error cancelling notifications:', error);
+    return false;
   }
 }

@@ -40,7 +40,7 @@ export default function RootLayout() {
     const initNotifications = async () => {
       try {
         console.log('Setting up notification handler');
-        await Notifications.setNotificationHandler({
+        Notifications.setNotificationHandler({
           handleNotification: async () => ({
             shouldShowAlert: true,
             shouldPlaySound: true,
