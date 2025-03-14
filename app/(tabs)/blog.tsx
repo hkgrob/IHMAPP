@@ -137,8 +137,8 @@ export default function BlogScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={["#F5A623"]}
-            tintColor="#F5A623"
+            colors={["#0a7ea4"]}
+            tintColor="#0a7ea4"
           />
         }
       >
