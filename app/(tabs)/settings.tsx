@@ -154,48 +154,40 @@ export default function SettingsScreen() {
   };
 
   const scheduleReminderAtTime = async (timeString, identifier) => {
-    const timePattern = /(\d+):(\d+)\s*(AM|PM)/i;
-    const match = timeString.match(timePattern);
+    try {
+      const timePattern = /(\d+):(\d+)\s*(AM|PM)/i;
+      const match = timeString.match(timePattern);
 
-    if (!match) return;
+      if (!match) return;
 
-    let hours = parseInt(match[1], 10);
-    const minutes = parseInt(match[2], 10);
-    const period = match[3].toUpperCase();
+      let hours = parseInt(match[1], 10);
+      const minutes = parseInt(match[2], 10);
+      const period = match[3].toUpperCase();
 
-    if (period === 'PM' && hours < 12) hours += 12;
-    if (period === 'AM' && hours === 12) hours = 0;
+      if (period === 'PM' && hours < 12) hours += 12;
+      if (period === 'AM' && hours === 12) hours = 0;
 
-    const now = new Date();
-    const scheduledTime = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      hours,
-      minutes,
-      0,
-      0
-    );
+      // Cancel existing notification before scheduling new one
+      await Notifications.cancelScheduledNotificationAsync(identifier);
 
-    if (scheduledTime <= now) {
-      scheduledTime.setDate(scheduledTime.getDate() + 1);
+      await Notifications.scheduleNotificationAsync({
+        identifier,
+        content: {
+          title: 'Declaration Reminder',
+          body: "It's Declaration time",
+          sound: soundEnabled ? 'default' : false,
+        },
+        trigger: {
+          hour: hours,
+          minute: minutes,
+          repeats: true,
+        },
+      }).catch(error => {
+        console.error('Failed to schedule notification:', error);
+      });
+    } catch (error) {
+      console.error('Error in scheduleReminderAtTime:', error);
     }
-
-    const secondsUntil = Math.max(1, Math.floor((scheduledTime - now) / 1000));
-
-    await Notifications.scheduleNotificationAsync({
-      identifier,
-      content: {
-        title: 'Declaration Reminder',
-        body: "It's Declaration time",
-        sound: soundEnabled ? 'default' : false,
-      },
-      trigger: {
-        hour: hours,
-        minute: minutes,
-        repeats: true,
-      },
-    });
   };
 
   const toggleNotifications = async (value) => {
@@ -219,22 +211,24 @@ export default function SettingsScreen() {
   };
 
   const handleTimeConfirm = async (date) => {
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const formattedHours = hours % 12 === 0 ? 12 : hours % 12;
-    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
-    const formattedTime = `${formattedHours}:${formattedMinutes} ${period}`;
+    try {
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const formattedHours = hours % 12 === 0 ? 12 : hours % 12;
+      const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+      const formattedTime = `${formattedHours}:${formattedMinutes} ${period}`;
 
-    setReminderTime(formattedTime);
-    await saveSettings('reminderTime', formattedTime)
-      .then(() => {
-        if (notificationsEnabled) {
-          // Small delay to ensure state is saved before scheduling
-          setTimeout(() => scheduleNotification(), 300);
-        }
-      });
-    setTimePickerVisible(false);
+      setTimePickerVisible(false);
+      setReminderTime(formattedTime);
+      await saveSettings('reminderTime', formattedTime);
+      
+      if (notificationsEnabled) {
+        await scheduleNotification();
+      }
+    } catch (error) {
+      console.error('Error in handleTimeConfirm:', error);
+    }
   };
 
   const handleTimeConfirm2 = async (date) => {
