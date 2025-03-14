@@ -3,220 +3,210 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Storage key
-const NOTIFICATION_SETTINGS_KEY = 'notification_settings';
+// Keys for AsyncStorage
+const NOTIFICATION_MORNING_TIME_KEY = 'notification_morning_time';
+const NOTIFICATION_EVENING_TIME_KEY = 'notification_evening_time';
+const NOTIFICATIONS_ENABLED_KEY = 'notifications_enabled';
 
-// Types
-export interface NotificationTime {
-  hour: number;
-  minute: number;
-}
+// Default notification times
+const DEFAULT_MORNING_TIME = { hour: 9, minute: 0 };
+const DEFAULT_EVENING_TIME = { hour: 20, minute: 0 };
 
-export interface NotificationSettings {
-  enabled: boolean;
-  morningTime: NotificationTime;
-  eveningTime: NotificationTime;
-  sound: boolean;
-}
-
-// Default notification settings
-export const DEFAULT_SETTINGS: NotificationSettings = {
-  enabled: false,
-  morningTime: { hour: 8, minute: 0 },
-  eveningTime: { hour: 20, minute: 0 },
-  sound: true,
-};
-
-// Configure notifications handler
-export const configureNotifications = async (): Promise<void> => {
+// Configure notifications
+export async function configureNotifications() {
   if (Platform.OS === 'web') {
-    console.log('Skipping notification setup for web platform');
-    return;
+    console.log('Notifications not supported on web');
+    return false;
   }
-  
-  try {
-    // Set notification handler for foreground notifications
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-      }),
-    });
-
-    // Create notification channel for Android
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('declarations-reminders', {
-        name: 'Declaration Reminders',
-        importance: Notifications.AndroidImportance.HIGH,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
-        sound: true,
-      });
-    }
-    
-    console.log('Notifications configured successfully');
-  } catch (error) {
-    console.error('Error configuring notifications:', error);
-    // Don't throw the error, just log it
-  }
-};
-
-// Request permissions
-export const requestNotificationPermissions = async (): Promise<boolean> => {
-  if (Platform.OS === 'web') return false;
 
   try {
+    // Request permissions - required for iOS
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
-
-    // If not granted, request permissions
+    
+    // Only ask if permissions have not been determined
     if (existingStatus !== 'granted') {
+      console.log('Requesting notification permissions...');
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
+    
+    if (finalStatus !== 'granted') {
+      console.log('Failed to get notification permissions');
+      return false;
+    }
 
-    return finalStatus === 'granted';
+    // Configure how notifications appear when the app is in the foreground
+    await Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
+
+    console.log('Notifications configured successfully');
+    return true;
   } catch (error) {
-    console.error('Error requesting notification permissions:', error);
+    console.error('Error configuring notifications:', error);
     return false;
   }
-};
+}
 
-// Save notification settings
-export const saveNotificationSettings = async (settings: NotificationSettings): Promise<void> => {
+// Get stored notification times or defaults
+export async function getNotificationTimes() {
   try {
-    await AsyncStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(settings));
-    console.log('Notification settings saved:', settings);
+    const morningTimeStr = await AsyncStorage.getItem(NOTIFICATION_MORNING_TIME_KEY);
+    const eveningTimeStr = await AsyncStorage.getItem(NOTIFICATION_EVENING_TIME_KEY);
+    
+    const morningTime = morningTimeStr ? JSON.parse(morningTimeStr) : DEFAULT_MORNING_TIME;
+    const eveningTime = eveningTimeStr ? JSON.parse(eveningTimeStr) : DEFAULT_EVENING_TIME;
+    
+    return { morningTime, eveningTime };
   } catch (error) {
-    console.error('Error saving notification settings:', error);
+    console.error('Error getting notification times:', error);
+    return { 
+      morningTime: DEFAULT_MORNING_TIME, 
+      eveningTime: DEFAULT_EVENING_TIME 
+    };
   }
-};
+}
 
-// Get notification settings
-export const getNotificationSettings = async (): Promise<NotificationSettings> => {
+// Save notification times
+export async function saveNotificationTimes(morningTime: { hour: number, minute: number }, eveningTime: { hour: number, minute: number }) {
   try {
-    const settings = await AsyncStorage.getItem(NOTIFICATION_SETTINGS_KEY);
-    if (!settings) return DEFAULT_SETTINGS;
-    return JSON.parse(settings);
+    await AsyncStorage.setItem(NOTIFICATION_MORNING_TIME_KEY, JSON.stringify(morningTime));
+    await AsyncStorage.setItem(NOTIFICATION_EVENING_TIME_KEY, JSON.stringify(eveningTime));
+    return true;
   } catch (error) {
-    console.error('Error getting notification settings:', error);
-    return DEFAULT_SETTINGS;
+    console.error('Error saving notification times:', error);
+    return false;
   }
-};
+}
+
+// Check if notifications are enabled
+export async function areNotificationsEnabled() {
+  try {
+    const enabled = await AsyncStorage.getItem(NOTIFICATIONS_ENABLED_KEY);
+    return enabled === 'true';
+  } catch (error) {
+    console.error('Error checking if notifications are enabled:', error);
+    return false;
+  }
+}
+
+// Set notifications enabled state
+export async function setNotificationsEnabled(enabled: boolean) {
+  try {
+    await AsyncStorage.setItem(NOTIFICATIONS_ENABLED_KEY, enabled ? 'true' : 'false');
+    
+    if (enabled) {
+      await scheduleAllNotifications();
+    } else {
+      await cancelAllNotifications();
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error setting notifications enabled:', error);
+    return false;
+  }
+}
+
+// Create notification trigger for specified time
+function createDailyTrigger(hour: number, minute: number) {
+  return {
+    hour: hour,
+    minute: minute,
+    repeats: true,
+  };
+}
+
+// Schedule morning notification
+async function scheduleMorningNotification(time: { hour: number, minute: number }) {
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Morning Declarations",
+        body: "It's time for your morning declarations! Start your day with positivity.",
+        sound: true,
+        priority: Notifications.AndroidNotificationPriority.HIGH,
+      },
+      trigger: createDailyTrigger(time.hour, time.minute),
+      identifier: 'morning-declaration',
+    });
+    console.log(`Morning notification scheduled for ${time.hour}:${time.minute}`);
+    return true;
+  } catch (error) {
+    console.error('Error scheduling morning notification:', error);
+    return false;
+  }
+}
+
+// Schedule evening notification
+async function scheduleEveningNotification(time: { hour: number, minute: number }) {
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Evening Declarations",
+        body: "It's time for your evening declarations! End your day with powerful affirmations.",
+        sound: true,
+        priority: Notifications.AndroidNotificationPriority.HIGH,
+      },
+      trigger: createDailyTrigger(time.hour, time.minute),
+      identifier: 'evening-declaration',
+    });
+    console.log(`Evening notification scheduled for ${time.hour}:${time.minute}`);
+    return true;
+  } catch (error) {
+    console.error('Error scheduling evening notification:', error);
+    return false;
+  }
+}
 
 // Schedule all notifications
-export const scheduleAllNotifications = async (): Promise<void> => {
+export async function scheduleAllNotifications() {
   if (Platform.OS === 'web') {
-    console.log('Skipping notification scheduling on web platform');
-    return;
+    console.log('Notifications not supported on web');
+    return false;
   }
-  
+
   try {
-    const settings = await getNotificationSettings();
+    // First cancel any existing notifications
+    await cancelAllNotifications();
     
-    // If notifications are disabled, cancel all and return
-    if (!settings.enabled) {
-      console.log('Notifications are disabled, cancelling all scheduled notifications');
-      await Notifications.cancelAllScheduledNotificationsAsync();
-      return;
+    // Check if notifications are enabled
+    const enabled = await areNotificationsEnabled();
+    if (!enabled) {
+      console.log('Notifications are disabled, not scheduling');
+      return false;
     }
     
-    // Cancel all existing notifications first
-    await Notifications.cancelAllScheduledNotificationsAsync();
+    // Get notification times
+    const { morningTime, eveningTime } = await getNotificationTimes();
     
-    // Schedule morning notification
-    await scheduleNotification(
-      'morning-declaration',
-      'Morning Declarations',
-      'Time for your morning declarations to start your day with purpose!',
-      settings.morningTime,
-      settings.sound
-    );
+    // Schedule notifications
+    await scheduleMorningNotification(morningTime);
+    await scheduleEveningNotification(eveningTime);
     
-    // Schedule evening notification
-    await scheduleNotification(
-      'evening-declaration',
-      'Evening Declarations',
-      'Time for your evening declarations to end your day with gratitude!',
-      settings.eveningTime,
-      settings.sound
-    );
-    
-    console.log('Notifications scheduled successfully');
+    console.log('All notifications scheduled successfully');
+    return true;
   } catch (error) {
     console.error('Error scheduling notifications:', error);
-    // Don't throw the error, just log it
+    return false;
   }
-};
+}
 
-// Schedule a single notification
-const scheduleNotification = async (
-  identifier: string,
-  title: string,
-  body: string,
-  time: NotificationTime,
-  withSound: boolean
-): Promise<string | null> => {
-  if (Platform.OS === 'web') return null;
-  
+// Cancel all scheduled notifications
+export async function cancelAllNotifications() {
+  if (Platform.OS === 'web') {
+    return;
+  }
+
   try {
-    // Calculate trigger time
-    const now = new Date();
-    const triggerDate = new Date(now);
-    triggerDate.setHours(time.hour);
-    triggerDate.setMinutes(time.minute);
-    triggerDate.setSeconds(0);
-    
-    // If time has already passed today, schedule for tomorrow
-    if (triggerDate <= now) {
-      triggerDate.setDate(triggerDate.getDate() + 1);
-    }
-    
-    // Schedule the notification
-    const id = await Notifications.scheduleNotificationAsync({
-      content: {
-        title,
-        body,
-        sound: withSound,
-      },
-      trigger: {
-        channelId: Platform.OS === 'android' ? 'declarations-reminders' : undefined,
-        hour: time.hour,
-        minute: time.minute,
-        repeats: true,
-      },
-    });
-    
-    return id;
+    await Notifications.cancelAllScheduledNotificationsAsync();
+    console.log('All notifications cancelled');
   } catch (error) {
-    console.error(`Error scheduling ${identifier} notification:`, error);
-    return null;
+    console.error('Error cancelling notifications:', error);
   }
-};
-
-// Helper to format time display (12-hour format with AM/PM)
-export const formatTimeDisplay = (time: NotificationTime): string => {
-  const hour12 = time.hour % 12 || 12;
-  const minute = time.minute.toString().padStart(2, '0');
-  const period = time.hour < 12 ? 'AM' : 'PM';
-  return `${hour12}:${minute} ${period}`;
-};
-
-// Convert Date to NotificationTime
-export const dateToNotificationTime = (date: Date): NotificationTime => {
-  return {
-    hour: date.getHours(),
-    minute: date.getMinutes(),
-  };
-};
-
-// Convert NotificationTime to Date
-export const notificationTimeToDate = (time: NotificationTime): Date => {
-  const date = new Date();
-  date.setHours(time.hour);
-  date.setMinutes(time.minute);
-  date.setSeconds(0);
-  date.setMilliseconds(0);
-  return date;
-};
+}

@@ -1,339 +1,216 @@
-
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  StyleSheet, 
-  Switch, 
-  TouchableOpacity, 
-  Platform,
-  Modal,
-  Alert
-} from 'react-native';
+import { View, StyleSheet, Switch, Platform, TouchableOpacity, Alert } from 'react-native';
 import { ThemedText } from './ThemedText';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { 
-  requestNotificationPermissions,
-  getNotificationSettings,
-  saveNotificationSettings,
-  scheduleAllNotifications,
-  formatTimeDisplay,
-  dateToNotificationTime,
-  notificationTimeToDate,
-  NotificationSettings as NotificationSettingsType
+  areNotificationsEnabled, 
+  setNotificationsEnabled, 
+  getNotificationTimes, 
+  saveNotificationTimes, 
+  configureNotifications 
 } from '../services/notificationService';
 
 export const NotificationSettings = () => {
-  // States for settings
-  const [enabled, setEnabled] = useState(false);
-  const [morningTime, setMorningTime] = useState(new Date());
-  const [eveningTime, setEveningTime] = useState(new Date());
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  
-  // States for time picker
+  const [notificationsEnabled, setNotificationsEnabledState] = useState(false);
   const [showMorningPicker, setShowMorningPicker] = useState(false);
   const [showEveningPicker, setShowEveningPicker] = useState(false);
-  
-  // Load saved settings
+  const [morningTime, setMorningTime] = useState({ hour: 9, minute: 0 });
+  const [eveningTime, setEveningTime] = useState({ hour: 20, minute: 0 });
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        // Check if notifications are configured and enabled
+        const enabled = await areNotificationsEnabled();
+        setNotificationsEnabledState(enabled);
+
+        // Get notification times
+        const times = await getNotificationTimes();
+        setMorningTime(times.morningTime);
+        setEveningTime(times.eveningTime);
+      } catch (error) {
+        console.error('Error loading notification settings:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadSettings();
   }, []);
 
-  const loadSettings = async () => {
+  const handleToggleNotifications = async (value: boolean) => {
     try {
-      const settings = await getNotificationSettings();
-      
-      setEnabled(settings.enabled);
-      setMorningTime(notificationTimeToDate(settings.morningTime));
-      setEveningTime(notificationTimeToDate(settings.eveningTime));
-      setSoundEnabled(settings.sound);
-    } catch (error) {
-      console.error('Error loading notification settings:', error);
-    }
-  };
-
-  // Handle time change for morning notification
-  const handleMorningTimeChange = (event, selectedDate) => {
-    if (Platform.OS === 'android') {
-      setShowMorningPicker(false);
-    }
-    
-    if (selectedDate) {
-      setMorningTime(selectedDate);
-      updateSettings({ morningTime: dateToNotificationTime(selectedDate) });
-    }
-  };
-
-  // Handle time change for evening notification
-  const handleEveningTimeChange = (event, selectedDate) => {
-    if (Platform.OS === 'android') {
-      setShowEveningPicker(false);
-    }
-    
-    if (selectedDate) {
-      setEveningTime(selectedDate);
-      updateSettings({ eveningTime: dateToNotificationTime(selectedDate) });
-    }
-  };
-
-  // Toggle notifications
-  const toggleNotifications = async (value) => {
-    try {
-      if (value && Platform.OS !== 'web') {
-        console.log('Requesting notification permissions');
-        // Request permissions if enabling
-        const permissionGranted = await requestNotificationPermissions();
-        
-        if (!permissionGranted) {
-          console.log('Notification permission denied');
+      if (value) {
+        // If turning on notifications, configure them first
+        const configured = await configureNotifications();
+        if (!configured) {
           Alert.alert(
-            'Permission Required',
-            'Please enable notifications in your device settings to receive declaration reminders.',
-            [{ text: 'OK' }]
+            "Notification Permission Required",
+            "Please enable notifications in your device settings to receive declaration reminders.",
+            [{ text: "OK" }]
           );
-          setEnabled(false); // Ensure UI shows correct state
           return;
         }
-        console.log('Notification permission granted');
       }
-      
-      // Update state first to provide immediate feedback
-      setEnabled(value);
-      
-      // Then update settings
-      await updateSettings({ enabled: value });
-      console.log('Notifications enabled:', value);
-      
-      // Provide haptic feedback on supported platforms
-      if (Platform.OS !== 'web' && Platform.OS !== 'android') {
-        try {
-          Haptics.notificationAsync(
-            value 
-              ? Haptics.NotificationFeedbackType.Success 
-              : Haptics.NotificationFeedbackType.Warning
-          ).catch(err => {
-            console.log('Haptic feedback not available:', err);
-          });
-        } catch (hapticError) {
-          console.log('Haptic feedback not available');
-        }
-      }
+
+      // Update local state
+      setNotificationsEnabledState(value);
+
+      // Save setting and schedule or cancel notifications
+      await setNotificationsEnabled(value);
     } catch (error) {
       console.error('Error toggling notifications:', error);
-      // Revert UI state on error
-      setEnabled(!value);
       Alert.alert(
-        'Error',
-        'There was a problem with notification settings. Please try again.',
-        [{ text: 'OK' }]
+        "Error",
+        "There was a problem setting up notifications. Please try again.",
+        [{ text: "OK" }]
       );
     }
   };
 
-  // Toggle sound
-  const toggleSound = (value) => {
-    setSoundEnabled(value);
-    updateSettings({ sound: value });
-  };
+  const handleMorningTimeChange = async (event: DateTimePickerEvent, selectedDate?: Date) => {
+    setShowMorningPicker(Platform.OS === 'ios');
 
-  // Update settings and schedule notifications
-  const updateSettings = async (updatedValues) => {
-    try {
-      const currentSettings = await getNotificationSettings();
-      const newSettings = { ...currentSettings, ...updatedValues } as NotificationSettingsType;
-      
-      await saveNotificationSettings(newSettings);
-      
-      if (Platform.OS !== 'web') {
-        await scheduleAllNotifications();
+    if (selectedDate) {
+      const newMorningTime = {
+        hour: selectedDate.getHours(),
+        minute: selectedDate.getMinutes()
+      };
+
+      setMorningTime(newMorningTime);
+
+      try {
+        await saveNotificationTimes(newMorningTime, eveningTime);
+        if (notificationsEnabled) {
+          await setNotificationsEnabled(true); // This will reschedule notifications
+        }
+      } catch (error) {
+        console.error('Error saving morning time:', error);
       }
-    } catch (error) {
-      console.error('Error updating notification settings:', error);
     }
   };
 
-  // Web notification message
-  const renderWebNoticeMessage = () => {
-    if (Platform.OS === 'web') {
-      return (
-        <View style={styles.webNotice}>
-          <ThemedText style={styles.webNoticeText}>
-            Notifications are designed for mobile devices. Please install the app on your iOS or Android device for the best experience.
-          </ThemedText>
-        </View>
-      );
+  const handleEveningTimeChange = async (event: DateTimePickerEvent, selectedDate?: Date) => {
+    setShowEveningPicker(Platform.OS === 'ios');
+
+    if (selectedDate) {
+      const newEveningTime = {
+        hour: selectedDate.getHours(),
+        minute: selectedDate.getMinutes()
+      };
+
+      setEveningTime(newEveningTime);
+
+      try {
+        await saveNotificationTimes(morningTime, newEveningTime);
+        if (notificationsEnabled) {
+          await setNotificationsEnabled(true); // This will reschedule notifications
+        }
+      } catch (error) {
+        console.error('Error saving evening time:', error);
+      }
     }
-    return null;
   };
+
+  const formatTime = (hour: number, minute: number) => {
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+    const displayMinute = minute < 10 ? `0${minute}` : minute;
+    return `${displayHour}:${displayMinute} ${period}`;
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ThemedText style={styles.loadingText}>Loading notification settings...</ThemedText>
+      </View>
+    );
+  }
+
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.container}>
+        <ThemedText style={styles.notSupportedText}>
+          Notifications are not supported on web. Please use the mobile app to set up notifications.
+        </ThemedText>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {renderWebNoticeMessage()}
-      
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Ionicons name="notifications" size={24} color="#0a7ea4" />
-          <ThemedText style={styles.sectionTitle}>Declaration Reminders</ThemedText>
-        </View>
-        
-        <View style={styles.settingRow}>
-          <ThemedText>Enable Daily Reminders</ThemedText>
-          <Switch
-            value={enabled}
-            onValueChange={toggleNotifications}
-            trackColor={{ false: '#767577', true: '#0a7ea4' }}
-            thumbColor={enabled ? '#f4f3f4' : '#f4f3f4'}
-          />
-        </View>
-        
-        {enabled && (
-          <>
-            <TouchableOpacity 
-              style={styles.settingRow}
-              onPress={() => {
-                if (Platform.OS === 'ios') {
-                  setShowMorningPicker(true);
-                } else if (Platform.OS === 'android') {
-                  setShowMorningPicker(true);
-                }
-              }}
-            >
-              <ThemedText>Morning Reminder</ThemedText>
-              <View style={styles.timeContainer}>
-                <ThemedText style={styles.timeText}>
-                  {formatTimeDisplay(dateToNotificationTime(morningTime))}
-                </ThemedText>
-                <Ionicons name="time-outline" size={20} color="#0a7ea4" style={styles.timeIcon} />
-              </View>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.settingRow}
-              onPress={() => {
-                if (Platform.OS === 'ios') {
-                  setShowEveningPicker(true);
-                } else if (Platform.OS === 'android') {
-                  setShowEveningPicker(true);
-                }
-              }}
-            >
-              <ThemedText>Evening Reminder</ThemedText>
-              <View style={styles.timeContainer}>
-                <ThemedText style={styles.timeText}>
-                  {formatTimeDisplay(dateToNotificationTime(eveningTime))}
-                </ThemedText>
-                <Ionicons name="time-outline" size={20} color="#0a7ea4" style={styles.timeIcon} />
-              </View>
-            </TouchableOpacity>
-            
-            <View style={styles.settingRow}>
-              <ThemedText>Play Sound</ThemedText>
-              <Switch
-                value={soundEnabled}
-                onValueChange={toggleSound}
-                trackColor={{ false: '#767577', true: '#0a7ea4' }}
-                thumbColor={soundEnabled ? '#f4f3f4' : '#f4f3f4'}
-              />
-            </View>
-          </>
-        )}
+      <View style={styles.settingRow}>
+        <ThemedText style={styles.settingLabel}>Enable Notifications</ThemedText>
+        <Switch
+          value={notificationsEnabled}
+          onValueChange={handleToggleNotifications}
+          trackColor={{ false: '#d3d3d3', true: '#0a7ea4' }}
+          thumbColor={notificationsEnabled ? '#ffffff' : '#f4f3f4'}
+        />
       </View>
 
-      {/* Time pickers */}
-      {(showMorningPicker || showEveningPicker) && Platform.OS === 'android' && (
+      <View style={[styles.settingRow, { opacity: notificationsEnabled ? 1 : 0.5 }]}>
+        <ThemedText style={styles.settingLabel}>Morning Reminder</ThemedText>
+        <TouchableOpacity
+          onPress={() => notificationsEnabled && setShowMorningPicker(true)}
+          disabled={!notificationsEnabled}
+          style={styles.timeButton}
+        >
+          <ThemedText style={styles.timeButtonText}>
+            {formatTime(morningTime.hour, morningTime.minute)}
+          </ThemedText>
+        </TouchableOpacity>
+      </View>
+
+      <View style={[styles.settingRow, { opacity: notificationsEnabled ? 1 : 0.5 }]}>
+        <ThemedText style={styles.settingLabel}>Evening Reminder</ThemedText>
+        <TouchableOpacity
+          onPress={() => notificationsEnabled && setShowEveningPicker(true)}
+          disabled={!notificationsEnabled}
+          style={styles.timeButton}
+        >
+          <ThemedText style={styles.timeButtonText}>
+            {formatTime(eveningTime.hour, eveningTime.minute)}
+          </ThemedText>
+        </TouchableOpacity>
+      </View>
+
+      {(showMorningPicker || Platform.OS === 'ios') && notificationsEnabled && (
         <DateTimePicker
-          value={showMorningPicker ? morningTime : eveningTime}
+          value={new Date().setHours(morningTime.hour, morningTime.minute)}
           mode="time"
           is24Hour={false}
-          display="default"
-          onChange={showMorningPicker ? handleMorningTimeChange : handleEveningTimeChange}
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleMorningTimeChange}
+          style={{ display: showMorningPicker ? 'flex' : 'none' }}
         />
       )}
-      
-      {/* iOS Modal Time Picker for Morning */}
-      {Platform.OS === 'ios' && (
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={showMorningPicker}
-          onRequestClose={() => setShowMorningPicker(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <ThemedText style={styles.modalTitle}>Set Morning Reminder</ThemedText>
-                <TouchableOpacity onPress={() => setShowMorningPicker(false)}>
-                  <ThemedText style={styles.doneButton}>Done</ThemedText>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={morningTime}
-                mode="time"
-                display="spinner"
-                onChange={handleMorningTimeChange}
-                style={styles.picker}
-              />
-            </View>
-          </View>
-        </Modal>
+
+      {(showEveningPicker || Platform.OS === 'ios') && notificationsEnabled && (
+        <DateTimePicker
+          value={new Date().setHours(eveningTime.hour, eveningTime.minute)}
+          mode="time"
+          is24Hour={false}
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleEveningTimeChange}
+          style={{ display: showEveningPicker ? 'flex' : 'none' }}
+        />
       )}
-      
-      {/* iOS Modal Time Picker for Evening */}
-      {Platform.OS === 'ios' && (
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={showEveningPicker}
-          onRequestClose={() => setShowEveningPicker(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <ThemedText style={styles.modalTitle}>Set Evening Reminder</ThemedText>
-                <TouchableOpacity onPress={() => setShowEveningPicker(false)}>
-                  <ThemedText style={styles.doneButton}>Done</ThemedText>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={eveningTime}
-                mode="time"
-                display="spinner"
-                onChange={handleEveningTimeChange}
-                style={styles.picker}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
+
+      <ThemedText style={styles.helpText}>
+        Notifications will remind you to say your declarations twice daily.
+      </ThemedText>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
-  },
-  section: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    marginBottom: 16,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginLeft: 8,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    marginVertical: 10,
   },
   settingRow: {
     flexDirection: 'row',
@@ -341,62 +218,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#e0e0e0',
   },
-  timeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  timeText: {
+  settingLabel: {
     fontSize: 16,
-    color: '#0a7ea4',
+    fontWeight: '500',
   },
-  timeIcon: {
-    marginLeft: 8,
+  timeButton: {
+    backgroundColor: '#e0e0e0',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
   },
-  webNotice: {
-    backgroundColor: '#FFDDB0',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+  timeButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
-  webNoticeText: {
+  helpText: {
+    marginTop: 16,
     fontSize: 14,
-    color: '#805B10',
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  loadingText: {
     textAlign: 'center',
+    padding: 20,
   },
-  // Modal styles for iOS
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  doneButton: {
-    color: '#0a7ea4',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  picker: {
-    height: 200,
-  },
+  notSupportedText: {
+    textAlign: 'center',
+    padding: 20,
+    color: '#666',
+  }
 });

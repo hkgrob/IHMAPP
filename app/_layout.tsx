@@ -30,30 +30,31 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
-  // Initialize notifications for mobile only
+  // Initialize notifications for mobile only - with better error handling
   useEffect(() => {
     if (Platform.OS === 'web') {
       console.log('Skipping notifications for web platform');
       return;
     }
     
-    // Safe initialization - catch any errors to prevent app crashes
+    // Safe initialization with minimal impact on app loading
     const initNotifications = async () => {
       try {
         console.log('Initializing notifications for mobile');
-        // Configure notification handler
-        await configureNotifications();
-        console.log('Notification configuration complete');
+        
+        // Just configure the handler - we'll request permissions later when needed
+        await Notifications.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
+          }),
+        });
+        
+        console.log('Basic notification handler configured');
       } catch (error) {
-        console.error('Error during notification configuration:', error);
-      }
-      
-      // Schedule notifications in a separate try block
-      try {
-        await scheduleAllNotifications();
-        console.log('Notification scheduling complete');
-      } catch (scheduleError) {
-        console.error('Error scheduling notifications:', scheduleError);
+        console.error('Error setting up notification handler:', error);
+        // This shouldn't block app loading
       }
     };
 
