@@ -263,6 +263,10 @@ export const scheduleReminder = async (reminder: Reminder): Promise<string | nul
       console.log('Trigger time is too soon, scheduling for tomorrow instead');
       triggerDate.setDate(triggerDate.getDate() + 1);
       console.log(`Rescheduled for: ${triggerDate.toLocaleString()}`);
+      
+      // Recalculate msTillTrigger after updating the date
+      msTillTrigger = triggerDate.getTime() - now.getTime();
+      console.log(`New time until trigger: ${Math.floor(msTillTrigger / (1000 * 60 * 60))}h ${Math.floor((msTillTrigger % (1000 * 60 * 60)) / (1000 * 60))}m`);
     }
     
     // Schedule the one-time notification with the adjusted date
@@ -312,6 +316,9 @@ export const applyAllReminders = async (): Promise<boolean> => {
     console.log('Cancelling all existing notifications...');
     await Notifications.cancelAllScheduledNotificationsAsync();
     
+    // Wait for cancellation to complete
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     // Double-check cancellation completed
     const afterCancel = await Notifications.getAllScheduledNotificationsAsync();
     if (afterCancel.length > 0) {
@@ -323,6 +330,9 @@ export const applyAllReminders = async (): Promise<boolean> => {
           await Notifications.cancelScheduledNotificationAsync(notification.identifier);
         }
       }
+      
+      // Additional wait to ensure cancellation completes
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Final cancellation check
       const finalCancel = await Notifications.getAllScheduledNotificationsAsync();
@@ -340,7 +350,7 @@ export const applyAllReminders = async (): Promise<boolean> => {
     
     // Schedule all enabled reminders one at a time
     let scheduledCount = 0;
-    let scheduledIds = new Set(); // Track which reminders we've scheduled to prevent duplicates
+    let scheduledIds = new Map(); // Track which reminders we've scheduled to prevent duplicates
     
     // Schedule sequentially with longer delays between each reminder
     for (let i = 0; i < reminders.length; i++) {
@@ -349,14 +359,14 @@ export const applyAllReminders = async (): Promise<boolean> => {
       if (reminder.enabled && !scheduledIds.has(reminder.id)) {
         console.log(`[${i+1}/${reminders.length}] Scheduling reminder ID ${reminder.id} for ${formatTime(reminder.time)}`);
         
-        // Add a delay to prevent batching issues
-        await new Promise(resolve => setTimeout(resolve, 800));
+        // Add a longer delay to prevent batching issues
+        await new Promise(resolve => setTimeout(resolve, 1200));
         
         try {
           const id = await scheduleReminder(reminder);
           if (id) {
             scheduledCount++;
-            scheduledIds.add(reminder.id);
+            scheduledIds.set(reminder.id, id);
             console.log(`Successfully scheduled reminder ID: ${id}`);
           } else {
             console.log(`Skipped scheduling reminder ID: ${reminder.id} (likely too soon)`);
@@ -373,14 +383,20 @@ export const applyAllReminders = async (): Promise<boolean> => {
     
     console.log(`Successfully scheduled ${scheduledCount} of ${reminders.length} reminders`);
     
-    // Final verification after a delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Final verification after a longer delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
     // Double check what actually got scheduled
     const finalScheduled = await Notifications.getAllScheduledNotificationsAsync();
     
     if (finalScheduled.length !== scheduledCount) {
       console.warn(`Expected ${scheduledCount} notifications, but found ${finalScheduled.length}`);
+      
+      // Log details of each scheduled notification for debugging
+      finalScheduled.forEach((notification, index) => {
+        const triggerDate = notification.trigger.value;
+        console.log(`Notification ${index + 1} (ID: ${notification.identifier}): Scheduled for ${new Date(triggerDate).toLocaleString()}`);
+      });
     }
     
     console.log(`=== FINAL VERIFICATION: ${finalScheduled.length} notifications are scheduled ===`);

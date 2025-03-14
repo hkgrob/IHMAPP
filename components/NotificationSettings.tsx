@@ -263,6 +263,16 @@ export const NotificationSettings = () => {
       
       if (hasPendingChanges) {
         console.log('Applying time changes after Done is pressed');
+        
+        // First cancel any existing notifications to prevent duplicates
+        if (Platform.OS !== 'web') {
+          console.log('Cancelling all scheduled notifications before applying changes');
+          await Notifications.cancelAllScheduledNotificationsAsync();
+          
+          // Small delay to ensure cancellation completes
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
         // Apply all reminders once when done is pressed
         await applyAllReminders();
         
@@ -276,6 +286,12 @@ export const NotificationSettings = () => {
             return r;
           })
         );
+        
+        // Log scheduled notifications for debugging
+        if (Platform.OS !== 'web') {
+          const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+          console.log(`After time adjustment: ${scheduled.length} notifications are scheduled`);
+        }
       }
     } catch (error) {
       console.error('Error applying reminders on done:', error);
