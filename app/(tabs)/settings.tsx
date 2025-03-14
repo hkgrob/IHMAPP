@@ -195,6 +195,15 @@ const SettingsScreen = () => {
   };
 
   const toggleNotifications = async (value) => {
+    if (Platform.OS === 'web') {
+      Alert.alert(
+        'Not Supported',
+        'Notifications are not supported in the web version.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     try {
       if (value) {
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -358,7 +367,7 @@ const SettingsScreen = () => {
                   <ThemedText style={styles.timeText}>{formatTime(reminderTime)}</ThemedText>
                 </ThemedView>
               </TouchableOpacity>
-              {showTimePicker && (
+              {showTimePicker && Platform.OS !== 'web' && (
                 <View>
                   <DateTimePicker
                     value={reminderTime}
@@ -369,6 +378,23 @@ const SettingsScreen = () => {
                   {Platform.OS === 'ios' && (
                     <Button title="Done" onPress={() => setShowTimePicker(false)} />
                   )}
+                </View>
+              )}
+              {showTimePicker && Platform.OS === 'web' && (
+                <View>
+                  <input
+                    type="time"
+                    value={reminderTime.toTimeString().slice(0, 5)}
+                    onChange={(e) => {
+                      const [hours, minutes] = e.target.value.split(':');
+                      const newDate = new Date();
+                      newDate.setHours(parseInt(hours, 10));
+                      newDate.setMinutes(parseInt(minutes, 10));
+                      handleTimeChange({ type: 'set', nativeEvent: { timestamp: newDate.getTime() }}, newDate);
+                    }}
+                    style={{ padding: 10, marginVertical: 10 }}
+                  />
+                  <Button title="Done" onPress={() => setShowTimePicker(false)} />
                 </View>
               )}
             </>
