@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginVertical: 16,
+    marginVertical: 8, //Reduced margin from 16
     marginHorizontal: 16,
   },
   listContent: {
