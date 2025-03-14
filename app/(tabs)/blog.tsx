@@ -202,7 +202,7 @@ export default function BlogScreen() {
                 <View style={styles.cardFooter}>
                   <TouchableOpacity style={styles.readMoreButton}>
                     <ThemedText style={styles.readMoreText}>Read more</ThemedText>
-                    <Ionicons name="arrow-forward" size={16} color="#F5A623" />
+                    <Ionicons name="arrow-forward" size={16} color="#0a7ea4" />
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   errorContainer: {
-    backgroundColor: 'rgba(245, 166, 35, 0.1)',
+    backgroundColor: 'rgba(10, 126, 164, 0.1)',
     padding: 12,
     margin: 16,
     borderRadius: 8,
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   errorMessage: {
     flex: 1,
     fontSize: 14,
-    color: '#F5A623',
+    color: '#0a7ea4',
   },
   retryButton: {
     flexDirection: 'row',
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   newPostBadge: {
-    backgroundColor: '#F5A623',
+    backgroundColor: '#0a7ea4',
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 12,
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   readMoreText: {
-    color: '#F5A623',
+    color: '#0a7ea4',
     marginRight: 4,
     fontWeight: '500',
   },
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F5A623',
+    backgroundColor: '#0a7ea4',
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 25,
