@@ -328,11 +328,10 @@ const SettingsScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView edges={['top']} style={styles.safeArea}>
       <StatusBar style="dark" />
-      <ThemedView style={styles.container}>
-        <ThemedText style={styles.title}>Settings</ThemedText>
-        <ScrollView style={styles.scrollView}>
+      <ThemedText style={styles.title}>Settings</ThemedText>
+      <ScrollView style={styles.scrollView} contentInsetAdjustmentBehavior="automatic">
           {renderSettingSection("NOTIFICATIONS", "notifications-outline", (
             <>
               <ThemedView style={styles.settingRow}>
@@ -460,20 +459,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    width: '100%',
-    paddingTop: Platform.OS === 'ios' ? 20 : 0,
   },
   scrollView: {
     flex: 1,
-    width: '100%',
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    marginTop: Platform.OS === 'ios' ? 20 : 10,
-    paddingHorizontal: 20,
-    textAlign: 'left',
+    fontWeight: '600',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: Platform.OS === 'ios' ? 1 : 0,
+    borderBottomColor: '#e5e5e5',
     color: '#000',
   },
   section: {
