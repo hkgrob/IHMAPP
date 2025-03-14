@@ -162,23 +162,27 @@ export default function HomeScreen() {
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
 
-      const storedDailyCount = await AsyncStorage.getItem('dailyCount');
-      const storedTotalCount = await AsyncStorage.getItem('totalCount');
+      const storedDailyCount = await AsyncStorage.getItem('dailyCount') || '0';
+      const storedTotalCount = await AsyncStorage.getItem('totalCount') || '0';
       const storedLastReset = await AsyncStorage.getItem('lastReset');
 
       const now = new Date();
       const lastReset = storedLastReset ? new Date(storedLastReset) : now;
 
+      const newDailyCount = parseInt(storedDailyCount, 10) + 1;
+      const newTotalCount = parseInt(storedTotalCount, 10) + 1;
+
       if (now.toDateString() !== lastReset.toDateString()) {
         await AsyncStorage.multiSet([
           ['dailyCount', '1'],
-          ['totalCount', ((parseInt(storedTotalCount || '0', 10) + 1)).toString(),
+          ['totalCount', newTotalCount.toString()],
           ['lastReset', now.toString()]
         ]);
       } else {
         await AsyncStorage.multiSet([
-          ['dailyCount', ((parseInt(storedDailyCount || '0', 10) + 1)).toString()],
-          ['totalCount', ((parseInt(storedTotalCount || '0', 10) + 1)).toString()]
+          ['dailyCount', newDailyCount.toString()],
+          ['totalCount', newTotalCount.toString()],
+          ['lastReset', lastReset.toString()]
         ]);
       }
     } catch (error) {
