@@ -115,6 +115,13 @@ export default function PodcastScreen() {
       <Stack.Screen options={{ 
         title: "Steve Backlund Podcasts",
         headerLargeTitle: true,
+        headerStyle: {
+          backgroundColor: '#0a7ea4',
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
       }} />
       <FlatList
         data={podcasts}
