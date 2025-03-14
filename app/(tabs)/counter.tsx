@@ -127,6 +127,7 @@ export default function CounterPage() {
       <ScrollView 
         contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={false}
+        bounces={false}
       >
         <ThemedView style={styles.container}>
           <ThemedText style={styles.pageTitle}>Declaration Counter</ThemedText>
@@ -170,7 +171,7 @@ export default function CounterPage() {
 
           <View style={styles.tipContainer}>
             <ThemedText style={styles.tipIcon}>💡 Tip</ThemedText>
-            <ThemedText style={styles.tipText}>
+            <ThemedText style={[styles.tipText, { flexShrink: 1 }]} numberOfLines={3}>
               Consistency is key! Aim to speak declarations at least once daily.
             </ThemedText>
           </View>
@@ -260,6 +261,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginBottom: 20,
   },
   tipIcon: {
     fontSize: 16,
