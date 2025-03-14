@@ -1,0 +1,37 @@
+[expo-cli] Starting Metro Bundler
+[expo-cli] iOS Bundling failed 2124ms node_modules/expo-router/entry.js (1155 modules)
+[expo-cli] Error: Unable to resolve module ./ThemedText from /home/runner/workspace/app/(tabs)/settings.tsx: 
+[expo-cli] 
+[expo-cli] None of these files exist:
+[expo-cli]   * app/(tabs)/ThemedText(.ios.ts|.native.ts|.ts|.ios.tsx|.native.tsx|.tsx|.ios.mjs|.native.mjs|.mjs|.ios.js|.native.js|.js|.ios.jsx|.native.jsx|.jsx|.ios.json|.native.json|.json|.ios.cjs|.native.cjs|.cjs|.ios.scss|.native.scss|.scss|.ios.sass|.native.sass|.sass|.ios.css|.native.css|.css)
+[expo-cli]   * app/(tabs)/ThemedText
+[expo-cli]   2 | import { ScrollView, View } from 'react-native';
+[expo-cli]   3 | import { Ionicons } from '@expo/vector-icons';
+[expo-cli] > 4 | import { ThemedText } from './ThemedText'; // Assuming this component exists
+[expo-cli]     |                             ^
+[expo-cli]   5 | import NotificationSettings from './NotificationSettings'; // Assuming this component exists
+[expo-cli]   6 |
+[expo-cli]   7 | const styles = StyleSheet.create({
+[expo-cli] Error: Unable to resolve module ./ThemedText from /home/runner/workspace/app/(tabs)/settings.tsx: 
+[expo-cli] 
+[expo-cli] None of these files exist:
+[expo-cli]   * app/(tabs)/ThemedText(.ios.ts|.native.ts|.ts|.ios.tsx|.native.tsx|.tsx|.ios.mjs|.native.mjs|.mjs|.ios.js|.native.js|.js|.ios.jsx|.native.jsx|.jsx|.ios.json|.native.json|.json|.ios.cjs|.native.cjs|.cjs|.ios.scss|.native.scss|.scss|.ios.sass|.native.sass|.sass|.ios.css|.native.css|.css)
+[expo-cli]   * app/(tabs)/ThemedText
+[expo-cli]   2 | import { ScrollView, View } from 'react-native';
+[expo-cli]   3 | import { Ionicons } from '@expo/vector-icons';
+[expo-cli] > 4 | import { ThemedText } from './ThemedText'; // Assuming this component exists
+[expo-cli]     |                             ^
+[expo-cli]   5 | import NotificationSettings from './NotificationSettings'; // Assuming this component exists
+[expo-cli]   6 |
+[expo-cli]   7 | const styles = StyleSheet.create({
+[expo-cli]     at ModuleResolver.resolveDependency (/home/runner/workspace/node_modules/metro/src/node-haste/DependencyGraph/ModuleResolution.js:112:15)
+[expo-cli]     at DependencyGraph.resolveDependency (/home/runner/workspace/node_modules/metro/src/node-haste/DependencyGraph.js:236:43)
+[expo-cli]     at /home/runner/workspace/node_modules/metro/src/lib/transformHelpers.js:165:21
+[expo-cli]     at resolveDependencies (/home/runner/workspace/node_modules/metro/src/DeltaBundler/buildSubgraph.js:42:25)
+[expo-cli]     at visit (/home/runner/workspace/node_modules/metro/src/DeltaBundler/buildSubgraph.js:83:30)
+[expo-cli]     at async Promise.all (index 6)
+[expo-cli]     at visit (/home/runner/workspace/node_modules/metro/src/DeltaBundler/buildSubgraph.js:92:5)
+[expo-cli]     at async Promise.all (index 0)
+[expo-cli]     at visit (/home/runner/workspace/node_modules/metro/src/DeltaBundler/buildSubgraph.js:92:5)
+[expo-cli]     at async Promise.all (index 1)
+✖ Export failed
