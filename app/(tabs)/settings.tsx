@@ -41,7 +41,7 @@ export default function SettingsScreen() {
             );
           } else {
             console.log('Notification permissions granted');
-            
+
             // Check existing scheduled notifications
             const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
             console.log(`Found ${scheduledNotifications.length} scheduled notifications`);
@@ -74,12 +74,14 @@ export default function SettingsScreen() {
       if (storedSecondReminderEnabled) setSecondReminderEnabled(storedSecondReminderEnabled === 'true');
       if (storedSound) setSoundEnabled(storedSound === 'true');
       if (storedHaptic) setHapticEnabled(storedHaptic === 'true');
-      
-      // Schedule notifications if enabled
-      if (storedNotifications === 'true') {
+
+      // Schedule notifications if enabled and not on web platform
+      if (storedNotifications === 'true' && Platform.OS !== 'web') {
         console.log('Notifications enabled, scheduling after loading settings');
         // Use setTimeout to ensure state is updated before scheduling
         setTimeout(() => scheduleNotification(), 500);
+      } else if (storedNotifications === 'true' && Platform.OS === 'web') {
+        console.log('Notifications enabled but not scheduling on web platform');
       }
     } catch (error) {
       console.error("Error loading settings:", error);
@@ -244,7 +246,7 @@ export default function SettingsScreen() {
       });
 
       console.log(`Notification scheduled for ${timeString} with ID: ${notificationId || identifier}`);
-      
+
       // Show confirmation to the user
       Alert.alert('Reminder Set', `Daily reminder set for ${timeString}`, [{ text: 'OK' }]);
     } catch (error) {
