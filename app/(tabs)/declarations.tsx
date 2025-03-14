@@ -20,6 +20,7 @@ export default function DeclarationsScreen() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [declarationCount, setDeclarationCount] = useState(0); // Added counter state
+  const [sound, setSound] = useState<Audio.Sound | null>(null); // Added sound state
 
   // Load custom declarations from storage
   useEffect(() => {
@@ -112,10 +113,31 @@ export default function DeclarationsScreen() {
     );
   }, [customDeclarations, saveCustomDeclarations, triggerHapticFeedback, declarationCount]);
 
-  // Increment counter function
-  const incrementCounter = useCallback(() => {
-    setDeclarationCount(declarationCount + 1);
-  }, [declarationCount]);
+  // Counter functionality 
+  const incrementCounter = async () => {
+    console.log("Incrementing counter from declarations page...");
+    try {
+      // Call the counter service to increment
+      const counterService = require('@/services/counterService');
+      await counterService.incrementCounter();
+
+      // Sound feedback
+      if (sound) {
+        try {
+          await sound.replayAsync();
+        } catch (error) {
+          console.error('Error playing sound:', error);
+        }
+      }
+
+      // Haptic feedback
+      if (Platform.OS !== 'web') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+    } catch (error) {
+      console.error('Error incrementing counter:', error);
+    }
+  };
 
 
   // Custom category for user's own declarations
