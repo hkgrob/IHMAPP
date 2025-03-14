@@ -134,13 +134,19 @@ export default function CounterScreen() {
       // Update UI count
       setCount(prevCount => prevCount + 1);
       
-      // Check current sound setting from storage before playing
+      // Check current settings from storage before playing
       const currentSoundSetting = await AsyncStorage.getItem('soundEnabled');
       const isSoundEnabled = currentSoundSetting !== 'false'; // Default to true if not set
       
+      const currentHapticSetting = await AsyncStorage.getItem('hapticEnabled');
+      const isHapticEnabled = currentHapticSetting !== 'false'; // Default to true if not set
+      
       // Play haptic feedback if enabled
-      if (hapticEnabled && Platform.OS === 'ios') {
+      if (isHapticEnabled && Platform.OS !== 'web') {
+        console.log('Applying haptic feedback - haptic is enabled in settings');
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } else if (!isHapticEnabled) {
+        console.log('Haptic is disabled in settings - not applying haptic feedback');
       }
 
       // Play sound if enabled in settings
