@@ -59,12 +59,32 @@ export const fetchBlogContentById = async (id: string, link: string): Promise<st
           
           if (contentMatch && contentMatch[1]) {
             // Clean up the content (remove HTML tags but keep paragraphs)
-            const cleanContent = contentMatch[1]
+            let cleanContent = contentMatch[1]
+              // Remove scripts and styles
               .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
               .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-              .replace(/<[^>]*>/g, '\n')
-              .replace(/\n+/g, '\n\n')
+              // Convert common paragraph elements to newlines
+              .replace(/<\/p>\s*<p[^>]*>/gi, '\n\n')
+              .replace(/<br\s*\/?>/gi, '\n')
+              .replace(/<\/div>\s*<div[^>]*>/gi, '\n\n')
+              .replace(/<\/h[1-6]>\s*<[^>]*>/gi, '\n\n')
+              // Convert lists to readable format
+              .replace(/<li[^>]*>/gi, '• ')
+              .replace(/<\/li>/gi, '\n')
+              // Remove remaining HTML tags
+              .replace(/<[^>]*>/g, '')
+              // Decode HTML entities
+              .replace(/&quot;/g, '"')
+              .replace(/&apos;/g, "'")
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
+              .replace(/&amp;/g, '&')
+              // Fix excessive whitespace
+              .replace(/\n{3,}/g, '\n\n')
               .trim();
+              
+            // Fix spacing before bullet points
+            cleanContent = cleanContent.replace(/([^\n])• /g, '$1\n\n• ');
             
             // Cache the content
             await AsyncStorage.setItem(`wix_blog_content_${id}`, cleanContent);
