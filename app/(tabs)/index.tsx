@@ -162,14 +162,21 @@ export default function HomeScreen() {
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
 
-      const storedDailyCount = await AsyncStorage.getItem('dailyCount');
-      const storedTotalCount = await AsyncStorage.getItem('totalCount');
+      const storedDailyCount = await AsyncStorage.getItem('dailyCount') || '0';
+      const storedTotalCount = await AsyncStorage.getItem('totalCount') || '0';
+      const storedLastReset = await AsyncStorage.getItem('lastResetDate');
 
-      const newDailyCount = (parseInt(storedDailyCount || '0', 10) + 1);
-      const newTotalCount = (parseInt(storedTotalCount || '0', 10) + 1);
+      const now = new Date();
+      const lastReset = storedLastReset ? new Date(storedLastReset) : now;
 
-      await AsyncStorage.setItem('dailyCount', newDailyCount.toString());
-      await AsyncStorage.setItem('totalCount', newTotalCount.toString());
+      const newDailyCount = parseInt(storedDailyCount, 10) + 1;
+      const newTotalCount = parseInt(storedTotalCount, 10) + 1;
+
+      await AsyncStorage.multiSet([
+        ['dailyCount', newDailyCount.toString()],
+        ['totalCount', newTotalCount.toString()],
+        ['lastResetDate', now.toISOString()]
+      ]);
     } catch (error) {
       console.error('Error incrementing counter:', error);
     }
