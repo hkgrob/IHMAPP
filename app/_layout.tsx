@@ -50,9 +50,15 @@ export default function RootLayout() {
           console.log('Initializing notifications system...');
           const initialized = await initializeNotifications();
           if (initialized) {
-            // Ensure we have at least one default reminder
-            await ensureDefaultReminder();
-            // Apply all reminders
+            // We only need to ensure default reminder if we have none
+            const currentReminders = await getReminders();
+            if (currentReminders.length === 0) {
+              console.log('No reminders found, creating default');
+              await ensureDefaultReminder();
+            } else {
+              console.log('Found existing reminders:', currentReminders.length);
+            }
+            // Apply reminders once at app initialization
             await applyAllReminders();
           }
         }

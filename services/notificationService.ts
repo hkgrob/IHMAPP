@@ -51,6 +51,11 @@ export const initializeNotifications = async (): Promise<boolean> => {
     }
     
     console.log('Notifications initialized successfully');
+    
+    // Cancel all existing notifications to prevent duplicate firing
+    // This is important when the app launches
+    await Notifications.cancelAllScheduledNotificationsAsync();
+    
     return true;
   } catch (error) {
     console.error('Failed to initialize notifications:', error);
@@ -314,22 +319,6 @@ export const applyAllReminders = async (): Promise<boolean> => {
     // Log what's scheduled (for debugging)
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
     console.log(`Verification: System shows ${scheduled.length} scheduled notifications`);
-    
-    if (scheduled.length > 0) {
-      // Log the first few scheduled notifications for debugging
-      const firstFew = scheduled.slice(0, Math.min(3, scheduled.length));
-      console.log('Sample scheduled notifications:', JSON.stringify(firstFew.map(n => ({
-        id: n.identifier,
-        trigger: typeof n.trigger === 'object' ? {
-          type: n.trigger.type,
-          date: n.trigger.date ? new Date(n.trigger.date).toLocaleString() : undefined,
-          repeats: n.trigger.repeats,
-          hour: n.trigger.hour,
-          minute: n.trigger.minute
-        } : n.trigger,
-        content: n.content.title
-      })), null, 2));
-    }
     
     return true;
   } catch (error) {

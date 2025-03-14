@@ -174,13 +174,14 @@ export const NotificationSettings = () => {
 
   // Handle time change from picker
   const handleTimeChange = async (event: any, selectedDate?: Date) => {
-    // Hide time picker on Android (iOS handled by Done button)
-    if (Platform.OS === 'android') {
-      setTimePickerState({ visible: false, selectedReminderId: null });
+    // Only process if it's a "set" event (user confirmed selection)
+    if (!selectedDate || !timePickerState.selectedReminderId || event.type !== 'set') {
+      // If Android and user cancelled, hide the picker
+      if (Platform.OS === 'android') {
+        setTimePickerState({ visible: false, selectedReminderId: null });
+      }
+      return;
     }
-    
-    // Only process if we have a date and reminder ID and it's a "set" event
-    if (!selectedDate || !timePickerState.selectedReminderId || event.type !== 'set') return;
     
     try {
       setRefreshing(true);
@@ -189,26 +190,26 @@ export const NotificationSettings = () => {
       const reminder = reminders.find(r => r.id === timePickerState.selectedReminderId);
       if (!reminder) return;
       
-      // Update the reminder with new time
+      // Update the reminder with new time in local state
       const updatedReminder = {
         ...reminder,
-        time: selectedDate
+        time: selectedDate,
+        _pendingTimeChange: true // Mark as pending for both platforms
       };
       
+      // Just update in local state - don't apply yet
       const success = await updateReminder(updatedReminder);
       if (success) {
         setReminders(prev => 
           prev.map(r => r.id === updatedReminder.id ? updatedReminder : r)
         );
-        
-        // Apply all reminders after setting the time picker state to avoid spam
-        if (Platform.OS === 'ios') {
-          // For iOS, we'll apply the reminders when Done is pressed
-          // This state is just to track that we have a pending change
-          reminder._pendingTimeChange = true;
-        } else {
-          await applyAllReminders();
-        }
+      }
+      
+      // Hide time picker on Android (iOS handled by Done button)
+      if (Platform.OS === 'android') {
+        setTimePickerState({ visible: false, selectedReminderId: null });
+        // Apply all reminders once picker is closed on Android
+        await applyAllReminders();
       }
     } catch (error) {
       console.error('Error updating reminder time:', error);
@@ -229,15 +230,17 @@ export const NotificationSettings = () => {
   // Hide time picker and apply changes if needed
   const hideTimePicker = async () => {
     try {
+      setRefreshing(true);
+      
       // Check if we have pending time changes to apply
       const hasPendingChanges = reminders.some(r => r._pendingTimeChange);
       
       if (hasPendingChanges) {
-        setRefreshing(true);
+        console.log('Applying time changes after Done is pressed');
         // Apply all reminders once when done is pressed
         await applyAllReminders();
         
-        // Clear pending flags
+        // Clear pending flags from state
         setReminders(prev => 
           prev.map(r => {
             if (r._pendingTimeChange) {
@@ -252,6 +255,7 @@ export const NotificationSettings = () => {
       console.error('Error applying reminders on done:', error);
     } finally {
       setRefreshing(false);
+      // Always hide picker when done
       setTimePickerState({
         visible: false,
         selectedReminderId: null
