@@ -104,16 +104,30 @@ export const NotificationSettings = () => {
     try {
       setRefreshing(true);
       
-      // Confirm before deleting
-      const success = await deleteReminder(id);
-      if (success) {
-        setReminders(prev => prev.filter(r => r.id !== id));
-        await applyAllReminders();
-      }
+      // Confirm deletion
+      Alert.alert(
+        'Delete Reminder',
+        'Are you sure you want to delete this reminder?',
+        [
+          { text: 'Cancel', style: 'cancel', onPress: () => setRefreshing(false) },
+          { 
+            text: 'Delete', 
+            style: 'destructive',
+            onPress: async () => {
+              const success = await deleteReminder(id);
+              if (success) {
+                setReminders(prev => prev.filter(r => r.id !== id));
+                await applyAllReminders();
+              }
+              setRefreshing(false);
+            }
+          }
+        ],
+        { cancelable: false }
+      );
     } catch (error) {
       console.error('Error deleting reminder:', error);
       Alert.alert('Error', 'Failed to delete reminder');
-    } finally {
       setRefreshing(false);
     }
   };
@@ -287,12 +301,12 @@ export const NotificationSettings = () => {
                 <TouchableOpacity
                   style={styles.deleteButton}
                   onPress={() => handleDeleteReminder(reminder.id)}
-                  disabled={refreshing || reminders.length <= 1}
+                  disabled={refreshing}
                 >
                   <Ionicons 
                     name="trash-outline" 
                     size={20} 
-                    color={reminders.length > 1 ? '#ff6b00' : '#ccc'} 
+                    color="#ff6b00" 
                   />
                 </TouchableOpacity>
               </View>
