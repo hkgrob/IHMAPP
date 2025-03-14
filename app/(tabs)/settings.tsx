@@ -227,7 +227,13 @@ export default function SettingsScreen() {
     const formattedTime = `${formattedHours}:${formattedMinutes} ${period}`;
 
     setReminderTime(formattedTime);
-    await saveSettings('reminderTime', formattedTime);
+    await saveSettings('reminderTime', formattedTime)
+      .then(() => {
+        if (notificationsEnabled) {
+          // Small delay to ensure state is saved before scheduling
+          setTimeout(() => scheduleNotification(), 300);
+        }
+      });
     setTimePickerVisible(false);
   };
 
@@ -240,7 +246,13 @@ export default function SettingsScreen() {
     const formattedTime = `${formattedHours}:${formattedMinutes} ${period}`;
 
     setReminderTime2(formattedTime);
-    await saveSettings('reminderTime2', formattedTime);
+    await saveSettings('reminderTime2', formattedTime)
+      .then(() => {
+        if (notificationsEnabled && secondReminderEnabled) {
+          // Small delay to ensure state is saved before scheduling
+          setTimeout(() => scheduleNotification(), 300);
+        }
+      });
     setTimePickerVisible2(false);
   };
 
@@ -486,7 +498,6 @@ export default function SettingsScreen() {
   );
 }
 
-// Styles remain the same as in your original code
 const styles = StyleSheet.create({
   container: {
     flex: 1,
