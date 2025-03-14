@@ -1,33 +1,39 @@
 
-import React, { useState, useEffect } from 'react';
-import { View, Switch, StyleSheet, Platform, TouchableOpacity, Alert } from 'react-native';
-import { ThemedText } from './ThemedText';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { Ionicons } from '@expo/vector-icons';
-import * as Notifications from 'expo-notifications';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  getSettings, 
-  saveSettings, 
-  applySettings, 
-  requestPermissions 
+  View, 
+  StyleSheet, 
+  Switch, 
+  TouchableOpacity, 
+  Alert, 
+  Platform,
+  ScrollView
+} from 'react-native';
+import { ThemedText } from './ThemedText';
+import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Notifications from 'expo-notifications';
+import {
+  Reminder,
+  getReminders,
+  createReminder,
+  updateReminder,
+  deleteReminder,
+  applyReminders,
+  requestPermissions,
+  formatTime
 } from '../services/notificationService';
 
 export const NotificationSettings = () => {
-  const [settings, setSettings] = useState({
-    enabled: false,
-    morningTime: new Date(new Date().setHours(9, 0, 0, 0)),
-    eveningTime: new Date(new Date().setHours(18, 0, 0, 0)),
-    secondReminderEnabled: true,
-  });
-  
-  const [showMorningPicker, setShowMorningPicker] = useState(false);
-  const [showEveningPicker, setShowEveningPicker] = useState(false);
-  const [permissionStatus, setPermissionStatus] = useState('unknown');
+  // State
+  const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(false);
+  const [permissionStatus, setPermissionStatus] = useState<string>('unknown');
+  const [editingReminderId, setEditingReminderId] = useState<string | null>(null);
   
-  // Load saved settings on component mount
+  // Load reminders and check permissions on mount
   useEffect(() => {
-    loadSettings();
+    loadReminders();
     checkPermissions();
   }, []);
   
@@ -38,114 +44,195 @@ export const NotificationSettings = () => {
     try {
       const { status } = await Notifications.getPermissionsAsync();
       setPermissionStatus(status);
-      console.log('Notification permission status:', status);
     } catch (error) {
-      console.error('Error checking notification permissions:', error);
+      console.error('Error checking permissions:', error);
     }
   };
   
-  // Load settings
-  const loadSettings = async () => {
-    try {
-      const savedSettings = await getSettings();
-      setSettings(savedSettings);
-      console.log('Loaded settings:', savedSettings);
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    }
-  };
-  
-  // Save and apply new settings
-  const updateSettings = async (newSettings) => {
+  // Load saved reminders
+  const loadReminders = async () => {
     try {
       setLoading(true);
-      setSettings(newSettings);
-      await saveSettings(newSettings);
-      console.log('Saved new settings:', newSettings);
-      
-      if (newSettings.enabled) {
-        const success = await applySettings(newSettings);
-        if (!success && Platform.OS !== 'web') {
-          Alert.alert(
-            'Notification Permission',
-            'Please enable notifications in your device settings to receive declaration reminders.',
-            [{ text: 'OK' }]
-          );
-        }
-      } else {
-        // If notifications are disabled, cancel all scheduled notifications
-        await Notifications.cancelAllScheduledNotificationsAsync();
-      }
+      const savedReminders = await getReminders();
+      setReminders(savedReminders);
     } catch (error) {
-      console.error('Error updating settings:', error);
-      Alert.alert(
-        'Error',
-        'Failed to update notification settings. Please try again.',
-        [{ text: 'OK' }]
-      );
+      console.error('Error loading reminders:', error);
     } finally {
       setLoading(false);
     }
   };
   
-  // Toggle notifications
-  const toggleNotifications = async (value) => {
+  // Add a new reminder
+  const handleAddReminder = async () => {
     try {
-      if (value && Platform.OS !== 'web') {
+      setLoading(true);
+      const newReminder = await createReminder();
+      setReminders(prev => [...prev, newReminder]);
+      await applyReminders();
+    } catch (error) {
+      console.error('Error adding reminder:', error);
+      Alert.alert('Error', 'Failed to add reminder');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Delete a reminder
+  const handleDeleteReminder = async (id: string) => {
+    try {
+      setLoading(true);
+      const success = await deleteReminder(id);
+      
+      if (success) {
+        setReminders(prev => prev.filter(r => r.id !== id));
+        await applyReminders();
+      }
+    } catch (error) {
+      console.error('Error deleting reminder:', error);
+      Alert.alert('Error', 'Failed to delete reminder');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Toggle a reminder on/off
+  const toggleReminder = async (reminder: Reminder) => {
+    try {
+      setLoading(true);
+      
+      if (!reminder.enabled) {
+        // If enabling, check permissions
         const granted = await requestPermissions();
-        if (!granted) {
+        if (!granted && Platform.OS !== 'web') {
           Alert.alert(
-            'Notification Permission Required',
+            'Permission Required',
             'Please enable notifications in your device settings to receive declaration reminders.',
             [{ text: 'OK' }]
           );
           return;
         }
-        setPermissionStatus('granted');
       }
       
-      await updateSettings({ ...settings, enabled: value });
+      const updatedReminder = {
+        ...reminder,
+        enabled: !reminder.enabled
+      };
       
-      // Get scheduled notifications for debugging
-      if (Platform.OS !== 'web') {
-        const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-        console.log('Current scheduled notifications:', scheduled.length);
+      const success = await updateReminder(updatedReminder);
+      
+      if (success) {
+        setReminders(prev => 
+          prev.map(r => r.id === reminder.id ? updatedReminder : r)
+        );
+        await applyReminders();
       }
     } catch (error) {
-      console.error('Error toggling notifications:', error);
+      console.error('Error toggling reminder:', error);
+    } finally {
+      setLoading(false);
     }
   };
   
-  // Toggle second reminder (evening)
-  const toggleSecondReminder = async (value) => {
+  // Handle time change
+  const handleTimeChange = async (reminder: Reminder, event: any, selectedDate?: Date) => {
+    if (Platform.OS !== 'ios') {
+      setEditingReminderId(null);
+    }
+    
+    if (!selectedDate) return;
+    
     try {
-      await updateSettings({ ...settings, secondReminderEnabled: value });
+      setLoading(true);
+      
+      const updatedReminder = {
+        ...reminder,
+        time: selectedDate
+      };
+      
+      const success = await updateReminder(updatedReminder);
+      
+      if (success) {
+        setReminders(prev => 
+          prev.map(r => r.id === reminder.id ? updatedReminder : r)
+        );
+        await applyReminders();
+      }
     } catch (error) {
-      console.error('Error toggling second reminder:', error);
+      console.error('Error updating reminder time:', error);
+    } finally {
+      setLoading(false);
     }
   };
   
-  // Handle morning time change
-  const handleMorningTimeChange = (event, selectedTime) => {
-    setShowMorningPicker(Platform.OS === 'ios');
-    if (selectedTime) {
-      updateSettings({ ...settings, morningTime: selectedTime });
-    }
+  // Render each reminder
+  const renderReminder = (reminder: Reminder, index: number) => {
+    const isEditing = editingReminderId === reminder.id;
+    const isLastReminder = index === reminders.length - 1;
+    
+    return (
+      <View key={reminder.id} style={[
+        styles.reminderContainer, 
+        !isLastReminder && styles.borderBottom
+      ]}>
+        <View style={styles.reminderHeader}>
+          <View style={styles.reminderHeaderLeft}>
+            <Switch
+              value={reminder.enabled}
+              onValueChange={() => toggleReminder(reminder)}
+              trackColor={{ false: '#767577', true: '#0a7ea4' }}
+              thumbColor="#f4f3f4"
+              disabled={loading}
+            />
+            <ThemedText style={styles.reminderTitle}>
+              Reminder {index + 1}
+            </ThemedText>
+          </View>
+          
+          {reminders.length > 1 && (
+            <TouchableOpacity
+              onPress={() => handleDeleteReminder(reminder.id)}
+              style={styles.deleteButton}
+              disabled={loading}
+            >
+              <Ionicons name="trash-outline" size={20} color="#ff6b00" />
+            </TouchableOpacity>
+          )}
+        </View>
+        
+        <TouchableOpacity
+          style={styles.timeSelector}
+          onPress={() => setEditingReminderId(reminder.id)}
+          disabled={!reminder.enabled || loading}
+        >
+          <Ionicons 
+            name="time-outline" 
+            size={22} 
+            color={reminder.enabled ? "#0a7ea4" : "#999"} 
+            style={styles.timeIcon} 
+          />
+          <ThemedText 
+            style={[
+              styles.timeText,
+              !reminder.enabled && styles.disabledText
+            ]}
+          >
+            {formatTime(reminder.time)}
+          </ThemedText>
+        </TouchableOpacity>
+        
+        {isEditing && Platform.OS !== 'web' && (
+          <DateTimePicker
+            value={reminder.time}
+            mode="time"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={(event, date) => handleTimeChange(reminder, event, date)}
+          />
+        )}
+      </View>
+    );
   };
   
-  // Handle evening time change
-  const handleEveningTimeChange = (event, selectedTime) => {
-    setShowEveningPicker(Platform.OS === 'ios');
-    if (selectedTime) {
-      updateSettings({ ...settings, eveningTime: selectedTime });
-    }
-  };
-  
-  // Format time for display
-  const formatTime = (date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-  
+  // If platform is web, show not supported message
   if (Platform.OS === 'web') {
     return (
       <View style={styles.container}>
@@ -165,103 +252,49 @@ export const NotificationSettings = () => {
         <ThemedText style={styles.headerText}>Declaration Reminders</ThemedText>
       </View>
       
-      <View style={styles.settingRow}>
-        <View style={styles.settingLabelContainer}>
-          <Ionicons name="notifications-outline" size={22} color="#0a7ea4" style={styles.icon} />
-          <ThemedText style={styles.settingText}>Enable Reminders</ThemedText>
-        </View>
-        <Switch
-          value={settings.enabled}
-          onValueChange={toggleNotifications}
-          trackColor={{ false: '#767577', true: '#0a7ea4' }}
-          thumbColor="#f4f3f4"
-          disabled={loading}
-        />
-      </View>
-      
-      {settings.enabled && (
-        <>
-          <TouchableOpacity 
-            style={styles.settingRow} 
-            onPress={() => setShowMorningPicker(true)}
-            disabled={loading}
-          >
-            <View style={styles.settingLabelContainer}>
-              <Ionicons name="sunny-outline" size={22} color="#0a7ea4" style={styles.icon} />
-              <ThemedText style={styles.settingText}>Morning Reminder</ThemedText>
-            </View>
-            <ThemedText style={styles.timeText}>{formatTime(settings.morningTime)}</ThemedText>
-          </TouchableOpacity>
-          
-          <View style={styles.settingRow}>
-            <View style={styles.settingLabelContainer}>
-              <Ionicons name="moon-outline" size={22} color="#0a7ea4" style={styles.icon} />
-              <ThemedText style={styles.settingText}>Enable Evening Reminder</ThemedText>
-            </View>
-            <Switch
-              value={settings.secondReminderEnabled}
-              onValueChange={toggleSecondReminder}
-              trackColor={{ false: '#767577', true: '#0a7ea4' }}
-              thumbColor="#f4f3f4"
-              disabled={loading}
-            />
-          </View>
-          
-          {settings.secondReminderEnabled && (
-            <TouchableOpacity 
-              style={styles.settingRow} 
-              onPress={() => setShowEveningPicker(true)}
-              disabled={loading}
-            >
-              <View style={styles.settingLabelContainer}>
-                <Ionicons name="time-outline" size={22} color="#0a7ea4" style={styles.icon} />
-                <ThemedText style={styles.settingText}>Evening Reminder Time</ThemedText>
-              </View>
-              <ThemedText style={styles.timeText}>{formatTime(settings.eveningTime)}</ThemedText>
-            </TouchableOpacity>
-          )}
-          
-          {showMorningPicker && (
-            <DateTimePicker
-              value={settings.morningTime}
-              mode="time"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={handleMorningTimeChange}
-            />
-          )}
-          
-          {showEveningPicker && (
-            <DateTimePicker
-              value={settings.eveningTime}
-              mode="time"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={handleEveningTimeChange}
-            />
-          )}
-          
-          <View style={styles.infoContainer}>
-            <Ionicons name="information-circle-outline" size={20} color="#0a7ea4" />
-            <ThemedText style={styles.infoText}>
-              You will receive reminders to speak your declarations at the times set above.
+      <ScrollView style={styles.scrollView}>
+        {reminders.length === 0 && !loading ? (
+          <View style={styles.emptyContainer}>
+            <ThemedText style={styles.emptyText}>
+              No reminders set. Add one below.
             </ThemedText>
           </View>
-        </>
-      )}
-      
-      {permissionStatus === 'denied' && (
-        <View style={styles.warningContainer}>
-          <Ionicons name="warning-outline" size={20} color="#ff6b00" />
-          <ThemedText style={styles.warningText}>
-            Notifications permission denied. Please enable in device settings.
+        ) : (
+          reminders.map(renderReminder)
+        )}
+        
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={handleAddReminder}
+          disabled={loading}
+        >
+          <Ionicons name="add-circle-outline" size={22} color="#0a7ea4" />
+          <ThemedText style={styles.addButtonText}>
+            Add Another Reminder
+          </ThemedText>
+        </TouchableOpacity>
+        
+        {permissionStatus === 'denied' && (
+          <View style={styles.warningContainer}>
+            <Ionicons name="warning-outline" size={20} color="#ff6b00" />
+            <ThemedText style={styles.warningText}>
+              Notifications permission denied. Please enable in device settings.
+            </ThemedText>
+          </View>
+        )}
+        
+        <View style={styles.infoContainer}>
+          <Ionicons name="information-circle-outline" size={20} color="#0a7ea4" />
+          <ThemedText style={styles.infoText}>
+            You will receive reminders to speak your declarations at the times set above.
           </ThemedText>
         </View>
-      )}
+      </ScrollView>
       
       {loading && (
-        <View style={styles.infoContainer}>
-          <Ionicons name="sync-outline" size={20} color="#0a7ea4" />
-          <ThemedText style={styles.infoText}>
-            Updating notification settings...
+        <View style={styles.loadingContainer}>
+          <ThemedText style={styles.loadingText}>
+            Updating reminders...
           </ThemedText>
         </View>
       )}
@@ -285,28 +318,75 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#0a7ea4',
   },
-  settingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
+  scrollView: {
+    maxHeight: 400,
+  },
+  reminderContainer: {
+    marginBottom: 15,
+    paddingBottom: 15,
+  },
+  borderBottom: {
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
-  settingLabelContainer: {
+  reminderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  reminderHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  icon: {
-    marginRight: 10,
-  },
-  settingText: {
+  reminderTitle: {
     fontSize: 16,
+    fontWeight: '500',
+    marginLeft: 10,
+  },
+  deleteButton: {
+    padding: 5,
+  },
+  timeSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 36,
+    padding: 8,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  timeIcon: {
+    marginRight: 8,
   },
   timeText: {
     fontSize: 16,
     color: '#0a7ea4',
+  },
+  disabledText: {
+    color: '#999',
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    padding: 12,
+    backgroundColor: '#e8f4f8',
+    borderRadius: 8,
+  },
+  addButtonText: {
+    fontSize: 16,
     fontWeight: '500',
+    color: '#0a7ea4',
+    marginLeft: 8,
+  },
+  emptyContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#777',
   },
   infoContainer: {
     flexDirection: 'row',
@@ -346,5 +426,14 @@ const styles = StyleSheet.create({
   notSupportedText: {
     fontSize: 14,
     marginLeft: 10,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    marginTop: 10,
+    padding: 10,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#0a7ea4',
   }
 });

@@ -9,7 +9,11 @@ import Colors from '@/constants/Colors';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
 import { View, StyleSheet } from 'react-native';
-import { initializeNotifications, applySettings, getSettings } from '@/services/notificationService';
+import { 
+  initializeNotifications, 
+  applyReminders, 
+  ensureDefaultReminder 
+} from '@/services/notificationService';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -39,12 +43,16 @@ export default function RootLayout() {
     if (loaded) {
       SplashScreen.hideAsync();
 
-      // Initialize notifications and apply saved settings
+      // Initialize notifications system
       (async () => {
-        await initializeNotifications();
-        const savedSettings = await getSettings();
-        if (savedSettings.enabled) {
-          await applySettings(savedSettings);
+        if (Platform.OS !== 'web') {
+          const initialized = await initializeNotifications();
+          if (initialized) {
+            // Ensure we have at least one default reminder
+            await ensureDefaultReminder();
+            // Apply all reminders
+            await applyReminders();
+          }
         }
       })();
     }
