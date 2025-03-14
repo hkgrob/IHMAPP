@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, ScrollView, ActivityIndicator, View, Image, Platform, SafeAreaView } from 'react-native';
+import { StyleSheet, ScrollView, ActivityIndicator, View, Image, Platform, SafeAreaView, Linking } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -16,13 +16,28 @@ export default function BlogPostScreen() {
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const router = useRouter();
+  const [webViewSupported, setWebViewSupported] = useState(true);
 
   useEffect(() => {
+    // Check if WebView is supported on this platform
+    if (Platform.OS !== 'web' && Platform.OS !== 'ios' && Platform.OS !== 'android') {
+      setWebViewSupported(false);
+    }
+    
     // Simulate loading content
     setTimeout(() => {
       setLoading(false);
     }, 1000);
   }, []);
+
+  const openExternalLink = () => {
+    if (link) {
+      Linking.openURL(link as string).catch(err => {
+        console.error('Error opening URL:', err);
+        setError('Failed to open the link. Please try again later.');
+      });
+    }
+  };
 
   return (
     <ThemedView style={styles.container}>
@@ -73,23 +88,36 @@ export default function BlogPostScreen() {
               <ThemedText style={styles.blogDate}>{date as string}</ThemedText>
               <ThemedText style={styles.blogExcerpt}>{excerpt as string}</ThemedText>
               
-              {/* Web view to load the actual blog content */}
-              <View style={styles.webViewContainer}>
-                <WebView
-                  source={{ uri: link as string }}
-                  style={styles.webView}
-                  startInLoadingState={true}
-                  renderLoading={() => (
-                    <View style={styles.webViewLoading}>
-                      <ActivityIndicator size="large" color="#0a7ea4" />
-                    </View>
-                  )}
-                  onError={(e) => {
-                    console.error('WebView error:', e);
-                    setError('Failed to load blog content. Please try again later.');
-                  }}
-                />
-              </View>
+              {webViewSupported ? (
+                <View style={styles.webViewContainer}>
+                  <WebView
+                    source={{ uri: link as string }}
+                    style={styles.webView}
+                    startInLoadingState={true}
+                    renderLoading={() => (
+                      <View style={styles.webViewLoading}>
+                        <ActivityIndicator size="large" color="#0a7ea4" />
+                      </View>
+                    )}
+                    onError={(e) => {
+                      console.error('WebView error:', e);
+                      setError('Failed to load blog content. Please try again later.');
+                    }}
+                  />
+                </View>
+              ) : (
+                <View style={styles.externalLinkContainer}>
+                  <ThemedText style={styles.platformMessage}>
+                    Direct content viewing is not supported on this platform.
+                  </ThemedText>
+                  <ThemedText
+                    style={styles.externalLinkText}
+                    onPress={openExternalLink}
+                  >
+                    Open in browser
+                  </ThemedText>
+                </View>
+              )}
               
               {error && (
                 <View style={styles.errorContainer}>
@@ -195,4 +223,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#ff6b00',
   },
+  externalLinkContainer: {
+    marginTop: 20,
+    padding: 20,
+    backgroundColor: '#f0f8ff',
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  platformMessage: {
+    fontSize: 16,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  externalLinkText: {
+    fontSize: 18,
+    color: '#0a7ea4',
+    fontWeight: 'bold',
+    padding: 10,
+    textDecorationLine: 'underline',
+  }
 });
