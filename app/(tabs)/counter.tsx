@@ -253,7 +253,8 @@ export default function CounterScreen() {
       <ScrollView 
         contentContainerStyle={[
           styles.scrollContent,
-          isSmallScreen && styles.scrollContentSmall
+          isSmallScreen && styles.scrollContentSmall,
+          { paddingTop: 0 } // Remove extra top padding
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -368,7 +369,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-start',
-    paddingTop: Platform.OS === 'ios' ? 40 : Platform.OS === 'web' ? 40 : 30, //Increased paddingTop for better spacing
   },
   content: {
     flex: 1,
