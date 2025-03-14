@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, ScrollView, Switch, TouchableOpacity, Alert, Linking, Platform, FlatList, View, Modal, Dimensions } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -222,7 +222,7 @@ export default function SettingsScreen() {
       setTimePickerVisible(false);
       setReminderTime(formattedTime);
       await saveSettings('reminderTime', formattedTime);
-      
+
       if (notificationsEnabled) {
         await scheduleNotification();
       }
@@ -294,11 +294,9 @@ export default function SettingsScreen() {
   );
 
   const ScrollableTimePicker = ({ isVisible, onConfirm, onCancel, initialTime }) => {
-    if (!isVisible) return null;
-
-    const [selectedHour, setSelectedHour] = useState(initialTime ? parseInt(initialTime.split(':')[0]) : 8);
-    const [selectedMinute, setSelectedMinute] = useState(initialTime ? parseInt(initialTime.split(':')[1].split(' ')[0]) : 0);
-    const [selectedPeriod, setSelectedPeriod] = useState(initialTime ? initialTime.split(' ')[1] : 'AM');
+    const selectedHourRef = useRef(initialTime ? parseInt(initialTime.split(':')[0]) : 8);
+    const selectedMinuteRef = useRef(initialTime ? parseInt(initialTime.split(':')[1].split(' ')[0]) : 0);
+    const selectedPeriodRef = useRef(initialTime ? initialTime.split(' ')[1] : 'AM');
 
     const hours = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
     const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
@@ -306,25 +304,40 @@ export default function SettingsScreen() {
 
     const handleConfirm = () => {
       const date = new Date();
-      let hours24 = selectedHour;
-      if (selectedPeriod === 'PM' && selectedHour < 12) hours24 += 12;
-      if (selectedPeriod === 'AM' && selectedHour === 12) hours24 = 0;
+      let hours24 = selectedHourRef.current;
+      if (selectedPeriodRef.current === 'PM' && selectedHourRef.current < 12) hours24 += 12;
+      if (selectedPeriodRef.current === 'AM' && selectedHourRef.current === 12) hours24 = 0;
       date.setHours(hours24);
-      date.setMinutes(parseInt(selectedMinute));
+      date.setMinutes(parseInt(selectedMinuteRef.current));
       date.setSeconds(0);
       onConfirm(date);
     };
 
-    const renderItem = (item, selected, onSelect) => (
-      <TouchableOpacity 
-        style={[styles.pickerItem, selected === item && styles.selectedPickerItem]} 
-        onPress={() => onSelect(item)}
+    const renderItem = (list, selectedValue, onSelect) => ({ item }) => (
+      <TouchableOpacity
+        style={[styles.pickerItem, parseInt(item) === selectedValue && styles.selectedItem]}
+        onPress={() => onSelect(parseInt(item))}
       >
-        <ThemedText style={[styles.pickerItemText, selected === item && styles.selectedPickerItemText]}>
+        <ThemedText style={parseInt(item) === selectedValue && styles.selectedText}>
           {item}
         </ThemedText>
       </TouchableOpacity>
     );
+
+
+    const renderPeriodItem = ({ item }) => (
+      <TouchableOpacity
+        style={[styles.pickerItem, item === selectedPeriodRef.current && styles.selectedItem]}
+        onPress={() => selectedPeriodRef.current = item}
+      >
+        <ThemedText style={item === selectedPeriodRef.current && styles.selectedText}>
+          {item}
+        </ThemedText>
+      </TouchableOpacity>
+    );
+
+
+    if (!isVisible) return null;
 
     return (
       <Modal visible={isVisible} transparent={true} animationType="slide">
@@ -332,45 +345,30 @@ export default function SettingsScreen() {
           <BlurView intensity={90} tint="light" style={styles.pickerContainer}>
             <ThemedText style={styles.pickerTitle}>Select Time</ThemedText>
             <View style={styles.pickerRowContainer}>
-              <View style={styles.pickerColumn}>
-                <ThemedText style={styles.pickerLabel}>Hour</ThemedText>
-                <FlatList
-                  data={hours}
-                  renderItem={({ item }) => renderItem(item, selectedHour.toString(), hour => setSelectedHour(parseInt(hour)))}
-                  keyExtractor={item => `hour-${item}`}
-                  showsVerticalScrollIndicator={true}
-                  style={styles.pickerList}
-                  contentContainerStyle={styles.pickerListContent}
-                  initialScrollIndex={hours.findIndex(h => parseInt(h) === selectedHour)}
-                  getItemLayout={(data, index) => ({ length: 44, offset: 44 * index, index })}
-                />
-              </View>
-              <View style={styles.pickerColumn}>
-                <ThemedText style={styles.pickerLabel}>Minute</ThemedText>
-                <FlatList
-                  data={minutes}
-                  renderItem={({ item }) => renderItem(item, selectedMinute.toString().padStart(2, '0'), minute => setSelectedMinute(minute))}
-                  keyExtractor={item => `minute-${item}`}
-                  showsVerticalScrollIndicator={true}
-                  style={styles.pickerList}
-                  contentContainerStyle={styles.pickerListContent}
-                  initialScrollIndex={minutes.findIndex(m => m === selectedMinute.toString().padStart(2, '0'))}
-                  getItemLayout={(data, index) => ({ length: 44, offset: 44 * index, index })}
-                />
-              </View>
-              <View style={styles.pickerColumn}>
-                <ThemedText style={styles.pickerLabel}>Period</ThemedText>
-                <FlatList
-                  data={periods}
-                  renderItem={({ item }) => renderItem(item, selectedPeriod, period => setSelectedPeriod(period))}
-                  keyExtractor={item => `period-${item}`}
-                  showsVerticalScrollIndicator={true}
-                  style={[styles.pickerList, { height: 88 }]}
-                  contentContainerStyle={styles.pickerListContent}
-                  initialScrollIndex={periods.findIndex(p => p === selectedPeriod)}
-                  getItemLayout={(data, index) => ({ length: 44, offset: 44 * index, index })}
-                />
-              </View>
+              <FlatList
+                data={hours}
+                renderItem={renderItem(hours, selectedHourRef.current, (val) => selectedHourRef.current = val)}
+                keyExtractor={item => item}
+                style={styles.pickerColumn}
+                initialScrollIndex={selectedHourRef.current -1}
+                getItemLayout={(data, index) => ({ length: 44, offset: 44 * index, index })}
+              />
+              <FlatList
+                data={minutes}
+                renderItem={renderItem(minutes, selectedMinuteRef.current, (val) => selectedMinuteRef.current = val)}
+                keyExtractor={item => item}
+                style={styles.pickerColumn}
+                initialScrollIndex={selectedMinuteRef.current}
+                getItemLayout={(data, index) => ({ length: 44, offset: 44 * index, index })}
+              />
+              <FlatList
+                data={periods}
+                renderItem={renderPeriodItem}
+                keyExtractor={item => item}
+                style={[styles.pickerColumn, {height: 88}]}
+                initialScrollIndex={periods.findIndex(p => p === selectedPeriodRef.current)}
+                getItemLayout={(data, index) => ({ length: 44, offset: 44 * index, index })}
+              />
             </View>
             <View style={styles.pickerButtonContainer}>
               <TouchableOpacity style={styles.pickerButton} onPress={onCancel}>
@@ -426,16 +424,16 @@ export default function SettingsScreen() {
                 thumbColor="#f4f3f4"
               />
             </ThemedView>
-            <ScrollableTimePicker 
-              isVisible={isTimePickerVisible} 
-              onConfirm={handleTimeConfirm} 
-              onCancel={() => setTimePickerVisible(false)} 
-              initialTime={reminderTime} 
+            <ScrollableTimePicker
+              isVisible={isTimePickerVisible}
+              onConfirm={handleTimeConfirm}
+              onCancel={() => setTimePickerVisible(false)}
+              initialTime={reminderTime}
             />
-            <ScrollableTimePicker 
-              isVisible={isTimePickerVisible2} 
-              onConfirm={handleTimeConfirm2} 
-              onCancel={() => setTimePickerVisible2(false)} 
+            <ScrollableTimePicker
+              isVisible={isTimePickerVisible2}
+              onConfirm={handleTimeConfirm2}
+              onCancel={() => setTimePickerVisible2(false)}
               initialTime={reminderTime2}
             />
           </>
@@ -473,13 +471,13 @@ export default function SettingsScreen() {
               <ThemedText>Version</ThemedText>
               <ThemedText>1.0.0</ThemedText>
             </ThemedView>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.linkButton}
               onPress={() => Linking.openURL('https://yourwebsite.com/privacy')}
             >
               <ThemedText style={styles.linkButtonText}>Privacy Policy</ThemedText>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.linkButton}
               onPress={() => Linking.openURL('https://yourwebsite.com/terms')}
             >
@@ -605,13 +603,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
   },
-  selectedPickerItem: {
+  selectedItem: {
     backgroundColor: 'rgba(0, 122, 255, 0.1)',
   },
-  pickerItemText: {
-    fontSize: 18,
-  },
-  selectedPickerItemText: {
+  selectedText: {
     fontWeight: '600',
     color: '#007AFF',
   },
