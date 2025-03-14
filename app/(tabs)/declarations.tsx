@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: Platform.OS === 'web' ? 20 : 16,
-    paddingTop: Platform.OS === 'ios' ? 60 : Platform.OS === 'web' ? 60 : 40,
+    paddingTop: Platform.OS === 'ios' ? 30 : Platform.OS === 'web' ? 30 : 20,
     paddingBottom: Platform.OS === 'ios' ? 40 : 20,
   },
   headerContainer: {
