@@ -12,7 +12,8 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
-import { useColorScheme } from '@/hooks/useColorScheme'; // Added import
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { Colors } from '@/constants/Colors';
 
 
 const { width, height } = Dimensions.get('window');
