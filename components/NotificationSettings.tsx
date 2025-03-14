@@ -179,7 +179,8 @@ export const NotificationSettings = () => {
       setTimePickerState({ visible: false, selectedReminderId: null });
     }
     
-    if (!selectedDate || !timePickerState.selectedReminderId) return;
+    // Only process if we have a date and reminder ID and it's a "set" event
+    if (!selectedDate || !timePickerState.selectedReminderId || event.type !== 'set') return;
     
     try {
       setRefreshing(true);
@@ -199,7 +200,15 @@ export const NotificationSettings = () => {
         setReminders(prev => 
           prev.map(r => r.id === updatedReminder.id ? updatedReminder : r)
         );
-        await applyAllReminders();
+        
+        // Apply all reminders after setting the time picker state to avoid spam
+        if (Platform.OS === 'ios') {
+          // For iOS, we'll apply the reminders when Done is pressed
+          // This state is just to track that we have a pending change
+          reminder._pendingTimeChange = true;
+        } else {
+          await applyAllReminders();
+        }
       }
     } catch (error) {
       console.error('Error updating reminder time:', error);
@@ -217,12 +226,37 @@ export const NotificationSettings = () => {
     });
   };
   
-  // Hide time picker
-  const hideTimePicker = () => {
-    setTimePickerState({
-      visible: false,
-      selectedReminderId: null
-    });
+  // Hide time picker and apply changes if needed
+  const hideTimePicker = async () => {
+    try {
+      // Check if we have pending time changes to apply
+      const hasPendingChanges = reminders.some(r => r._pendingTimeChange);
+      
+      if (hasPendingChanges) {
+        setRefreshing(true);
+        // Apply all reminders once when done is pressed
+        await applyAllReminders();
+        
+        // Clear pending flags
+        setReminders(prev => 
+          prev.map(r => {
+            if (r._pendingTimeChange) {
+              const { _pendingTimeChange, ...rest } = r;
+              return rest;
+            }
+            return r;
+          })
+        );
+      }
+    } catch (error) {
+      console.error('Error applying reminders on done:', error);
+    } finally {
+      setRefreshing(false);
+      setTimePickerState({
+        visible: false,
+        selectedReminderId: null
+      });
+    }
   };
 
   // If web platform, show not supported message
