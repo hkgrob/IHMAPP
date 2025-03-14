@@ -258,7 +258,9 @@ export default function CounterScreen() {
         showsVerticalScrollIndicator={false}
       >
         <ThemedView style={styles.content}> {/* Added content wrapper */}
-          <ThemedText style={styles.pageTitle}>Declaration Counter</ThemedText> {/* Moved title outside */}
+          <View style={styles.headerContainer}>
+            <ThemedText style={styles.pageTitle}>Declaration Counter</ThemedText>
+          </View>
           <ThemedView style={styles.counterContainer}>
 
             <ThemedView style={styles.statsContainer}>
@@ -367,6 +369,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
+  },
+  headerContainer: {
+    // Add styles for the header container here if needed.  For example:
+    // paddingVertical: 20,
+    // alignItems: 'center',
   },
   pageTitle: {
     fontSize: 24,
