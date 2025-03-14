@@ -59,42 +59,17 @@ export default function BlogPostScreen() {
             </View>
           ) : (
             <View style={styles.postContainer}>
-              <View style={styles.headerContainer}>
-                <ThemedText style={styles.blogTitle}>{title as string}</ThemedText>
-                <ThemedText style={styles.blogDate}>{date as string}</ThemedText>
-              </View>
+              <ThemedText style={styles.blogTitle}>{title as string}</ThemedText>
+              <ThemedText style={styles.blogDate}>{date as string}</ThemedText>
               
-              {error || content.includes("We couldn't fetch the full content") ? (
+              {error ? (
                 <View style={styles.errorContainer}>
-                  <Ionicons name="newspaper-outline" size={48} color="#0a7ea4" />
-                  <ThemedText style={styles.errorText}>
-                    {error || "We couldn't load the full blog post content on this device."}
-                  </ThemedText>
-                  
-                  <View style={styles.infoContainer}>
-                    <ThemedText style={styles.infoText}>
-                      You can read the complete article on our website.
-                    </ThemedText>
-                  </View>
-                  
-                  <TouchableOpacity 
-                    style={[styles.readMoreButton, { marginTop: 20 }]}
-                    onPress={() => Linking.openURL(link as string)}
-                  >
-                    <ThemedText style={styles.readMoreText}>Open in Browser</ThemedText>
-                  </TouchableOpacity>
+                  <Ionicons name="alert-circle-outline" size={48} color="#0a7ea4" />
+                  <ThemedText style={styles.errorText}>{error}</ThemedText>
                 </View>
               ) : (
                 <View style={styles.contentContainer}>
-                  <ThemedText style={styles.blogContent}>
-                    {content.split('\n\n').map((paragraph, index) => (
-                      paragraph.trim() ? (
-                        <ThemedText key={index} style={styles.paragraph}>
-                          {paragraph.trim()}
-                        </ThemedText>
-                      ) : null
-                    ))}
-                  </ThemedText>
+                  <ThemedText style={styles.blogContent}>{content}</ThemedText>
                   
                   <TouchableOpacity 
                     style={styles.readMoreButton}
@@ -137,21 +112,15 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 80,
   },
-  headerContainer: {
-    marginBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-    paddingBottom: 16,
-  },
   blogTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 8,
-    lineHeight: 34,
   },
   blogDate: {
     fontSize: 14,
     opacity: 0.7,
+    marginBottom: 20,
   },
   errorContainer: {
     alignItems: 'center',
@@ -161,51 +130,23 @@ const styles = StyleSheet.create({
   },
   errorText: {
     marginTop: 16,
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#444',
-  },
-  infoContainer: {
-    marginTop: 12,
-    paddingHorizontal: 20,
-  },
-  infoText: {
     fontSize: 16,
     textAlign: 'center',
-    lineHeight: 22,
-    color: '#666',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
   },
   contentContainer: {
     marginTop: 16,
   },
   blogContent: {
-    fontSize: 17,
-    lineHeight: 28,
-  },
-  paragraph: {
-    marginBottom: 16,
+    fontSize: 16,
+    lineHeight: 24,
   },
   readMoreButton: {
-    marginTop: 40,
+    marginTop: 30,
     backgroundColor: '#0a7ea4',
-    paddingHorizontal: 24,
-    paddingVertical: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderRadius: 8,
     alignSelf: 'center',
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
   },
   readMoreText: {
     color: 'white',
