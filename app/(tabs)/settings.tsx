@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
     overflow: 'hidden',
-    width: Platform.OS === 'ios' ? '92%' : undefined,
+    width: '92%',
     alignSelf: 'center',
   },
   sectionHeader: {
