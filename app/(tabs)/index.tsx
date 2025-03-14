@@ -51,7 +51,7 @@ export default function HomeScreen() {
               description="Track your progress"
               icon="stopwatch-outline"
               route="/(tabs)/counter"
-              color="#0a7ea4"
+              color="#50E3C2"
             />
 
             <FeatureButton 

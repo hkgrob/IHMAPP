@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator, View, Image, Alert, Platform, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -18,7 +19,6 @@ export default function BlogScreen() {
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const cardBackground = useThemeColor({}, 'cardBackground');
-  const accentColor = useThemeColor({}, 'accent'); // Added to easily access accent color
 
   useEffect(() => {
     loadPosts();
@@ -29,7 +29,7 @@ export default function BlogScreen() {
       setLoading(true);
       const blogPosts = await fetchWixBlogPosts();
       setPosts(blogPosts);
-
+      
       // Check if we're showing fallback data
       if (blogPosts.length === 4 && blogPosts[0].id === '1') {
         console.log('Showing fallback content');
@@ -73,7 +73,7 @@ export default function BlogScreen() {
 
       const blogPosts = await fetchWixBlogPosts();
       setPosts(blogPosts);
-
+      
       // Check if we're showing fallback data
       if (blogPosts.length === 4 && blogPosts[0].id === '1') {
         setErrorMessage('Could not connect to blog service. Showing fallback content.');
@@ -138,14 +138,14 @@ export default function BlogScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={[accentColor]} // Changed color here
-            tintColor={accentColor} // Changed color here
+            colors={["#F5A623"]}
+            tintColor="#F5A623"
           />
         }
       >
         {loading && !refreshing ? (
           <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color={accentColor} /> {/* Changed color here */}
+            <ActivityIndicator size="large" color="#F5A623" />
             <ThemedText style={styles.loadingText}>
               Loading posts...
             </ThemedText>
@@ -167,16 +167,16 @@ export default function BlogScreen() {
                   />
                 ) : (
                   <LinearGradient
-                    colors={[accentColor, '#F5CE69']} {/* Changed color here */}
+                    colors={['#F5A623', '#F5CE69']}
                     style={styles.blogImagePlaceholder}
                   >
                     <Ionicons name="newspaper" size={42} color="#fff" />
                   </LinearGradient>
                 )}
-
+                
                 <View style={styles.blogMeta}>
                   {index < 2 && (
-                    <View style={[styles.newPostBadge, { backgroundColor: accentColor }]}> {/* Changed color here */}
+                    <View style={styles.newPostBadge}>
                       <ThemedText style={styles.newPostText}>NEW</ThemedText>
                     </View>
                   )}
@@ -184,30 +184,30 @@ export default function BlogScreen() {
                     {typeof post.date === 'string' ? post.date : 'No Date'}
                   </ThemedText>
                 </View>
-
+                
                 <ThemedText 
                   style={styles.blogTitle}
                   numberOfLines={2}
                 >
                   {post.title}
                 </ThemedText>
-
+                
                 <ThemedText 
                   style={styles.blogExcerpt}
                   numberOfLines={3}
                 >
                   {post.excerpt}
                 </ThemedText>
-
+                
                 <View style={styles.cardFooter}>
                   <TouchableOpacity style={styles.readMoreButton}>
-                    <ThemedText style={[styles.readMoreText, { color: accentColor }]}>Read more</ThemedText> {/* Changed color here */}
-                    <Ionicons name="arrow-forward" size={16} color={accentColor} /> {/* Changed color here */}
+                    <ThemedText style={styles.readMoreText}>Read more</ThemedText>
+                    <Ionicons name="arrow-forward" size={16} color="#F5A623" />
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
             ))}
-
+            
             {posts.length > 0 && (
               <ThemedText style={styles.footerText}>
                 Visit our website for more articles

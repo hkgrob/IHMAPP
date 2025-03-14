@@ -348,7 +348,7 @@ export default function CounterScreen() {
         <View style={styles.tipsContainer}>
           <BlurView intensity={90} tint={Platform.OS === 'ios' ? 'default' : 'light'} style={styles.tipsCard}>
             <ThemedText style={styles.tipsTitle} numberOfLines={1}>
-              <Ionicons name="bulb-outline" size={18} color={tintColor} /> Tip
+              <Ionicons name="bulb-outline" size={18} color="#FFCC00" /> Tip
             </ThemedText>
             <ThemedText style={styles.tipsText} numberOfLines={4}>
               Consistency is key! Aim to speak declarations aloud daily to build new neural pathways.
