@@ -429,7 +429,7 @@ const SettingsScreen = () => {
             <>
               <ThemedView style={styles.settingRow}>
                 <ThemedText style={styles.settingText}>Version</ThemedText>
-                <ThemedText style={styles.timeText}>1.0.2</ThemedText>
+                <ThemedText style={styles.timeText}>1.0.4</ThemedText>
               </ThemedView>              
               <TouchableOpacity
                 style={styles.linkButton}
