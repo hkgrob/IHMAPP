@@ -170,17 +170,26 @@ export default function SettingsScreen() {
       }
     } catch (error) {
       console.error('Error scheduling notification:', error);
+      // Don't show alerts on web platform
+      if (Platform.OS !== 'web') {
+        Alert.alert(
+          'Notification Error',
+          'There was a problem setting up your notifications. Please try again.',
+          [{ text: 'OK' }]
+        );
+      }
     }
   };
 
   const scheduleReminderAtTime = async (timeString, identifier) => {
-    const timePattern = /(\d+):(\d+)\s*(AM|PM)/i;
-    const match = timeString.match(timePattern);
+    try {
+      const timePattern = /(\d+):(\d+)\s*(AM|PM)/i;
+      const match = timeString.match(timePattern);
 
-    if (!match) {
-      console.error(`Invalid time format: ${timeString}`);
-      return;
-    }
+      if (!match) {
+        console.error(`Invalid time format: ${timeString}`);
+        return;
+      }
 
     let hours = parseInt(match[1], 10);
     const minutes = parseInt(match[2], 10);
@@ -240,8 +249,16 @@ export default function SettingsScreen() {
       Alert.alert('Reminder Set', `Daily reminder set for ${timeString}`, [{ text: 'OK' }]);
     } catch (error) {
       console.error('Error scheduling notification:', error);
-      Alert.alert('Reminder Set', `Daily reminder set for ${timeString}`, [{ text: 'OK' }]);
+      // Handle errors more gracefully and don't show success message on error
+      if (Platform.OS !== 'web') {
+        Alert.alert('Reminder Issue', `Could not set reminder for ${timeString}. Please try again.`, [{ text: 'OK' }]);
+      } else {
+        console.log('Notification error in web platform:', error);
+      }
     }
+  } catch (error) {
+    console.error('Error in scheduleReminderAtTime:', error);
+  }
   };
 
   const toggleNotifications = (value) => {
