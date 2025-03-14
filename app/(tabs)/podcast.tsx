@@ -123,6 +123,12 @@ export default function PodcastScreen() {
           fontWeight: 'bold',
         },
       }} />
+      
+      {/* Added explicit page title */}
+      <View style={styles.titleContainer}>
+        <ThemedText style={styles.pageTitle}>Steve Backlund Podcasts</ThemedText>
+      </View>
+      
       <FlatList
         data={podcasts}
         renderItem={renderPodcastItem}
@@ -148,6 +154,17 @@ export default function PodcastScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  titleContainer: {
+    padding: 16,
+    backgroundColor: '#0a7ea4',
+    alignItems: 'center',
+  },
+  pageTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: 'white',
+    marginVertical: 10,
   },
   listContent: {
     padding: 16,
