@@ -34,6 +34,17 @@ export default function SettingsScreen() {
           const { status } = await Notifications.requestPermissionsAsync();
           if (status !== 'granted') {
             console.log('Notification permissions not granted');
+            Alert.alert(
+              'Notifications Disabled',
+              'Please enable notifications in your device settings to receive reminders.',
+              [{ text: 'OK' }]
+            );
+          } else {
+            console.log('Notification permissions granted');
+            
+            // Check existing scheduled notifications
+            const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+            console.log(`Found ${scheduledNotifications.length} scheduled notifications`);
           }
         } else {
           console.log('Notifications not supported on web');
@@ -63,6 +74,13 @@ export default function SettingsScreen() {
       if (storedSecondReminderEnabled) setSecondReminderEnabled(storedSecondReminderEnabled === 'true');
       if (storedSound) setSoundEnabled(storedSound === 'true');
       if (storedHaptic) setHapticEnabled(storedHaptic === 'true');
+      
+      // Schedule notifications if enabled
+      if (storedNotifications === 'true') {
+        console.log('Notifications enabled, scheduling after loading settings');
+        // Use setTimeout to ensure state is updated before scheduling
+        setTimeout(() => scheduleNotification(), 500);
+      }
     } catch (error) {
       console.error("Error loading settings:", error);
     }
@@ -133,16 +151,20 @@ export default function SettingsScreen() {
 
   const scheduleNotification = async () => {
     if (Platform.OS === 'web' || !notificationsEnabled) {
+      console.log('Skipping notification scheduling: Web platform or notifications disabled');
       return;
     }
 
     try {
+      console.log('Cancelling all scheduled notifications before rescheduling');
       await Notifications.cancelAllScheduledNotificationsAsync();
 
       if (notificationsEnabled) {
+        console.log(`Scheduling first reminder at ${reminderTime}`);
         await scheduleReminderAtTime(reminderTime, 'first-reminder');
 
         if (secondReminderEnabled) {
+          console.log(`Scheduling second reminder at ${reminderTime2}`);
           await scheduleReminderAtTime(reminderTime2, 'second-reminder');
         }
       }
@@ -156,7 +178,7 @@ export default function SettingsScreen() {
     const match = timeString.match(timePattern);
 
     if (!match) {
-      console.error('Invalid time format');
+      console.error(`Invalid time format: ${timeString}`);
       return;
     }
 
@@ -164,11 +186,14 @@ export default function SettingsScreen() {
     const minutes = parseInt(match[2], 10);
     const period = match[3].toUpperCase();
 
+    // Convert to 24-hour format
     if (period === 'PM' && hours < 12) {
       hours += 12;
     } else if (period === 'AM' && hours === 12) {
       hours = 0;
     }
+
+    console.log(`Scheduling for ${hours}:${minutes} (${period})`);
 
     const now = new Date();
     const scheduledTime = new Date(
@@ -176,14 +201,19 @@ export default function SettingsScreen() {
       now.getMonth(),
       now.getDate(),
       hours,
-      minutes
+      minutes,
+      0, // seconds
+      0  // milliseconds
     );
 
+    // If time has already passed today, schedule for tomorrow
     if (scheduledTime <= now) {
       scheduledTime.setDate(scheduledTime.getDate() + 1);
+      console.log('Time already passed today, scheduling for tomorrow');
     }
 
     const secondsUntilReminder = Math.floor((scheduledTime.getTime() - now.getTime()) / 1000);
+    console.log(`Seconds until reminder: ${secondsUntilReminder}`);
 
     try {
       if (!Notifications) {
@@ -191,7 +221,7 @@ export default function SettingsScreen() {
         Alert.alert('Reminder Set', `Daily reminder set for ${timeString}`, [{ text: 'OK' }]);
         return;
       }
-      await Notifications.scheduleNotificationAsync({
+      const notificationId = await Notifications.scheduleNotificationAsync({
         identifier: identifier,
         content: {
           title: 'Declaration Reminder',
@@ -204,7 +234,10 @@ export default function SettingsScreen() {
         },
       });
 
-      console.log(`Notification scheduled for ${timeString} with ID: ${identifier}`);
+      console.log(`Notification scheduled for ${timeString} with ID: ${notificationId || identifier}`);
+      
+      // Show confirmation to the user
+      Alert.alert('Reminder Set', `Daily reminder set for ${timeString}`, [{ text: 'OK' }]);
     } catch (error) {
       console.error('Error scheduling notification:', error);
       Alert.alert('Reminder Set', `Daily reminder set for ${timeString}`, [{ text: 'OK' }]);
