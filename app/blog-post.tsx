@@ -134,13 +134,13 @@ const styles = StyleSheet.create({
   },
   blogImage: {
     width: '100%',
-    height: 200,
+    height: 120,
     borderRadius: 8,
     marginBottom: 16,
   },
   blogImagePlaceholder: {
     width: '100%',
-    height: 200,
+    height: 120,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
