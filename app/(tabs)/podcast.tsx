@@ -167,9 +167,11 @@ const styles = StyleSheet.create({
   podcastImagePlaceholder: {
     width: '100%',
     height: 180,
-    backgroundColor: '#0a7ea4',
+    backgroundColor: '#0a7ea4', // Fallback color
     justifyContent: 'center',
     alignItems: 'center',
+    // Linear gradient background
+    backgroundImage: 'linear-gradient(to bottom right, #0a7ea4, #2c9fc9, #50c2e8)',
   },
   podcastInfo: {
     padding: 16,
