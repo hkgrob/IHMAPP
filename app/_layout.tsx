@@ -5,11 +5,11 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import Colors from '@/constants/Colors';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useColorScheme } from '../hooks/useColorScheme';
-import { Header } from '../components/Header';
-import * as Notifications from 'expo-notifications';
+import { Header } from '@/components/Header';
+import { View, StyleSheet } from 'react-native';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -29,31 +29,6 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
-
-  // Initialize notifications for mobile only
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      console.log('Skipping notifications for web platform');
-      return;
-    }
-    
-    const initNotifications = async () => {
-      try {
-        console.log('Setting up notification handler');
-        Notifications.setNotificationHandler({
-          handleNotification: async () => ({
-            shouldShowAlert: true,
-            shouldPlaySound: true,
-            shouldSetBadge: true,
-          }),
-        });
-      } catch (error) {
-        console.error('Error setting up notification handler:', error);
-      }
-    };
-
-    initNotifications();
-  }, []);
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
