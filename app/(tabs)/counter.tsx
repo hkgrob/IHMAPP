@@ -364,8 +364,9 @@ export default function CounterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 0, // Remove extra top padding
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
   },
   pageTitle: {
     fontSize: 24,
@@ -375,16 +376,19 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 20,
-    width: '100%'
+    width: '100%',
+    alignItems: 'center', // Center content horizontally
   },
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 20,
     paddingTop: 0,
+    alignItems: 'center', // Center content horizontally
   },
   scrollContentSmall: {
     padding: 10,
+    alignItems: 'center', // Center content horizontally
+
   },
   counterContainer: {
     marginTop: 20,
@@ -394,6 +398,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+    width: '100%',
+    maxWidth: 450, //Added max width for responsiveness
+    alignItems: 'center', // Center items within the container
   },
   title: {
     fontSize: 28,
@@ -407,9 +414,10 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     width: '100%',
     minWidth: 300,
+    flexWrap: 'wrap', // Allow wrapping on smaller screens
   },
   statCard: {
-    width: 140,
+    width: '48%', // Adjust width for better layout
     height: 120,
     marginHorizontal: 5,
     padding: 15,
@@ -421,6 +429,7 @@ const styles = StyleSheet.create({
     elevation: 2,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 10, //Added margin for better spacing
   },
   statLabel: {
     fontSize: 16,
@@ -441,6 +450,8 @@ const styles = StyleSheet.create({
     minWidth: 220,
     minHeight: 60,
     justifyContent: 'center',
+    width: '100%', //Added to make it take up full width
+    maxWidth: 450, //Added to limit max width
   },
   buttonText: {
     color: '#000000',
@@ -452,10 +463,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 10,
+    width: '100%', //Added to make it take up full width
   },
   resetContainerSmall: {
     flexDirection: 'column',
     alignItems: 'center',
+    width: '100%', //Added to make it take up full width
   },
   resetButton: {
     paddingVertical: 10,
@@ -464,10 +477,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     width: '48%',
     alignItems: 'center',
+    marginBottom: 10, //Added margin for better spacing
   },
   resetButtonSmall: {
     width: '100%',
-    marginBottom: 10,
   },
   resetText: {
     fontSize: 14,
@@ -480,6 +493,7 @@ const styles = StyleSheet.create({
     marginTop: 30,
     marginBottom: 20,
     alignItems: 'center',
+    width: '100%',
   },
   tipsCard: {
     width: '100%',
