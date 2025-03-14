@@ -9,7 +9,7 @@
       "android",
       "web"
     ],
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/fire-icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -22,8 +22,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/fire-icon.png",
+        "backgroundColor": "#FF6700"
       },
       "package": "com.hkgrob.biblestudyapp"
     },
@@ -37,7 +37,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/fire-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
