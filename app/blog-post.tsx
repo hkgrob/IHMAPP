@@ -59,8 +59,10 @@ export default function BlogPostScreen() {
             </View>
           ) : (
             <View style={styles.postContainer}>
-              <ThemedText style={styles.blogTitle}>{title as string}</ThemedText>
-              <ThemedText style={styles.blogDate}>{date as string}</ThemedText>
+              <View style={styles.headerContainer}>
+                <ThemedText style={styles.blogTitle}>{title as string}</ThemedText>
+                <ThemedText style={styles.blogDate}>{date as string}</ThemedText>
+              </View>
               
               {error ? (
                 <View style={styles.errorContainer}>
@@ -69,7 +71,15 @@ export default function BlogPostScreen() {
                 </View>
               ) : (
                 <View style={styles.contentContainer}>
-                  <ThemedText style={styles.blogContent}>{content}</ThemedText>
+                  <ThemedText style={styles.blogContent}>
+                    {content.split('\n\n').map((paragraph, index) => (
+                      paragraph.trim() ? (
+                        <ThemedText key={index} style={styles.paragraph}>
+                          {paragraph.trim()}
+                        </ThemedText>
+                      ) : null
+                    ))}
+                  </ThemedText>
                   
                   <TouchableOpacity 
                     style={styles.readMoreButton}
@@ -112,15 +122,21 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 80,
   },
+  headerContainer: {
+    marginBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
+    paddingBottom: 16,
+  },
   blogTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 8,
+    lineHeight: 34,
   },
   blogDate: {
     fontSize: 14,
     opacity: 0.7,
-    marginBottom: 20,
   },
   errorContainer: {
     alignItems: 'center',
@@ -137,16 +153,27 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   blogContent: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 17,
+    lineHeight: 28,
+  },
+  paragraph: {
+    marginBottom: 16,
   },
   readMoreButton: {
-    marginTop: 30,
+    marginTop: 40,
     backgroundColor: '#0a7ea4',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
     borderRadius: 8,
     alignSelf: 'center',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   readMoreText: {
     color: 'white',
