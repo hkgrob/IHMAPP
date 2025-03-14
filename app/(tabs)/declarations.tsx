@@ -232,7 +232,7 @@ export default function DeclarationsScreen() {
 
           {/* Counter Button */}
           <TouchableOpacity style={styles.countButton} onPress={incrementCounter}>
-            <Text style={styles.countButtonText}>Declaration Count: {declarationCount}</Text>
+            <Text style={styles.countButtonText}>Click to Add Declaration Count: {declarationCount}</Text>
           </TouchableOpacity>
         </View>
 
