@@ -211,7 +211,7 @@ export default function HomeScreen() {
               onPress={handlePress}
               style={[styles.countButton, { backgroundColor: '#0a7ea4' }]}
             >
-              <Ionicons name="ios-checkmark-circle-sharp" size={24} color="white" />
+              <Ionicons name="ios-add-circle-sharp" size={24} color="white" />
               <Text style={styles.buttonText}>Click to Declare</Text>
             </TouchableOpacity>
 
