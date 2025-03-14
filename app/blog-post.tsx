@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, ActivityIndicator, View, Image, Platform, SafeAreaView, Linking, ImageBackground } from 'react-native';
+
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, ScrollView, ActivityIndicator, View, Image, Platform, SafeAreaView } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -15,28 +16,13 @@ export default function BlogPostScreen() {
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const router = useRouter();
-  const [webViewSupported, setWebViewSupported] = useState(true);
 
   useEffect(() => {
-    // Check if WebView is supported on this platform
-    if (Platform.OS !== 'web' && Platform.OS !== 'ios' && Platform.OS !== 'android') {
-      setWebViewSupported(false);
-    }
-
     // Simulate loading content
     setTimeout(() => {
       setLoading(false);
     }, 1000);
   }, []);
-
-  const openExternalLink = () => {
-    if (link) {
-      Linking.openURL(link as string).catch(err => {
-        console.error('Error opening URL:', err);
-        setError('Failed to open the link. Please try again later.');
-      });
-    }
-  };
 
   return (
     <ThemedView style={styles.container}>
@@ -69,127 +55,42 @@ export default function BlogPostScreen() {
           ) : (
             <View style={styles.postContainer}>
               {imageUrl ? (
-                <ImageBackground 
+                <Image 
                   source={{ uri: imageUrl as string }} 
-                  style={styles.headerImage}
+                  style={styles.blogImage} 
                   resizeMode="cover"
-                >
-                  <View style={styles.headerOverlay}>
-                    <ThemedText style={styles.headerTitle}>{title as string}</ThemedText>
-                    <ThemedText style={styles.headerDate}>{date as string}</ThemedText>
-                  </View>
-                </ImageBackground>
+                />
               ) : (
                 <LinearGradient
                   colors={['#0a7ea4', '#64b5d9']}
-                  style={styles.headerImagePlaceholder}
+                  style={styles.blogImagePlaceholder}
                 >
                   <Ionicons name="newspaper" size={42} color="#fff" />
-                  <ThemedText style={styles.headerTitle}>{title as string}</ThemedText>
-                  <ThemedText style={styles.headerDate}>{date as string}</ThemedText>
                 </LinearGradient>
               )}
-
-              <View style={styles.contentContainer}>
-                <ThemedText style={styles.blogExcerpt}>{excerpt as string}</ThemedText>
-
-              {Platform.OS === 'web' ? (
-                <View style={styles.webViewContainer}>
-                  <WebView
-                    source={{ uri: link as string }}
-                    style={styles.webView}
-                    startInLoadingState={true}
-                    renderLoading={() => (
-                      <View style={styles.webViewLoading}>
-                        <ActivityIndicator size="large" color="#0a7ea4" />
-                      </View>
-                    )}
-                    onError={(e) => {
-                      console.error('WebView error:', e);
-                      setError('Failed to load blog content. Please try again later.');
-                    }}
-                  />
-                </View>
-              ) : Platform.OS === 'ios' || Platform.OS === 'android' ? (
-                <View style={styles.webViewContainer}>
-                  <WebView
-                    source={{ uri: link as string }}
-                    style={styles.webView}
-                    startInLoadingState={true}
-                    renderLoading={() => (
-                      <View style={styles.webViewLoading}>
-                        <ActivityIndicator size="large" color="#0a7ea4" />
-                      </View>
-                    )}
-                    onError={(e) => {
-                      console.error('WebView error:', e);
-                      setError('Failed to load blog content. Please try again later.');
-                    }}
-                  />
-                </View>
-              ) : (
-                <View style={styles.externalLinkContainer}>
-                  <ThemedText style={styles.platformMessage}>
-                    Direct content viewing is not supported on this platform.
-                  </ThemedText>
-                  <ThemedText
-                    style={styles.externalLinkText}
-                    onPress={openExternalLink}
-                  >
-                    Open in browser
-                  </ThemedText>
-                </View>
-              )}
-              </View></old_str>
-<new_str>              {Platform.OS === 'web' ? (
-                <View style={styles.webViewContainer}>
-                  <WebView
-                    source={{ uri: link as string }}
-                    style={styles.webView}
-                    startInLoadingState={true}
-                    renderLoading={() => (
-                      <View style={styles.webViewLoading}>
-                        <ActivityIndicator size="large" color="#0a7ea4" />
-                      </View>
-                    )}
-                    onError={(e) => {
-                      console.error('WebView error:', e);
-                      setError('Failed to load blog content. Please try again later.');
-                    }}
-                  />
-                </View>
-              ) : Platform.OS === 'ios' || Platform.OS === 'android' ? (
-                <View style={styles.webViewContainer}>
-                  <WebView
-                    source={{ uri: link as string }}
-                    style={styles.webView}
-                    startInLoadingState={true}
-                    renderLoading={() => (
-                      <View style={styles.webViewLoading}>
-                        <ActivityIndicator size="large" color="#0a7ea4" />
-                      </View>
-                    )}
-                    onError={(e) => {
-                      console.error('WebView error:', e);
-                      setError('Failed to load blog content. Please try again later.');
-                    }}
-                  />
-                </View>
-              ) : (
-                <View style={styles.externalLinkContainer}>
-                  <ThemedText style={styles.platformMessage}>
-                    Direct content viewing is not supported on this platform.
-                  </ThemedText>
-                  <ThemedText
-                    style={styles.externalLinkText}
-                    onPress={openExternalLink}
-                  >
-                    Open in browser
-                  </ThemedText>
-                </View>
-              )}
+              
+              <ThemedText style={styles.blogTitle}>{title as string}</ThemedText>
+              <ThemedText style={styles.blogDate}>{date as string}</ThemedText>
+              <ThemedText style={styles.blogExcerpt}>{excerpt as string}</ThemedText>
+              
+              {/* Web view to load the actual blog content */}
+              <View style={styles.webViewContainer}>
+                <WebView
+                  source={{ uri: link as string }}
+                  style={styles.webView}
+                  startInLoadingState={true}
+                  renderLoading={() => (
+                    <View style={styles.webViewLoading}>
+                      <ActivityIndicator size="large" color="#0a7ea4" />
+                    </View>
+                  )}
+                  onError={(e) => {
+                    console.error('WebView error:', e);
+                    setError('Failed to load blog content. Please try again later.');
+                  }}
+                />
               </View>
-
+              
               {error && (
                 <View style={styles.errorContainer}>
                   <Ionicons name="alert-circle-outline" size={32} color="#ff6b00" />
@@ -231,46 +132,34 @@ const styles = StyleSheet.create({
   postContainer: {
     flex: 1,
   },
-  headerImage: {
+  blogImage: {
     width: '100%',
-    height: 250,
+    height: 200,
+    borderRadius: 8,
+    marginBottom: 16,
   },
-  headerImagePlaceholder: {
+  blogImagePlaceholder: {
     width: '100%',
-    height: 250,
+    height: 200,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    marginBottom: 16,
   },
-  headerOverlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    width: '100%',
-    height: '100%',
-    justifyContent: 'flex-end',
-    padding: 20,
-  },
-  headerTitle: {
+  blogTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 8,
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
   },
-  headerDate: {
+  blogDate: {
     fontSize: 14,
-    color: '#FFFFFF',
-    opacity: 0.9,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    opacity: 0.7,
+    marginBottom: 16,
   },
   blogExcerpt: {
     fontSize: 16,
     lineHeight: 24,
     marginBottom: 20,
-    padding: 16,
   },
   webViewContainer: {
     width: '100%',
@@ -306,25 +195,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#ff6b00',
   },
-  externalLinkContainer: {
-    marginTop: 20,
-    padding: 20,
-    backgroundColor: '#f0f8ff',
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  platformMessage: {
-    fontSize: 16,
-    marginBottom: 15,
-    textAlign: 'center',
-  },
-  externalLinkText: {
-    fontSize: 18,
-    color: '#0a7ea4',
-    fontWeight: 'bold',
-    padding: 10,
-    textDecorationLine: 'underline',
-  }
 });
