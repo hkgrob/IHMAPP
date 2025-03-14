@@ -110,7 +110,7 @@ export default function BlogScreen() {
       />
 
       <LinearGradient
-        colors={['rgba(245, 166, 35, 0.2)', 'rgba(245, 166, 35, 0)']}
+        colors={['rgba(10, 126, 164, 0.2)', 'rgba(10, 126, 164, 0)']}
         style={styles.headerGradient}
       >
         <View style={styles.headerContainer}>
