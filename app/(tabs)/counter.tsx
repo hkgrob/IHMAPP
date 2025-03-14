@@ -12,19 +12,31 @@ import { ScrollView } from 'react-native';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
 
 export default function CounterScreen() {
   const [count, setCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [dailyCount, setDailyCount] = useState(0);
   const [lastReset, setLastReset] = useState('');
+  const [hapticEnabled, setHapticEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [sound, setSound] = useState(null);
   const iconColor = useThemeColor({}, 'icon');
   const tintColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
   const windowWidth = Dimensions.get('window').width;
 
   useEffect(() => {
-    loadCounts();
+    loadHapticSetting();
+    loadSoundSetting();
+    loadSound();
+
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
   }, []);
 
   const loadCounts = async () => {
@@ -76,20 +88,59 @@ export default function CounterScreen() {
     }
   };
 
-  const incrementCount = async () => {
+  const loadSound = async () => {
     try {
-      console.log('Increment button pressed');
-      if (Platform.OS === 'ios') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
+      const soundAsset = require('../../assets/sounds/click.mp3');
+      console.log('Loading sound asset in counter:', soundAsset);
 
-      const newDailyCount = dailyCount + 1;
-      const newTotalCount = totalCount + 1;
-      setDailyCount(newDailyCount);
-      setTotalCount(newTotalCount);
-      await saveCounts(newDailyCount, newTotalCount);
+      const { sound } = await Audio.Sound.createAsync(
+        soundAsset,
+        { shouldPlay: false }
+      );
+
+      if (sound) {
+        setSound(sound);
+        console.log('Sound loaded successfully in counter');
+      } else {
+        console.error('Sound object is null or undefined');
+      }
     } catch (error) {
-      console.error('Error saving counts:', error);
+      console.error('Error loading sound in counter:', error);
+    }
+  };
+
+  const loadHapticSetting = async () => {
+    try {
+      const storedHaptic = await AsyncStorage.getItem('hapticEnabled');
+      if (storedHaptic) setHapticEnabled(storedHaptic === 'true');
+    } catch (error) {
+      console.error("Error loading haptic setting:", error);
+    }
+  };
+
+  const loadSoundSetting = async () => {
+    try {
+      const storedSound = await AsyncStorage.getItem('soundEnabled');
+      if (storedSound) setSoundEnabled(storedSound === 'true');
+    } catch (error) {
+      console.error("Error loading sound setting:", error);
+    }
+  };
+
+  const incrementCount = async () => {
+    setCount(prevCount => prevCount + 1);
+
+    if (hapticEnabled) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+
+    if (soundEnabled && sound) {
+      try {
+        await sound.setPositionAsync(0);
+        await sound.playAsync();
+      } catch (error) {
+        console.error('Error playing sound:', error);
+      }
     }
   };
 
