@@ -9,6 +9,8 @@ import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
 import { DECLARATION_CATEGORIES } from '../../constants/DeclarationsData';
 import { CustomDeclaration, DeclarationCategory } from '../../types/declarations';
+import { counterEvents, COUNTER_UPDATED } from '@/services/counterService'; // Added import for counter events
+
 
 // Storage key constant
 const STORAGE_KEY = 'customDeclarations';
@@ -40,7 +42,37 @@ export default function DeclarationsScreen() {
     };
 
     loadData();
+    loadCounterData();
+
+
+    // Subscribe to counter updates from other screens
+    const handleCounterUpdate = (counts) => {
+      console.log('Counter update received in declarations page:', counts);
+      setDeclarationCount(counts.dailyCount);
+    };
+
+    // Add event listener
+    counterEvents.on(COUNTER_UPDATED, handleCounterUpdate);
+
+    // Clean up listener when component unmounts
+    return () => {
+      counterEvents.off(COUNTER_UPDATED, handleCounterUpdate);
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
   }, []);
+
+  // Load counter data
+  const loadCounterData = async () => {
+    try {
+      const counterService = require('@/services/counterService');
+      const { dailyCount } = await counterService.loadCounts();
+      setDeclarationCount(dailyCount);
+    } catch (error) {
+      console.error('Error loading counter data:', error);
+    }
+  };
 
   // Save declarations with memoized callback
   const saveCustomDeclarations = useCallback(async (declarations: CustomDeclaration[]) => {
