@@ -429,17 +429,20 @@ const SettingsScreen = () => {
             <>
               <ThemedView style={styles.settingRow}>
                 <ThemedText style={styles.settingText}>Version</ThemedText>
-                <ThemedText style={styles.timeText}>1.0.0</ThemedText>
+                <ThemedText style={styles.timeText}>1.0.2</ThemedText>
               </ThemedView>
+              
+              
+              
               <TouchableOpacity
                 style={styles.linkButton}
-                onPress={() => Linking.openURL('https://yourwebsite.com/privacy')}
+                onPress={() => Linking.openURL('https://ignitinghope/privacy')}
               >
                 <ThemedText style={styles.linkButtonText}>Privacy Policy</ThemedText>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.linkButton}
-                onPress={() => Linking.openURL('https://yourwebsite.com/terms')}
+                onPress={() => Linking.openURL('https://ignitnghope.com/terms')}
               >
                 <ThemedText style={styles.linkButtonText}>Terms of Service</ThemedText>
               </TouchableOpacity>
