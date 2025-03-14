@@ -128,19 +128,35 @@ export default function CounterScreen() {
   };
 
   const incrementCount = async () => {
-    setCount(prevCount => prevCount + 1);
-
-    if (hapticEnabled) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }
-
-    if (soundEnabled && sound) {
-      try {
-        await sound.setPositionAsync(0);
-        await sound.playAsync();
-      } catch (error) {
-        console.error('Error playing sound:', error);
+    try {
+      console.log('Increment button pressed');
+      
+      // Update UI count
+      setCount(prevCount => prevCount + 1);
+      
+      // Play haptic feedback if enabled
+      if (hapticEnabled && Platform.OS === 'ios') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
+
+      // Play sound if enabled
+      if (soundEnabled && sound) {
+        try {
+          await sound.setPositionAsync(0);
+          await sound.playAsync();
+        } catch (error) {
+          console.error('Error playing sound:', error);
+        }
+      }
+
+      // Update and save daily and total counts
+      const newDailyCount = dailyCount + 1;
+      const newTotalCount = totalCount + 1;
+      setDailyCount(newDailyCount);
+      setTotalCount(newTotalCount);
+      await saveCounts(newDailyCount, newTotalCount);
+    } catch (error) {
+      console.error('Error saving counts:', error);
     }
   };
 
