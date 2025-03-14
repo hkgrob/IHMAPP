@@ -225,7 +225,7 @@ export default function SettingsScreen() {
         identifier: identifier,
         content: {
           title: 'Declaration Reminder',
-          body: 'Remember to make your daily declarations!',
+          body: "It's Declaration time",
           sound: true,
         },
         trigger: {
