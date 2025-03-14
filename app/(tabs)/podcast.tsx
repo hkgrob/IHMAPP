@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl, Platform, Dimensions, Slider } from 'react-native';
+import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl, Platform, Dimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
@@ -18,13 +18,8 @@ export default function PodcastScreen() {
   const [sound, setSound] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentEpisodeId, setCurrentEpisodeId] = useState(null);
-  const [currentEpisodeTitle, setCurrentEpisodeTitle] = useState(''); // Added state for current episode title
+  const [currentEpisodeTitle, setCurrentEpisodeTitle] = useState('');
   const [loadingAudio, setLoadingAudio] = useState(false);
-  const [position, setPosition] = useState(0); // Added state for current playback position
-  const [duration, setDuration] = useState(0); // Added state for total duration
-  const [volume, setVolume] = useState(1.0); // Added state for volume control
-  const positionUpdateTimer = useRef(null); // Ref for the position update timer
-
 
   // Get screen width for responsive layout
   const screenWidth = Dimensions.get('window').width;
@@ -52,9 +47,6 @@ export default function PodcastScreen() {
     return () => {
       if (sound) {
         console.log('Cleaning up sound');
-        if (positionUpdateTimer.current) {
-          clearInterval(positionUpdateTimer.current);
-        }
         sound.unloadAsync();
       }
     };
@@ -65,34 +57,6 @@ export default function PodcastScreen() {
     fetchPodcasts();
   }, [fetchPodcasts]);
 
-  // Format milliseconds to mm:ss format
-  const formatTime = (milliseconds) => {
-    if (!milliseconds) return '00:00';
-    
-    const totalSeconds = Math.floor(milliseconds / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  const startPositionUpdateTimer = () => {
-    positionUpdateTimer.current = setInterval(async () => {
-      if (sound) {
-        const status = await sound.getStatusAsync();
-        setPosition(status.positionMillis);
-        setDuration(status.durationMillis || 0);
-      }
-    }, 1000);
-  };
-  
-  // Apply volume change to the sound
-  useEffect(() => {
-    if (sound) {
-      sound.setVolumeAsync(volume);
-    }
-  }, [volume, sound]);
-
   const handlePlayEpisode = async (url, episodeId, episodeTitle = '') => {
     try {
       setLoadingAudio(true);
@@ -101,87 +65,44 @@ export default function PodcastScreen() {
       if (episodeId === currentEpisodeId && sound) {
         console.log('Toggling play state for current episode');
 
-        if (isPlaying) {
-          await sound.pauseAsync();
-          setIsPlaying(false);
-          // Clear position update timer
-          if (positionUpdateTimer.current) {
-            clearInterval(positionUpdateTimer.current);
+        const status = await sound.getStatusAsync();
+        if (status.isLoaded) {
+          if (isPlaying) {
+            await sound.pauseAsync();
+            setIsPlaying(false);
+          } else {
+            await sound.playAsync();
+            setIsPlaying(true);
           }
-        } else {
-          await sound.playAsync();
-          setIsPlaying(true);
-          // Start position update timer
-          startPositionUpdateTimer();
         }
         setLoadingAudio(false);
         return;
       }
 
-      // Unload previous sound and clear timer
+      // Unload previous sound
       if (sound) {
         console.log('Unloading previous sound');
-        if (positionUpdateTimer.current) {
-          clearInterval(positionUpdateTimer.current);
-        }
         await sound.unloadAsync();
       }
 
       console.log('Loading new sound:', url);
 
-      // Reset position and duration
-      setPosition(0);
-      setDuration(0);
-
       // Create and load new sound
-      const soundObject = new Audio.Sound();
-
-      try {
-        await soundObject.loadAsync({ uri: url });
-        console.log('Sound loaded successfully');
-
-        // Get initial status to set duration
-        const status = await soundObject.getStatusAsync();
-        if (status.isLoaded) {
-          setDuration(status.durationMillis || 0);
-        }
-
-        // Set up playback status update handler
-        soundObject.setOnPlaybackStatusUpdate((status) => {
-          if (status.isLoaded) {
-            if (status.didJustFinish) {
-              console.log('Playback finished');
-              setIsPlaying(false);
-              setPosition(0);
-              if (positionUpdateTimer.current) {
-                clearInterval(positionUpdateTimer.current);
-              }
-            }
-          } else if (status.error) {
-            console.error('Playback error:', status.error);
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri: url },
+        { shouldPlay: true },
+        (status) => {
+          if (status.didJustFinish) {
+            setIsPlaying(false);
           }
-        });
+        }
+      );
 
-        // Set volume
-        await soundObject.setVolumeAsync(volume);
-
-        // Play the sound
-        await soundObject.playAsync();
-        console.log('Sound playing');
-
-        setSound(soundObject);
-        setIsPlaying(true);
-        setCurrentEpisodeId(episodeId);
-        setCurrentEpisodeTitle(episodeTitle);
-        setLoadingAudio(false);
-
-        // Start position update timer
-        startPositionUpdateTimer();
-      } catch (err) {
-        console.error('Error playing podcast:', err);
-        setLoadingAudio(false);
-        throw err;
-      }
+      setSound(newSound);
+      setIsPlaying(true);
+      setCurrentEpisodeId(episodeId);
+      setCurrentEpisodeTitle(episodeTitle);
+      setLoadingAudio(false);
     } catch (err) {
       console.error('Error playing podcast:', err);
       alert(`Error playing podcast: ${err && err.message ? err.message : 'Could not play audio. Please try again.'}`);
@@ -193,6 +114,16 @@ export default function PodcastScreen() {
         setSound(null);
       }
       setLoadingAudio(false);
+    }
+  };
+
+  const stopPlayback = async () => {
+    if (sound) {
+      await sound.unloadAsync();
+      setSound(null);
+      setIsPlaying(false);
+      setCurrentEpisodeId(null);
+      setCurrentEpisodeTitle('');
     }
   };
 
@@ -288,7 +219,7 @@ export default function PodcastScreen() {
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={[
           styles.listContent,
-          currentEpisodeId ? { paddingBottom: 160 } : {} // Add padding when player is visible
+          currentEpisodeId ? { paddingBottom: 100 } : {} // Add padding when player is visible
         ]}
         refreshControl={
           <RefreshControl
@@ -303,95 +234,40 @@ export default function PodcastScreen() {
           </View>
         }
       />
+
       {currentEpisodeId && (
         <View style={styles.audioPlayer}>
-          <ThemedText style={styles.episodeTitle}>{currentEpisodeTitle}</ThemedText>
-          <Slider
-            style={styles.progressBar}
-            value={position && duration ? position / duration : 0}
-            minimumValue={0}
-            maximumValue={1}
-            onValueChange={(value) => {
-              if (sound && duration) {
-                sound.setPositionAsync(value * duration);
-              }
-            }}
-            minimumTrackTintColor="#0a7ea4"
-            maximumTrackTintColor="#ddd"
-            thumbTintColor="#0a7ea4"
-          />
-          <View style={styles.timeInfo}>
-            <ThemedText style={styles.timeText}>{formatTime(position || 0)}</ThemedText>
-            <ThemedText style={styles.timeText}>{formatTime(duration || 0)}</ThemedText>
-          </View>
-          <View style={styles.playerControls}>
-            <TouchableOpacity 
-              onPress={() => {
-                if (sound && position && position > 10000) {
-                  sound.setPositionAsync(position - 10000);
-                }
-              }}
-            >
-              <Ionicons name="play-back" size={30} color="#0a7ea4" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              onPress={async () => {
-                if (sound) {
-                  if (isPlaying) {
-                    await sound.pauseAsync();
+          <View style={styles.playerContent}>
+            <View style={styles.playerInfo}>
+              <ThemedText style={styles.episodeTitle} numberOfLines={1}>
+                {currentEpisodeTitle}
+              </ThemedText>
+            </View>
+
+            <View style={styles.playerControls}>
+              <TouchableOpacity 
+                onPress={() => {
+                  if (sound && isPlaying) {
+                    sound.pauseAsync();
                     setIsPlaying(false);
-                  } else {
-                    await sound.playAsync();
+                  } else if (sound) {
+                    sound.playAsync();
                     setIsPlaying(true);
                   }
-                }
-              }} 
-              style={styles.mainPlayButton}
-            >
-              <Ionicons name={isPlaying ? "pause-circle" : "play-circle"} size={50} color="#0a7ea4" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              onPress={() => {
-                if (sound && position && duration && position + 30000 < duration) {
-                  sound.setPositionAsync(position + 30000);
-                } else if (sound && duration) {
-                  sound.setPositionAsync(duration);
-                }
-              }}
-            >
-              <Ionicons name="play-forward" size={30} color="#0a7ea4" />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.volumeControl}>
-            <Ionicons name="volume-low" size={20} color="#0a7ea4" />
-            <Slider
-              style={styles.volumeSlider}
-              value={volume || 1}
-              minimumValue={0}
-              maximumValue={1}
-              onValueChange={(value) => setVolume(value)}
-              minimumTrackTintColor="#0a7ea4"
-              maximumTrackTintColor="#ddd"
-              thumbTintColor="#0a7ea4"
-            />
-            <TouchableOpacity 
-              onPress={async () => {
-                if (sound) {
-                  await sound.unloadAsync();
-                  setIsPlaying(false);
-                  setCurrentEpisodeId(null);
-                  setCurrentEpisodeTitle('');
-                  if (positionUpdateTimer.current) {
-                    clearInterval(positionUpdateTimer.current);
-                  }
-                }
-              }}
-            >
-              <Ionicons name="close-circle" size={24} color="#0a7ea4" />
-            </TouchableOpacity>
+                }}
+                style={styles.mainPlayButton}
+              >
+                <Ionicons 
+                  name={isPlaying ? "pause-circle" : "play-circle"} 
+                  size={40} 
+                  color="#0a7ea4" 
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={stopPlayback}>
+                <Ionicons name="close-circle" size={28} color="#0a7ea4" />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       )}
@@ -441,7 +317,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#0a7ea4', 
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundImage: 'linear-gradient(to bottom right, #0a7ea4, #2c9fc9, #50c2e8)',
   },
   podcastInfo: {
     padding: 12,
@@ -470,11 +345,14 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 12,
     opacity: 0.8,
+    padding: 12,
+    paddingTop: 0,
   },
   playButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    padding: 12,
+    paddingTop: 0,
   },
   playButtonText: {
     fontSize: 16,
@@ -531,45 +409,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 5,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  playerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  playerInfo: {
+    flex: 1,
+    marginRight: 10,
   },
   episodeTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  progressBar: {
-    height: 40,
-    marginBottom: 8,
   },
   playerControls: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  volumeSlider: {
-    width: 80,
-  },
-  volumeControl: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: 120,
-  },
-  timeInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingHorizontal: 10,
-    marginTop: 5,
-  },
-  timeText: {
-    fontSize: 12,
-    color: '#666',
   },
   mainPlayButton: {
-    marginHorizontal: 15,
-  }
+    marginRight: 15,
+  },
 });
