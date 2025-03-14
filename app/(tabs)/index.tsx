@@ -193,7 +193,6 @@ export default function HomeScreen() {
 
           {/* Feature Grid */}
           <View style={styles.featureGrid}>
-            <Counter /> {/* Added Counter component */}
             <TouchableOpacity
               onPress={handlePress}
               style={styles.clickerButtonWrapper}
