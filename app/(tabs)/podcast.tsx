@@ -325,7 +325,7 @@ export default function PodcastScreen() {
           <View style={styles.timeInfo}>
             <ThemedText style={styles.timeText}>{formatTime(position)}</ThemedText>
             <ThemedText style={styles.timeText}>{formatTime(duration)}</ThemedText>
-          </View>
+          </View>w>
           <View style={styles.playerControls}>
             <TouchableOpacity 
               onPress={() => {
