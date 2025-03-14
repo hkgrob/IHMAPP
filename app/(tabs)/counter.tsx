@@ -8,15 +8,9 @@ import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { counterEvents, COUNTER_UPDATED } from '@/services/counterService';
 
 const { width } = Dimensions.get('window');
-
-// Assume these are defined elsewhere and accessible globally.  Replace with your actual implementation.
-const counterEvents = {
-  on: (event, listener) => { /* Implement your event listener logic here */ },
-  off: (event, listener) => { /* Implement your event listener removal logic here */ }
-};
-const COUNTER_UPDATED = 'COUNTER_UPDATED'; // Replace with your actual event name
 
 
 export default function CounterPage() {
@@ -129,9 +123,10 @@ export default function CounterPage() {
 
       // Use counter service to update counts
       const counterService = require('@/services/counterService');
-      await counterService.incrementCounter();
-      // Emit event to notify other components
-      counterEvents.emit(COUNTER_UPDATED, {dailyCount, totalCount});
+      const result = await counterService.incrementCounter();
+      
+      // No need to manually emit event as counterService already does this
+      console.log('Counter incremented:', result);
 
     } catch (error) {
       console.error('Error incrementing counter:', error);
