@@ -64,34 +64,24 @@ export default function BlogPostScreen() {
                 <ThemedText style={styles.blogDate}>{date as string}</ThemedText>
               </View>
               
-              {error ? (
-                <View style={styles.errorContainer}>
-                  <Ionicons name="alert-circle-outline" size={48} color="#0a7ea4" />
-                  <ThemedText style={styles.errorText}>{error}</ThemedText>
-                  <View style={styles.buttonContainer}>
-                    <TouchableOpacity 
-                      style={[styles.readMoreButton, { marginTop: 20 }]}
-                      onPress={loadBlogContent}
-                    >
-                      <ThemedText style={styles.readMoreText}>Try Again</ThemedText>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.readMoreButton, { marginTop: 20, marginLeft: 10 }]}
-                      onPress={() => Linking.openURL(link as string)}
-                    >
-                      <ThemedText style={styles.readMoreText}>View on Website</ThemedText>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : content.includes("We couldn't fetch the full content") ? (
+              {error || content.includes("We couldn't fetch the full content") ? (
                 <View style={styles.errorContainer}>
                   <Ionicons name="newspaper-outline" size={48} color="#0a7ea4" />
-                  <ThemedText style={styles.errorText}>{content}</ThemedText>
+                  <ThemedText style={styles.errorText}>
+                    {error || "We couldn't load the full blog post content on this device."}
+                  </ThemedText>
+                  
+                  <View style={styles.infoContainer}>
+                    <ThemedText style={styles.infoText}>
+                      You can read the complete article on our website.
+                    </ThemedText>
+                  </View>
+                  
                   <TouchableOpacity 
                     style={[styles.readMoreButton, { marginTop: 20 }]}
                     onPress={() => Linking.openURL(link as string)}
                   >
-                    <ThemedText style={styles.readMoreText}>Read on Website</ThemedText>
+                    <ThemedText style={styles.readMoreText}>Open in Browser</ThemedText>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -171,8 +161,20 @@ const styles = StyleSheet.create({
   },
   errorText: {
     marginTop: 16,
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#444',
+  },
+  infoContainer: {
+    marginTop: 12,
+    paddingHorizontal: 20,
+  },
+  infoText: {
     fontSize: 16,
     textAlign: 'center',
+    lineHeight: 22,
+    color: '#666',
   },
   buttonContainer: {
     flexDirection: 'row',

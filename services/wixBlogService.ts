@@ -157,9 +157,18 @@ export const fetchBlogContentById = async (postId: string, postUrl: string): Pro
     }
     
     // If we reached here, all attempts failed
+    console.log('All attempts to fetch blog content failed');
+    // Return a more specific message about the mobile limitation
     return "We couldn't fetch the full content. Please check the original post on our website.";
   } catch (error) {
     console.error('Error fetching blog content:', error);
+    // Cache the error for this post to avoid repeated failed attempts
+    try {
+      const cacheKey = `blog_error_${postId}`;
+      AsyncStorage.setItem(cacheKey, 'true');
+    } catch (cacheError) {
+      // Ignore cache errors
+    }
     return "We couldn't fetch the full content. Please check the original post on our website.";
   }
 };
