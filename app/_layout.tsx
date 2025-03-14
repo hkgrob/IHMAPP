@@ -46,12 +46,13 @@ export default function RootLayout() {
       // Initialize notifications system
       (async () => {
         if (Platform.OS !== 'web') {
+          console.log('Initializing notifications system...');
           const initialized = await initializeNotifications();
           if (initialized) {
             // Ensure we have at least one default reminder
             await ensureDefaultReminder();
             // Apply all reminders
-            await applyReminders();
+            await applyAllReminders();
           }
         }
       })();

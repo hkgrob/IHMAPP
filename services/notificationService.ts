@@ -2,27 +2,31 @@
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { v4 as uuidv4 } from 'uuid';
 
 // Constants
-const REMINDERS_KEY = 'declaration_reminders';
+const REMINDERS_STORAGE_KEY = 'declaration_reminders';
 
-// Reminder interface
+// Define reminder interface
 export interface Reminder {
   id: string;
   enabled: boolean;
-  time: Date;
+  time: Date | string; // Date in memory, string in storage
   title: string;
   body: string;
 }
 
 /**
- * Initialize notifications configuration
+ * Initialize notifications
  */
-export const initializeNotifications = async () => {
-  if (Platform.OS === 'web') return false;
+export const initializeNotifications = async (): Promise<boolean> => {
+  if (Platform.OS === 'web') {
+    console.log('Notifications not supported on web');
+    return false;
+  }
   
   try {
-    // Configure notification handler
+    // Set notification handler
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
@@ -31,7 +35,7 @@ export const initializeNotifications = async () => {
       }),
     });
     
-    // Create notification channel for Android
+    // Create channel for Android
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('declarations', {
         name: 'Declaration Reminders',
@@ -52,7 +56,7 @@ export const initializeNotifications = async () => {
 /**
  * Request notification permissions
  */
-export const requestPermissions = async () => {
+export const requestPermissions = async (): Promise<boolean> => {
   if (Platform.OS === 'web') return false;
   
   try {
@@ -60,29 +64,35 @@ export const requestPermissions = async () => {
     let finalStatus = existingStatus;
     
     if (existingStatus !== 'granted') {
+      console.log('Requesting notification permissions...');
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
     
-    return finalStatus === 'granted';
+    if (finalStatus !== 'granted') {
+      console.log('Permission not granted');
+      return false;
+    }
+    
+    return true;
   } catch (error) {
-    console.error('Error requesting notification permissions:', error);
+    console.error('Error requesting permissions:', error);
     return false;
   }
 };
 
 /**
- * Get current reminders
+ * Load reminders from storage
  */
 export const getReminders = async (): Promise<Reminder[]> => {
   try {
-    const data = await AsyncStorage.getItem(REMINDERS_KEY);
+    const data = await AsyncStorage.getItem(REMINDERS_STORAGE_KEY);
     if (!data) return [];
     
-    const reminders = JSON.parse(data);
+    const parsed = JSON.parse(data);
     
-    // Convert string dates back to Date objects
-    return reminders.map(reminder => ({
+    // Convert time strings back to Date objects
+    return parsed.map((reminder: any) => ({
       ...reminder,
       time: new Date(reminder.time)
     }));
@@ -93,11 +103,17 @@ export const getReminders = async (): Promise<Reminder[]> => {
 };
 
 /**
- * Save reminders
+ * Save reminders to storage
  */
 export const saveReminders = async (reminders: Reminder[]): Promise<boolean> => {
   try {
-    await AsyncStorage.setItem(REMINDERS_KEY, JSON.stringify(reminders));
+    // Convert Date objects to ISO strings for storage
+    const remindersToSave = reminders.map(reminder => ({
+      ...reminder,
+      time: reminder.time instanceof Date ? reminder.time.toISOString() : reminder.time
+    }));
+    
+    await AsyncStorage.setItem(REMINDERS_STORAGE_KEY, JSON.stringify(remindersToSave));
     return true;
   } catch (error) {
     console.error('Error saving reminders:', error);
@@ -108,51 +124,74 @@ export const saveReminders = async (reminders: Reminder[]): Promise<boolean> => 
 /**
  * Create a new reminder
  */
-export const createReminder = async (time: Date = new Date()): Promise<Reminder> => {
-  // Default to 9 AM if time not specified
-  if (!time) {
-    time = new Date();
-    time.setHours(9, 0, 0, 0);
+export const addReminder = async (time?: Date): Promise<Reminder | null> => {
+  try {
+    // Default to current time if not provided
+    const reminderTime = time || new Date();
+    
+    // Create reminder object
+    const newReminder: Reminder = {
+      id: uuidv4(),
+      enabled: true,
+      time: reminderTime,
+      title: 'Declaration Reminder',
+      body: 'Time to speak your declarations!'
+    };
+    
+    // Get existing reminders and add the new one
+    const reminders = await getReminders();
+    reminders.push(newReminder);
+    
+    // Save all reminders
+    const saved = await saveReminders(reminders);
+    if (!saved) return null;
+    
+    return newReminder;
+  } catch (error) {
+    console.error('Error adding reminder:', error);
+    return null;
   }
-  
-  const reminder: Reminder = {
-    id: Date.now().toString(),
-    enabled: true,
-    time,
-    title: 'Declaration Reminder',
-    body: 'Time to speak your declarations!'
-  };
-  
-  const reminders = await getReminders();
-  reminders.push(reminder);
-  await saveReminders(reminders);
-  
-  return reminder;
 };
 
 /**
- * Update a reminder
+ * Update an existing reminder
  */
-export const updateReminder = async (updatedReminder: Reminder): Promise<boolean> => {
-  const reminders = await getReminders();
-  const index = reminders.findIndex(r => r.id === updatedReminder.id);
-  
-  if (index === -1) return false;
-  
-  reminders[index] = updatedReminder;
-  return await saveReminders(reminders);
+export const updateReminder = async (reminder: Reminder): Promise<boolean> => {
+  try {
+    const reminders = await getReminders();
+    const index = reminders.findIndex(r => r.id === reminder.id);
+    
+    if (index === -1) {
+      console.log(`Reminder with id ${reminder.id} not found`);
+      return false;
+    }
+    
+    reminders[index] = reminder;
+    return await saveReminders(reminders);
+  } catch (error) {
+    console.error('Error updating reminder:', error);
+    return false;
+  }
 };
 
 /**
- * Delete a reminder
+ * Delete a reminder by id
  */
 export const deleteReminder = async (id: string): Promise<boolean> => {
-  const reminders = await getReminders();
-  const filteredReminders = reminders.filter(r => r.id !== id);
-  
-  if (filteredReminders.length === reminders.length) return false;
-  
-  return await saveReminders(filteredReminders);
+  try {
+    const reminders = await getReminders();
+    const filteredReminders = reminders.filter(r => r.id !== id);
+    
+    if (filteredReminders.length === reminders.length) {
+      console.log(`Reminder with id ${id} not found`);
+      return false;
+    }
+    
+    return await saveReminders(filteredReminders);
+  } catch (error) {
+    console.error('Error deleting reminder:', error);
+    return false;
+  }
 };
 
 /**
@@ -162,16 +201,16 @@ export const scheduleReminder = async (reminder: Reminder): Promise<string | nul
   if (Platform.OS === 'web' || !reminder.enabled) return null;
   
   try {
-    // Extract hours and minutes
-    const hours = reminder.time.getHours();
-    const minutes = reminder.time.getMinutes();
-    
-    console.log(`Scheduling reminder ${reminder.id} for ${hours}:${minutes}`);
-    
-    // Cancel existing notification with this ID if it exists
+    // Cancel existing notification for this reminder if it exists
     await Notifications.cancelScheduledNotificationAsync(reminder.id);
     
-    // Schedule new notification
+    const reminderTime = reminder.time instanceof Date ? reminder.time : new Date(reminder.time);
+    const hours = reminderTime.getHours();
+    const minutes = reminderTime.getMinutes();
+    
+    console.log(`Scheduling reminder for ${hours}:${minutes}`);
+    
+    // Schedule the notification
     return await Notifications.scheduleNotificationAsync({
       content: {
         title: reminder.title,
@@ -183,49 +222,44 @@ export const scheduleReminder = async (reminder: Reminder): Promise<string | nul
         hour: hours,
         minute: minutes,
         repeats: true,
-        channelId: Platform.OS === 'android' ? 'declarations' : undefined,
       },
       identifier: reminder.id,
     });
   } catch (error) {
-    console.error(`Error scheduling reminder ${reminder.id}:`, error);
+    console.error('Error scheduling reminder:', error);
     return null;
   }
 };
 
 /**
- * Apply all reminders (schedule or cancel as needed)
+ * Apply all reminders (schedule enabled ones, cancel disabled ones)
  */
-export const applyReminders = async (): Promise<boolean> => {
+export const applyAllReminders = async (): Promise<boolean> => {
   if (Platform.OS === 'web') return false;
   
   try {
-    // Cancel all existing scheduled notifications
-    await Notifications.cancelAllScheduledNotificationsAsync();
-    
     // Get all reminders
     const reminders = await getReminders();
+    console.log(`Applying ${reminders.length} reminders`);
     
-    // If no reminders or none enabled, just return after canceling
-    const enabledReminders = reminders.filter(r => r.enabled);
-    if (enabledReminders.length === 0) {
-      console.log('No enabled reminders found');
-      return true;
-    }
+    // Cancel all existing notifications first
+    await Notifications.cancelAllScheduledNotificationsAsync();
     
-    // Request permissions if needed
+    // If no permission, request it
     const hasPermission = await requestPermissions();
     if (!hasPermission) {
-      console.log('Notification permissions not granted');
+      console.log('No permission to schedule notifications');
       return false;
     }
     
     // Schedule all enabled reminders
-    for (const reminder of enabledReminders) {
-      await scheduleReminder(reminder);
+    for (const reminder of reminders) {
+      if (reminder.enabled) {
+        await scheduleReminder(reminder);
+      }
     }
     
-    // Log scheduled notifications for debugging
+    // Log what's scheduled (for debugging)
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
     console.log(`Successfully scheduled ${scheduled.length} notifications`);
     
@@ -240,31 +274,25 @@ export const applyReminders = async (): Promise<boolean> => {
  * Create a default reminder if none exist
  */
 export const ensureDefaultReminder = async (): Promise<void> => {
-  const reminders = await getReminders();
-  if (reminders.length === 0) {
-    const defaultTime = new Date();
-    defaultTime.setHours(9, 0, 0, 0);
-    await createReminder(defaultTime);
-  }
-};
-
-/**
- * Cancel all scheduled notifications
- */
-export const cancelAllNotifications = async (): Promise<void> => {
-  if (Platform.OS === 'web') return;
-  
   try {
-    await Notifications.cancelAllScheduledNotificationsAsync();
-    console.log('All notifications canceled');
+    const reminders = await getReminders();
+    if (reminders.length === 0) {
+      // Create a reminder for 9 AM
+      const morningTime = new Date();
+      morningTime.setHours(9, 0, 0, 0);
+      await addReminder(morningTime);
+    }
   } catch (error) {
-    console.error('Error canceling notifications:', error);
+    console.error('Error creating default reminder:', error);
   }
 };
 
 /**
- * Format time for display
+ * Format time for display (HH:MM AM/PM)
  */
-export const formatTime = (date: Date): string => {
+export const formatTime = (date: Date | string): string => {
+  if (typeof date === 'string') {
+    date = new Date(date);
+  }
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
