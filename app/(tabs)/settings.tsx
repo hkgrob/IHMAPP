@@ -465,12 +465,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '600',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    textAlign: 'center',
+    paddingVertical: 8,
     backgroundColor: '#fff',
     borderBottomWidth: Platform.OS === 'ios' ? 1 : 0,
     borderBottomColor: '#e5e5e5',
     color: '#000',
+    marginTop: Platform.OS === 'ios' ? 0 : 8,
   },
   section: {
     marginBottom: 20,
