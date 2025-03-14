@@ -156,8 +156,8 @@ export const addReminder = async (time?: Date): Promise<Reminder | null> => {
     const saved = await saveReminders(reminders);
     if (!saved) return null;
     
-    // Important: Don't schedule here - let the caller call applyAllReminders
-    // This prevents duplicate notifications
+    // DO NOT schedule here or call applyAllReminders
+    // The caller should handle this to prevent duplicate scheduling
     
     return newReminder;
   } catch (error) {
@@ -247,11 +247,10 @@ export const scheduleReminder = async (reminder: Reminder): Promise<string | nul
     const formattedTriggerTime = `${triggerDate.toLocaleTimeString()} on ${triggerDate.toLocaleDateString()}`;
     console.log(`Will schedule notification to trigger at: ${formattedTriggerTime}`);
     
-    // Set up a more reliable trigger method - use seconds from now
-    const secondsFromNow = Math.max(1, Math.floor((triggerDate.getTime() - now.getTime()) / 1000));
-    console.log(`That's ${secondsFromNow} seconds from now`);
+    // Make sure we're using date-based scheduling for maximum reliability
+    // This ensures the notification will fire at exactly the right time
     
-    // First schedule the one-time notification for the next occurrence
+    // First schedule the one-time notification for the next occurrence with exact date
     return await Notifications.scheduleNotificationAsync({
       content: {
         title: reminder.title,
@@ -260,38 +259,43 @@ export const scheduleReminder = async (reminder: Reminder): Promise<string | nul
         data: { id: reminder.id, scheduledFor: triggerDate.toISOString() },
       },
       trigger: {
-        seconds: secondsFromNow,
+        date: triggerDate,  // Use exact date object
         repeats: false,
       },
       identifier: reminder.id,
     }).then(id => {
-      console.log(`Successfully scheduled next notification with ID: ${id}`);
+      console.log(`Successfully scheduled next notification with ID: ${id} for ${triggerDate.toLocaleString()}`);
       
       // Log all scheduled notifications for debugging
       Notifications.getAllScheduledNotificationsAsync().then(notifications => {
         console.log(`Total scheduled notifications: ${notifications.length}`);
         notifications.forEach(n => {
-          console.log(`- ID: ${n.identifier}, Trigger: ${JSON.stringify(n.trigger)}`);
+          console.log(`- ID: ${n.identifier}, Content: ${n.content.title}, Trigger: ${JSON.stringify(n.trigger)}`);
         });
       });
       
-      // Then schedule the recurring daily notification starting after the first one
-      Notifications.scheduleNotificationAsync({
-        content: {
-          title: reminder.title,
-          body: reminder.body, 
-          sound: true,
-          data: { id: `${reminder.id}_recurring` },
-        },
-        trigger: {
-          hour: hours,
-          minute: minutes,
-          repeats: true,
-        },
-        identifier: `${reminder.id}_recurring`,
-      }).catch(error => {
-        console.error('Error scheduling recurring reminder:', error);
-      });
+      // Schedule daily recurring notifications - but with a delay
+      // This helps prevent Expo from batching notifications and causing duplicates
+      setTimeout(() => {
+        Notifications.scheduleNotificationAsync({
+          content: {
+            title: reminder.title,
+            body: reminder.body, 
+            sound: true,
+            data: { id: `${reminder.id}_recurring` },
+          },
+          trigger: {
+            hour: hours,
+            minute: minutes,
+            repeats: true,
+          },
+          identifier: `${reminder.id}_recurring`,
+        }).then(() => {
+          console.log(`Successfully scheduled recurring notification for ${hours}:${minutes}`);
+        }).catch(error => {
+          console.error('Error scheduling recurring reminder:', error);
+        });
+      }, 1000); // Add 1 second delay between scheduling
       
       return id;
     });
@@ -310,11 +314,19 @@ export const applyAllReminders = async (): Promise<boolean> => {
   try {
     // Get all reminders
     const reminders = await getReminders();
-    console.log(`Applying ${reminders.length} reminders`);
+    console.log(`=== APPLYING ${reminders.length} REMINDERS ===`);
     
-    // Cancel all existing notifications first
+    // Get current scheduled notifications for debugging
+    const beforeScheduled = await Notifications.getAllScheduledNotificationsAsync();
+    console.log(`Before applying: ${beforeScheduled.length} notifications already scheduled`);
+    
+    // Cancel all existing notifications first to prevent duplicates
     console.log('Cancelling all existing notifications...');
     await Notifications.cancelAllScheduledNotificationsAsync();
+    
+    // Verify cancellation
+    const afterCancel = await Notifications.getAllScheduledNotificationsAsync();
+    console.log(`After cancellation: ${afterCancel.length} notifications remain scheduled`);
     
     // If no permission, request it
     const hasPermission = await requestPermissions();
@@ -323,41 +335,65 @@ export const applyAllReminders = async (): Promise<boolean> => {
       return false;
     }
     
-    // Schedule all enabled reminders
+    // Schedule all enabled reminders with delays between each
     let scheduledCount = 0;
-    for (const reminder of reminders) {
-      if (reminder.enabled) {
-        console.log(`Scheduling reminder ID ${reminder.id} for ${formatTime(reminder.time)}`);
-        const id = await scheduleReminder(reminder);
-        if (id) {
-          scheduledCount++;
-          console.log(`Successfully scheduled reminder ID: ${id}`);
-        } else {
-          console.error(`Failed to schedule reminder ID: ${reminder.id}`);
-        }
+    
+    // Use sequential promises with delays instead of for loop
+    const scheduleSequentially = async () => {
+      for (let i = 0; i < reminders.length; i++) {
+        const reminder = reminders[i];
         
-        // Add a small delay between scheduling to prevent rate limiting
-        await new Promise(resolve => setTimeout(resolve, 300));
-      } else {
-        console.log(`Skipping disabled reminder ID ${reminder.id}`);
+        if (reminder.enabled) {
+          console.log(`[${i+1}/${reminders.length}] Scheduling reminder ID ${reminder.id} for ${formatTime(reminder.time)}`);
+          
+          // Add a longer delay between scheduling to prevent rate limiting and batching
+          await new Promise(resolve => setTimeout(resolve, 800));
+          
+          try {
+            const id = await scheduleReminder(reminder);
+            if (id) {
+              scheduledCount++;
+              console.log(`Successfully scheduled reminder ID: ${id}`);
+            } else {
+              console.error(`Failed to schedule reminder ID: ${reminder.id}`);
+            }
+          } catch (err) {
+            console.error(`Error scheduling reminder ID ${reminder.id}:`, err);
+          }
+        } else {
+          console.log(`[${i+1}/${reminders.length}] Skipping disabled reminder ID ${reminder.id}`);
+        }
       }
-    }
+    };
+    
+    // Run the sequential scheduling
+    await scheduleSequentially();
     
     console.log(`Successfully scheduled ${scheduledCount} of ${reminders.length} reminders`);
     
-    // Log detailed info about what's scheduled (for debugging)
-    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    console.log(`Verification: System shows ${scheduled.length} scheduled notifications`);
+    // Final verification
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const finalScheduled = await Notifications.getAllScheduledNotificationsAsync();
+    console.log(`=== FINAL VERIFICATION: ${finalScheduled.length} notifications are scheduled ===`);
     
-    if (scheduled.length > 0) {
+    if (finalScheduled.length > 0) {
       console.log('Scheduled notifications details:');
-      scheduled.forEach((notification, index) => {
+      finalScheduled.forEach((notification, index) => {
         const trigger = notification.trigger as any;
         const content = notification.content;
         console.log(`[${index + 1}] ID: ${notification.identifier}`);
         console.log(`    Title: ${content.title}`);
         console.log(`    Body: ${content.body}`);
-        console.log(`    Trigger: ${JSON.stringify(trigger)}`);
+        
+        // Format trigger time information in a readable way
+        if (trigger.date) {
+          console.log(`    Trigger: At exact date ${new Date(trigger.date).toLocaleString()}`);
+        } else if (trigger.hour !== undefined && trigger.minute !== undefined) {
+          console.log(`    Trigger: Daily at ${trigger.hour}:${trigger.minute < 10 ? '0' : ''}${trigger.minute}`);
+        } else {
+          console.log(`    Trigger: ${JSON.stringify(trigger)}`);
+        }
+        
         if (content.data && content.data.scheduledFor) {
           console.log(`    Scheduled for: ${new Date(content.data.scheduledFor).toLocaleString()}`);
         }

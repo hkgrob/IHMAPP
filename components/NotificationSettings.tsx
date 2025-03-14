@@ -92,15 +92,34 @@ export const NotificationSettings = () => {
         defaultTime.setDate(defaultTime.getDate() + 1);
       }
       
-      // First add reminder to storage only (no scheduling yet)
+      console.log(`Creating reminder for ${defaultTime.toLocaleString()}`);
+      
+      // First cancel all existing notifications to prevent duplicates
+      if (Platform.OS !== 'web') {
+        console.log('Cancelling all existing notifications before adding new reminder');
+        await Notifications.cancelAllScheduledNotificationsAsync();
+      }
+      
+      // Add reminder to storage only (no scheduling yet)
       const newReminder = await addReminder(defaultTime);
       if (newReminder) {
         // Update UI with new reminder
         setReminders(prev => [...prev, newReminder]);
         
-        // Apply all reminders once (prevents duplicate notifications)
-        console.log('Scheduling notifications after adding new reminder');
+        // Apply all reminders in a controlled manner
+        console.log('Scheduling all notifications after adding new reminder');
+        
+        // Add a short delay to ensure everything is settled
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Now schedule all reminders
         await applyAllReminders();
+        
+        // Verify what's actually scheduled
+        if (Platform.OS !== 'web') {
+          const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+          console.log(`After adding: ${scheduled.length} notifications are scheduled`);
+        }
       }
     } catch (error) {
       console.error('Error adding reminder:', error);
