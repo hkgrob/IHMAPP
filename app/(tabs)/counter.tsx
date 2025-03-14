@@ -139,6 +139,8 @@ export default function CounterPage() {
   };
 
   const resetCounter = async (type) => {
+    console.log(`Attempting to reset ${type} counter`);
+
     // Show confirmation dialog first
     const title = type === 'daily' ? 'Reset Daily Count' : 'Reset Total Count';
     const message = type === 'daily' 
@@ -151,12 +153,14 @@ export default function CounterPage() {
       [
         {
           text: 'Cancel',
-          style: 'cancel'
+          style: 'cancel',
+          onPress: () => console.log('Reset canceled')
         },
         {
           text: 'Reset',
           style: 'destructive',
           onPress: async () => {
+            console.log(`Confirmed reset of ${type} counter`);
             try {
               if (type === 'daily') {
                 await AsyncStorage.setItem('dailyCount', '0');
@@ -173,7 +177,8 @@ export default function CounterPage() {
             }
           }
         }
-      ]
+      ],
+      { cancelable: true }
     );
   };
 
