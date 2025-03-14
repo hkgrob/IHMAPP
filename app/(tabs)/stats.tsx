@@ -7,6 +7,8 @@ import { BlurView } from 'expo-blur';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { useThemeColor } from '@/hooks/useThemeColor'; // Added import
+
 
 export default function StatsScreen() {
   const colorScheme = useColorScheme();
@@ -135,8 +137,8 @@ export default function StatsScreen() {
           style={styles.blurContainer}
         >
           <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Ionicons name="trophy-outline" size={30} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} />
+            <View style={[styles.statIconContainer, { backgroundColor: useThemeColor({}, 'accent') }]}> {/* Only change applied here */}
+              <Ionicons name="trophy-outline" size={30} color="#FFFFFF" />
             </View>
             <View style={styles.valueContainer}>
               <ThemedText style={styles.statValue}>{bestStreak}</ThemedText>
