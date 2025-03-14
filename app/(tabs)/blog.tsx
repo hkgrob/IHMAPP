@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 20,
-    marginTop: Platform.OS === 'ios' ? 10 : 20,
+    marginTop: Platform.OS === 'ios' ? 25 : 20, // Increased top margin for iOS
     marginBottom: 8,
   },
   headerTitle: {
