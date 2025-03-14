@@ -3,7 +3,7 @@ import { Text, View, StyleSheet, TouchableOpacity, Dimensions, Vibration, Alert,
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import Colors from '@/constants/Colors';
+import { Colors } from '@/constants/Colors';
 import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
