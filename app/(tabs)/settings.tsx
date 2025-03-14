@@ -189,7 +189,7 @@ const SettingsScreen = () => {
     try {
       if (value) {
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        
+
         if (existingStatus !== 'granted') {
           const { status } = await Notifications.requestPermissionsAsync();
           if (status !== 'granted') {
@@ -430,19 +430,16 @@ const SettingsScreen = () => {
               <ThemedView style={styles.settingRow}>
                 <ThemedText style={styles.settingText}>Version</ThemedText>
                 <ThemedText style={styles.timeText}>1.0.2</ThemedText>
-              </ThemedView>
-              
-              
-              
+              </ThemedView>              
               <TouchableOpacity
                 style={styles.linkButton}
-                onPress={() => Linking.openURL('https://ignitinghope/privacy')}
+                onPress={() => Linking.openURL('https://ignitinghope.com/privacy')}
               >
                 <ThemedText style={styles.linkButtonText}>Privacy Policy</ThemedText>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.linkButton}
-                onPress={() => Linking.openURL('https://ignitnghope.com/terms')}
+                onPress={() => Linking.openURL('https://ignitinghope.com/terms')}
               >
                 <ThemedText style={styles.linkButtonText}>Terms of Service</ThemedText>
               </TouchableOpacity>
