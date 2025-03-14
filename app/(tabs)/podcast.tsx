@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl, Platform, Dimensions } from 'react-native';
+import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl, Platform, Dimensions, Slider } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
@@ -14,13 +13,19 @@ export default function PodcastScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  
+
   // Audio state
   const [sound, setSound] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentEpisodeId, setCurrentEpisodeId] = useState(null);
+  const [currentEpisodeTitle, setCurrentEpisodeTitle] = useState(''); // Added state for current episode title
   const [loadingAudio, setLoadingAudio] = useState(false);
-  
+  const [position, setPosition] = useState(0); // Added state for current playback position
+  const [duration, setDuration] = useState(0); // Added state for total duration
+  const [volume, setVolume] = useState(1.0); // Added state for volume control
+  const positionUpdateTimer = useRef(null); // Ref for the position update timer
+
+
   // Get screen width for responsive layout
   const screenWidth = Dimensions.get('window').width;
 
@@ -47,6 +52,9 @@ export default function PodcastScreen() {
     return () => {
       if (sound) {
         console.log('Cleaning up sound');
+        if (positionUpdateTimer.current) {
+          clearInterval(positionUpdateTimer.current);
+        }
         sound.unloadAsync();
       }
     };
@@ -57,76 +65,114 @@ export default function PodcastScreen() {
     fetchPodcasts();
   }, [fetchPodcasts]);
 
-  const handlePlayEpisode = async (url, episodeId) => {
+  const startPositionUpdateTimer = () => {
+    positionUpdateTimer.current = setInterval(async () => {
+      if (sound) {
+        const status = await sound.getStatusAsync();
+        setPosition(status.positionMillis);
+      }
+    }, 1000);
+  };
+
+  const handlePlayEpisode = async (url, episodeId, episodeTitle = '') => {
     try {
       setLoadingAudio(true);
-      
+
       // Same episode - toggle play/pause
       if (episodeId === currentEpisodeId && sound) {
         console.log('Toggling play state for current episode');
-        
+
         if (isPlaying) {
           await sound.pauseAsync();
           setIsPlaying(false);
+          // Clear position update timer
+          if (positionUpdateTimer.current) {
+            clearInterval(positionUpdateTimer.current);
+          }
         } else {
           await sound.playAsync();
           setIsPlaying(true);
+          // Start position update timer
+          startPositionUpdateTimer();
         }
         setLoadingAudio(false);
         return;
       }
-      
-      // Unload previous sound
+
+      // Unload previous sound and clear timer
       if (sound) {
         console.log('Unloading previous sound');
+        if (positionUpdateTimer.current) {
+          clearInterval(positionUpdateTimer.current);
+        }
         await sound.unloadAsync();
       }
-      
+
       console.log('Loading new sound:', url);
-      
+
+      // Reset position and duration
+      setPosition(0);
+      setDuration(0);
+
       // Create and load new sound
       const soundObject = new Audio.Sound();
-      
+
       try {
         await soundObject.loadAsync({ uri: url });
         console.log('Sound loaded successfully');
-        
+
+        // Get initial status to set duration
+        const status = await soundObject.getStatusAsync();
+        if (status.isLoaded) {
+          setDuration(status.durationMillis || 0);
+        }
+
         // Set up playback status update handler
         soundObject.setOnPlaybackStatusUpdate((status) => {
           if (status.isLoaded) {
             if (status.didJustFinish) {
               console.log('Playback finished');
               setIsPlaying(false);
+              setPosition(0);
+              if (positionUpdateTimer.current) {
+                clearInterval(positionUpdateTimer.current);
+              }
             }
           } else if (status.error) {
             console.error('Playback error:', status.error);
           }
         });
-        
+
+        // Set volume
+        await soundObject.setVolumeAsync(volume);
+
         // Play the sound
         await soundObject.playAsync();
         console.log('Sound playing');
-        
+
         setSound(soundObject);
         setIsPlaying(true);
         setCurrentEpisodeId(episodeId);
-      } catch (loadError) {
-        console.error('Error loading audio:', loadError);
-        alert(`Unable to load audio: ${loadError.message || 'Unknown error'}`);
+        setCurrentEpisodeTitle(episodeTitle);
+        setLoadingAudio(false);
+
+        // Start position update timer
+        startPositionUpdateTimer();
+      } catch (err) {
+        console.error('Error playing podcast:', err);
+        setLoadingAudio(false);
+        throw err;
       }
-      
     } catch (err) {
-      console.error('Error with audio playback:', err);
-      alert(`Playback error: ${err?.message || 'Could not play this episode. Please try again.'}`);
-      
-      // Reset state on error
+      console.error('Error playing podcast:', err);
+      alert(`Error playing podcast: ${err && err.message ? err.message : 'Could not play audio. Please try again.'}`);
       setIsPlaying(false);
+      setCurrentEpisodeId(null);
+      setCurrentEpisodeTitle('');
       if (sound) {
         await sound.unloadAsync();
         setSound(null);
       }
-      setCurrentEpisodeId(null);
-    } finally {
       setLoadingAudio(false);
     }
   };
@@ -134,7 +180,7 @@ export default function PodcastScreen() {
   const renderPodcastItem = ({ item }) => {
     const isCurrentlyPlaying = currentEpisodeId === item.id && isPlaying;
     const isLoading = loadingAudio && currentEpisodeId === item.id;
-    
+
     return (
       <View style={styles.podcastItem}>
         <View style={styles.podcastContent}>
@@ -164,7 +210,7 @@ export default function PodcastScreen() {
 
             <TouchableOpacity
               style={styles.playButton}
-              onPress={() => handlePlayEpisode(item.audioUrl, item.id)}
+              onPress={() => handlePlayEpisode(item.audioUrl, item.id, item.title)}
               disabled={isLoading}
             >
               {isLoading ? (
@@ -218,15 +264,15 @@ export default function PodcastScreen() {
       <Stack.Screen options={{
         headerShown: false,
       }} />
-      
+
       <FlatList
         data={podcasts}
-        ListHeaderComponent={() => (
-          <ThemedText style={styles.pageTitle}>Steve Backlund Podcasts</ThemedText>
-        )}
         renderItem={renderPodcastItem}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          currentEpisodeId ? { paddingBottom: 160 } : {} // Add padding when player is visible
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -240,6 +286,47 @@ export default function PodcastScreen() {
           </View>
         }
       />
+      {currentEpisodeId && (
+        <View style={styles.audioPlayer}>
+          <ThemedText style={styles.episodeTitle}>{currentEpisodeTitle}</ThemedText>
+          <Slider
+            style={styles.progressBar}
+            value={position / duration}
+            minimumValue={0}
+            maximumValue={1}
+            onValueChange={(value) => {
+              if (sound) {
+                sound.setPositionAsync(value * duration);
+              }
+            }}
+            minimumTrackTintColor="#0a7ea4"
+            maximumTrackTintColor="#ddd"
+            thumbTintColor="#0a7ea4"
+          />
+          <View style={styles.playerControls}>
+            <Slider
+              style={styles.volumeSlider}
+              value={volume}
+              minimumValue={0}
+              maximumValue={1}
+              onValueChange={(value) => setVolume(value)}
+              minimumTrackTintColor="#0a7ea4"
+              maximumTrackTintColor="#ddd"
+              thumbTintColor="#0a7ea4"
+            />
+            <TouchableOpacity onPress={async () => {
+              if (sound) {
+                await sound.pauseAsync();
+                setIsPlaying(false);
+                clearInterval(positionUpdateTimer.current);
+              }
+            }}>
+                <Ionicons name="pause-circle" size={24} color="#0a7ea4" />
+            </TouchableOpacity>
+            
+          </View>
+        </View>
+      )}
     </ThemedView>
   );
 }
@@ -248,14 +335,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: Platform.OS === 'web' ? 20 : 16,
-    paddingTop: 0, // Removed padding from top
+    paddingTop: 0, 
     paddingBottom: Platform.OS === 'ios' ? 40 : 20,
   },
   pageTitle: {
     fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginVertical: 12, // Matching the blog page padding
+    marginVertical: 12, 
     marginHorizontal: 16,
   },
   listContent: {
@@ -282,11 +369,10 @@ const styles = StyleSheet.create({
   },
   podcastImagePlaceholder: {
     width: '100%',
-    height: 60, // Reduced from 120px
-    backgroundColor: '#0a7ea4', // Fallback color
+    height: 60, 
+    backgroundColor: '#0a7ea4', 
     justifyContent: 'center',
     alignItems: 'center',
-    // Linear gradient background
     backgroundImage: 'linear-gradient(to bottom right, #0a7ea4, #2c9fc9, #50c2e8)',
   },
   podcastInfo: {
@@ -368,5 +454,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     opacity: 0.7,
+  },
+  audioPlayer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  episodeTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  progressBar: {
+    height: 40,
+    marginBottom: 8,
+  },
+  playerControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  volumeSlider: {
+    width: 100,
   }
 });
