@@ -109,7 +109,7 @@ export default function BlogScreen() {
       />
 
       <LinearGradient
-        colors={['rgba(10, 126, 164, 0.3)', 'rgba(10, 126, 164, 0)']}
+        colors={['rgba(10, 126, 164, 0.5)', 'rgba(10, 126, 164, 0.2)', 'rgba(10, 126, 164, 0)']}
         style={styles.headerGradient}
       >
         <View style={styles.headerContainer}>
@@ -306,6 +306,7 @@ const styles = StyleSheet.create({
     height: 120,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(10, 126, 164, 0.1)',
   },
   blogMeta: {
     flexDirection: 'row',
