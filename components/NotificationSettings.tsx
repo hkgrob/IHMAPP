@@ -92,32 +92,40 @@ export const NotificationSettings = () => {
             'Please enable notifications in your device settings to receive declaration reminders.',
             [{ text: 'OK' }]
           );
+          setEnabled(false); // Ensure UI shows correct state
           return;
         }
         console.log('Notification permission granted');
       }
       
+      // Update state first to provide immediate feedback
       setEnabled(value);
+      
+      // Then update settings
       await updateSettings({ enabled: value });
       console.log('Notifications enabled:', value);
       
-      // Provide haptic feedback
-      if (Platform.OS !== 'web') {
+      // Provide haptic feedback on supported platforms
+      if (Platform.OS !== 'web' && Platform.OS !== 'android') {
         try {
-          await Haptics.notificationAsync(
+          Haptics.notificationAsync(
             value 
               ? Haptics.NotificationFeedbackType.Success 
               : Haptics.NotificationFeedbackType.Warning
-          );
+          ).catch(err => {
+            console.log('Haptic feedback not available:', err);
+          });
         } catch (hapticError) {
-          console.error('Haptic feedback failed, but continuing:', hapticError);
+          console.log('Haptic feedback not available');
         }
       }
     } catch (error) {
       console.error('Error toggling notifications:', error);
+      // Revert UI state on error
+      setEnabled(!value);
       Alert.alert(
         'Error',
-        'There was a problem enabling notifications. Please try again later.',
+        'There was a problem with notification settings. Please try again.',
         [{ text: 'OK' }]
       );
     }

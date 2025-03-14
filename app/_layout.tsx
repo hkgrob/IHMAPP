@@ -32,29 +32,33 @@ export default function RootLayout() {
 
   // Initialize notifications for mobile only
   useEffect(() => {
+    if (Platform.OS === 'web') {
+      console.log('Skipping notifications for web platform');
+      return;
+    }
+    
+    // Safe initialization - catch any errors to prevent app crashes
     const initNotifications = async () => {
       try {
-        if (Platform.OS !== 'web') {
-          console.log('Initializing notifications for mobile');
-          // Configure notification handler
-          await configureNotifications();
-
-          // Schedule notifications based on saved settings
-          await scheduleAllNotifications();
-          console.log('Notifications initialization complete');
-        } else {
-          console.log('Skipping notifications for web platform');
-        }
+        console.log('Initializing notifications for mobile');
+        // Configure notification handler
+        await configureNotifications();
+        console.log('Notification configuration complete');
       } catch (error) {
-        // Log error but don't prevent app from loading
-        console.error('Error initializing notifications, but continuing app load:', error);
+        console.error('Error during notification configuration:', error);
+      }
+      
+      // Schedule notifications in a separate try block
+      try {
+        await scheduleAllNotifications();
+        console.log('Notification scheduling complete');
+      } catch (scheduleError) {
+        console.error('Error scheduling notifications:', scheduleError);
       }
     };
 
-    // Initialize notifications but don't block app loading
-    initNotifications().catch(error => {
-      console.error('Failed to initialize notifications, but app will continue:', error);
-    });
+    // Run initialization without awaiting or blocking app loading
+    initNotifications();
   }, []);
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
