@@ -82,36 +82,24 @@ export const NotificationSettings = () => {
     try {
       setRefreshing(true);
       
-      // Set default time to 9:00 AM
-      const defaultTime = new Date();
-      defaultTime.setHours(9, 0, 0, 0);
+      // Let the service create a reminder with default time (1 hour from now)
+      const newReminder = await addReminder();
       
-      // If the current time is after 9 AM, set for tomorrow
-      const now = new Date();
-      if (now.getHours() >= 9 && now.getMinutes() >= 0) {
-        defaultTime.setDate(defaultTime.getDate() + 1);
-      }
-      
-      console.log(`Creating reminder for ${defaultTime.toLocaleString()}`);
-      
-      // Add reminder to storage first without scheduling
-      const newReminder = await addReminder(defaultTime);
       if (newReminder) {
-        // Update UI with new reminder
+        // Update UI with new reminder first
         setReminders(prev => [...prev, newReminder]);
         
-        // Give system time to process UI update before scheduling
-        await new Promise(resolve => setTimeout(resolve, 750));
+        // Let the UI update complete before scheduling
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Schedule all reminders using a single operation
-        // This is critical to prevent duplicates
+        // Schedule the notifications after a delay
         console.log('Scheduling notifications with the new reminder');
         await applyAllReminders();
         
         // Show a confirmation to the user
         Alert.alert(
           'Reminder Added',
-          `A new declaration reminder has been set for ${formatTime(defaultTime)}`,
+          `A new declaration reminder has been set for ${formatTime(newReminder.time)}`,
           [{ text: 'OK' }]
         );
         
@@ -119,6 +107,14 @@ export const NotificationSettings = () => {
         if (Platform.OS !== 'web') {
           const scheduled = await Notifications.getAllScheduledNotificationsAsync();
           console.log(`After adding: ${scheduled.length} notifications are scheduled`);
+          
+          // Log each scheduled notification for debugging
+          scheduled.forEach((notification, index) => {
+            const triggerDate = notification.trigger.value;
+            if (triggerDate) {
+              console.log(`Notification ${index + 1}: Scheduled for ${new Date(triggerDate).toLocaleString()}`);
+            }
+          });
         }
       }
     } catch (error) {

@@ -136,8 +136,18 @@ export const saveReminders = async (reminders: Reminder[]): Promise<boolean> => 
  */
 export const addReminder = async (time?: Date): Promise<Reminder | null> => {
   try {
-    // Default to current time if not provided
-    const reminderTime = time || new Date();
+    // If no time provided, set default time to 1 hour from now
+    let reminderTime;
+    if (!time) {
+      reminderTime = new Date();
+      reminderTime.setHours(reminderTime.getHours() + 1);
+      // Round to nearest 5 minutes for better UX
+      reminderTime.setMinutes(Math.ceil(reminderTime.getMinutes() / 5) * 5, 0, 0);
+    } else {
+      reminderTime = time;
+    }
+    
+    console.log(`Creating reminder for future time: ${reminderTime.toLocaleString()}`);
     
     // Create reminder object
     const newReminder: Reminder = {
@@ -227,7 +237,7 @@ export const scheduleReminder = async (reminder: Reminder): Promise<string | nul
     // Get current time
     const now = new Date();
     
-    // Create a Date for today at the specified time
+    // Create a Date for the next occurrence of this time
     const triggerDate = new Date();
     triggerDate.setHours(hours, minutes, 0, 0);
     
@@ -247,14 +257,15 @@ export const scheduleReminder = async (reminder: Reminder): Promise<string | nul
     const formattedTriggerTime = `${triggerDate.toLocaleTimeString()} on ${triggerDate.toLocaleDateString()}`;
     console.log(`Will schedule notification to trigger at: ${formattedTriggerTime}`);
     
-    // IMPORTANT: Only schedule if the trigger time is at least 30 seconds in the future
+    // IMPORTANT: Only schedule if the trigger time is at least 60 seconds in the future
     // This prevents immediate triggering when creating a new reminder
-    if (msTillTrigger < 30000) {
-      console.log('Trigger time is too soon, skipping scheduling to prevent immediate notification');
-      return null;
+    if (msTillTrigger < 60000) {
+      console.log('Trigger time is too soon, scheduling for tomorrow instead');
+      triggerDate.setDate(triggerDate.getDate() + 1);
+      console.log(`Rescheduled for: ${triggerDate.toLocaleString()}`);
     }
     
-    // Schedule the one-time notification
+    // Schedule the one-time notification with the adjusted date
     const oneTimeId = await Notifications.scheduleNotificationAsync({
       content: {
         title: reminder.title,
