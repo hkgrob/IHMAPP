@@ -24,6 +24,23 @@ export default function DeclarationsScreen() {
   const [declarationCount, setDeclarationCount] = useState(0); // Added counter state
   const [sound, setSound] = useState<Audio.Sound | null>(null); // Added sound state
 
+  // Load sound effect
+  useEffect(() => {
+    const loadSound = async () => {
+      try {
+        const soundAsset = require('@/assets/sounds/click.mp3');
+        console.log('Loading sound asset:', soundAsset);
+        const { sound: clickSound } = await Audio.Sound.createAsync(soundAsset);
+        setSound(clickSound);
+        console.log('Sound loaded successfully');
+      } catch (error) {
+        console.error('Error loading sound:', error);
+      }
+    };
+    
+    loadSound();
+  }, []);
+
   // Load custom declarations from storage
   useEffect(() => {
     const loadData = async () => {
@@ -153,18 +170,29 @@ export default function DeclarationsScreen() {
       const counterService = require('@/services/counterService');
       await counterService.incrementCounter();
 
-      // Sound feedback
-      if (sound) {
-        try {
+      // Check settings and play sound if enabled
+      try {
+        const soundEnabled = await AsyncStorage.getItem('soundEnabled');
+        console.log('Settings:', { soundEnabled, hapticEnabled: await AsyncStorage.getItem('hapticEnabled') });
+        
+        if (soundEnabled !== 'false' && sound) {
           await sound.replayAsync();
-        } catch (error) {
-          console.error('Error playing sound:', error);
+          console.log('Sound played successfully');
         }
+      } catch (error) {
+        console.error('Error playing sound:', error);
       }
 
       // Haptic feedback
       if (Platform.OS !== 'web') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        try {
+          const hapticEnabled = await AsyncStorage.getItem('hapticEnabled');
+          if (hapticEnabled !== 'false') {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          }
+        } catch (error) {
+          console.error('Error with haptic feedback:', error);
+        }
       }
     } catch (error) {
       console.error('Error incrementing counter:', error);
