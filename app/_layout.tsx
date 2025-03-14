@@ -8,8 +8,8 @@ import { useEffect } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useColorScheme } from '../hooks/useColorScheme';
-import { configureNotifications, scheduleAllNotifications } from '../services/notificationService';
 import { Header } from '../components/Header';
+import * as Notifications from 'expo-notifications';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -30,19 +30,16 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
-  // Initialize notifications for mobile only - with better error handling
+  // Initialize notifications for mobile only
   useEffect(() => {
     if (Platform.OS === 'web') {
       console.log('Skipping notifications for web platform');
       return;
     }
     
-    // Safe initialization with minimal impact on app loading
     const initNotifications = async () => {
       try {
-        console.log('Initializing notifications for mobile');
-        
-        // Just configure the handler - we'll request permissions later when needed
+        console.log('Setting up notification handler');
         await Notifications.setNotificationHandler({
           handleNotification: async () => ({
             shouldShowAlert: true,
@@ -50,15 +47,11 @@ export default function RootLayout() {
             shouldSetBadge: true,
           }),
         });
-        
-        console.log('Basic notification handler configured');
       } catch (error) {
         console.error('Error setting up notification handler:', error);
-        // This shouldn't block app loading
       }
     };
 
-    // Run initialization without awaiting or blocking app loading
     initNotifications();
   }, []);
 

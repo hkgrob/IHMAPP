@@ -36,16 +36,6 @@ export async function configureNotifications() {
       return false;
     }
 
-    // Configure how notifications appear when the app is in the foreground
-    await Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-      }),
-    });
-
-    console.log('Notifications configured successfully');
     return true;
   } catch (error) {
     console.error('Error configuring notifications:', error);
@@ -113,15 +103,6 @@ export async function setNotificationsEnabled(enabled: boolean) {
   }
 }
 
-// Create notification trigger for specified time
-function createDailyTrigger(hour: number, minute: number) {
-  return {
-    hour: hour,
-    minute: minute,
-    repeats: true,
-  };
-}
-
 // Schedule morning notification
 async function scheduleMorningNotification(time: { hour: number, minute: number }) {
   try {
@@ -130,9 +111,12 @@ async function scheduleMorningNotification(time: { hour: number, minute: number 
         title: "Morning Declarations",
         body: "It's time for your morning declarations! Start your day with positivity.",
         sound: true,
-        priority: Notifications.AndroidNotificationPriority.HIGH,
       },
-      trigger: createDailyTrigger(time.hour, time.minute),
+      trigger: {
+        hour: time.hour,
+        minute: time.minute,
+        repeats: true,
+      },
       identifier: 'morning-declaration',
     });
     console.log(`Morning notification scheduled for ${time.hour}:${time.minute}`);
@@ -151,9 +135,12 @@ async function scheduleEveningNotification(time: { hour: number, minute: number 
         title: "Evening Declarations",
         body: "It's time for your evening declarations! End your day with powerful affirmations.",
         sound: true,
-        priority: Notifications.AndroidNotificationPriority.HIGH,
       },
-      trigger: createDailyTrigger(time.hour, time.minute),
+      trigger: {
+        hour: time.hour,
+        minute: time.minute,
+        repeats: true,
+      },
       identifier: 'evening-declaration',
     });
     console.log(`Evening notification scheduled for ${time.hour}:${time.minute}`);

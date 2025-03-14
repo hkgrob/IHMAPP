@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Switch, Platform, TouchableOpacity, Alert } from 'react-native';
 import { ThemedText } from './ThemedText';
@@ -21,7 +22,7 @@ export const NotificationSettings = () => {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        // Check if notifications are configured and enabled
+        // Check if notifications are enabled
         const enabled = await areNotificationsEnabled();
         setNotificationsEnabledState(enabled);
 
@@ -176,25 +177,23 @@ export const NotificationSettings = () => {
         </TouchableOpacity>
       </View>
 
-      {(showMorningPicker || Platform.OS === 'ios') && notificationsEnabled && (
+      {showMorningPicker && (
         <DateTimePicker
           value={new Date().setHours(morningTime.hour, morningTime.minute)}
           mode="time"
           is24Hour={false}
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={handleMorningTimeChange}
-          style={{ display: showMorningPicker ? 'flex' : 'none' }}
         />
       )}
 
-      {(showEveningPicker || Platform.OS === 'ios') && notificationsEnabled && (
+      {showEveningPicker && (
         <DateTimePicker
           value={new Date().setHours(eveningTime.hour, eveningTime.minute)}
           mode="time"
           is24Hour={false}
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={handleEveningTimeChange}
-          style={{ display: showEveningPicker ? 'flex' : 'none' }}
         />
       )}
 
