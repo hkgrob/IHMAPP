@@ -89,7 +89,7 @@ export default function CounterPage() {
     // Get latest settings
     const soundEnabled = await AsyncStorage.getItem('soundEnabled');
     const hapticEnabled = await AsyncStorage.getItem('hapticEnabled');
-    
+
     console.log('Settings values:', { soundEnabled, hapticEnabled });
 
     // Play sound if enabled and available
@@ -105,7 +105,7 @@ export default function CounterPage() {
     // Add haptic feedback if enabled
     if (Platform.OS !== 'web') {
       console.log('Haptic setting value:', hapticEnabled);
-      
+
       // If haptic is not explicitly disabled ('false'), we should enable it
       if (hapticEnabled !== 'false') {
         console.log('Haptic feedback enabled, attempting to trigger');
