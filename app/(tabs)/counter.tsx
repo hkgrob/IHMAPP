@@ -134,19 +134,26 @@ export default function CounterScreen() {
       // Update UI count
       setCount(prevCount => prevCount + 1);
       
+      // Check current sound setting from storage before playing
+      const currentSoundSetting = await AsyncStorage.getItem('soundEnabled');
+      const isSoundEnabled = currentSoundSetting !== 'false'; // Default to true if not set
+      
       // Play haptic feedback if enabled
       if (hapticEnabled && Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
 
-      // Play sound if enabled
-      if (soundEnabled && sound) {
+      // Play sound if enabled in settings
+      if (isSoundEnabled && sound) {
+        console.log('Playing sound - sound is enabled in settings');
         try {
           await sound.setPositionAsync(0);
           await sound.playAsync();
         } catch (error) {
           console.error('Error playing sound:', error);
         }
+      } else {
+        console.log('Sound is disabled in settings - not playing sound');
       }
 
       // Update and save daily and total counts
