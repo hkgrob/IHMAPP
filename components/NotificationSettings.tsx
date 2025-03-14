@@ -82,19 +82,36 @@ export const NotificationSettings = () => {
     try {
       setRefreshing(true);
       
+      // First cancel any existing notifications to prevent immediate triggering
+      if (Platform.OS !== 'web') {
+        console.log('Cancelling all notifications before adding new reminder');
+        await Notifications.cancelAllScheduledNotificationsAsync();
+        
+        // Give system time to complete cancellation
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+      
       // Let the service create a reminder with default time (1 hour from now)
       const newReminder = await addReminder();
       
       if (newReminder) {
-        // Update UI with new reminder first
-        setReminders(prev => [...prev, newReminder]);
+        console.log(`Created new reminder for ${formatTime(newReminder.time)}`);
         
-        // Let the UI update complete before scheduling
+        // Wait before updating UI (avoid race conditions)
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Schedule the notifications after a delay
-        console.log('Scheduling notifications with the new reminder');
+        // Update UI with new reminder
+        setReminders(prev => [...prev, newReminder]);
+        
+        // Important: Allow UI update to complete before scheduling
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Schedule all reminders
+        console.log('Scheduling all reminders including the new one');
         await applyAllReminders();
+        
+        // Another delay before showing confirmation
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Show a confirmation to the user
         Alert.alert(
@@ -105,6 +122,9 @@ export const NotificationSettings = () => {
         
         // Verify what's actually scheduled (for debugging)
         if (Platform.OS !== 'web') {
+          // Wait for scheduling to complete
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
           const scheduled = await Notifications.getAllScheduledNotificationsAsync();
           console.log(`After adding: ${scheduled.length} notifications are scheduled`);
           
@@ -112,7 +132,9 @@ export const NotificationSettings = () => {
           scheduled.forEach((notification, index) => {
             const triggerDate = notification.trigger.value;
             if (triggerDate) {
-              console.log(`Notification ${index + 1}: Scheduled for ${new Date(triggerDate).toLocaleString()}`);
+              console.log(`Notification ${index + 1} (ID: ${notification.identifier}): Scheduled for ${new Date(triggerDate).toLocaleString()}`);
+            } else {
+              console.log(`Notification ${index + 1} (ID: ${notification.identifier}): No trigger date available`);
             }
           });
         }
@@ -258,50 +280,75 @@ export const NotificationSettings = () => {
     try {
       setRefreshing(true);
       
+      // Always hide picker first to prevent UI issues
+      setTimePickerState({
+        visible: false,
+        selectedReminderId: null
+      });
+      
       // Check if we have pending time changes to apply
       const hasPendingChanges = reminders.some(r => r._pendingTimeChange);
       
       if (hasPendingChanges) {
         console.log('Applying time changes after Done is pressed');
         
-        // First cancel any existing notifications to prevent duplicates
+        // Cancel all scheduled notifications first to prevent duplicates
         if (Platform.OS !== 'web') {
-          console.log('Cancelling all scheduled notifications before applying changes');
+          console.log('Cancelling all scheduled notifications before applying time changes');
           await Notifications.cancelAllScheduledNotificationsAsync();
           
-          // Small delay to ensure cancellation completes
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // Wait longer to ensure cancellation completes
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          
+          // Double-check cancellation
+          const afterCancel = await Notifications.getAllScheduledNotificationsAsync();
+          if (afterCancel.length > 0) {
+            console.warn(`${afterCancel.length} notifications remain after cancellation, trying again...`);
+            await Notifications.cancelAllScheduledNotificationsAsync();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
         }
         
-        // Apply all reminders once when done is pressed
-        await applyAllReminders();
+        // Update our state reminders first, removing pending flags
+        const updatedReminders = reminders.map(r => {
+          if (r._pendingTimeChange) {
+            const { _pendingTimeChange, ...rest } = r;
+            return rest;
+          }
+          return r;
+        });
         
-        // Clear pending flags from state
-        setReminders(prev => 
-          prev.map(r => {
-            if (r._pendingTimeChange) {
-              const { _pendingTimeChange, ...rest } = r;
-              return rest;
-            }
-            return r;
-          })
-        );
+        // Update state before scheduling
+        setReminders(updatedReminders);
+        
+        // Wait for state update to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Now apply all reminders at once
+        console.log('Scheduling all reminders with updated times');
+        await applyAllReminders();
         
         // Log scheduled notifications for debugging
         if (Platform.OS !== 'web') {
+          // Give scheduling time to complete
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
           const scheduled = await Notifications.getAllScheduledNotificationsAsync();
           console.log(`After time adjustment: ${scheduled.length} notifications are scheduled`);
+          
+          // Log each scheduled notification
+          scheduled.forEach((notification, index) => {
+            const triggerDate = notification.trigger.value;
+            if (triggerDate) {
+              console.log(`Notification ${index + 1} (ID: ${notification.identifier}): Scheduled for ${new Date(triggerDate).toLocaleString()}`);
+            }
+          });
         }
       }
     } catch (error) {
       console.error('Error applying reminders on done:', error);
     } finally {
       setRefreshing(false);
-      // Always hide picker when done
-      setTimePickerState({
-        visible: false,
-        selectedReminderId: null
-      });
     }
   };
 
