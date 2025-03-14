@@ -86,54 +86,56 @@ export default function CounterPage() {
   };
 
   const incrementCounter = async () => {
-    // Get latest settings
-    const soundEnabled = await AsyncStorage.getItem('soundEnabled');
-    const hapticEnabled = await AsyncStorage.getItem('hapticEnabled');
-    
-    console.log('Settings values:', { soundEnabled, hapticEnabled });
+    // Get current counts
+    const updatedDaily = dailyCount + 1;
+    const updatedTotal = totalCount + 1;
 
-    // Play sound if enabled and available
-    if (soundEnabled !== 'false' && sound) {
-      try {
-        await sound.replayAsync();
-        console.log('Playing sound');
-      } catch (error) {
-        console.error('Error playing sound:', error);
-      }
-    }
+    // Update state
+    setDailyCount(updatedDaily);
+    setTotalCount(updatedTotal);
 
-    // Add haptic feedback if enabled
-    if (Platform.OS !== 'web') {
-      console.log('Haptic setting value:', hapticEnabled);
-      
-      // If haptic is not explicitly disabled ('false'), we should enable it
-      if (hapticEnabled !== 'false') {
-        console.log('Haptic feedback enabled, attempting to trigger');
+    try {
+      // Save to storage
+      await AsyncStorage.setItem('dailyCount', updatedDaily.toString());
+      await AsyncStorage.setItem('totalCount', updatedTotal.toString());
+
+      // Play sound if enabled
+      if (Platform.OS !== 'web' && soundEnabled !== 'false') {
         try {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          console.log('Haptic feedback success');
+          console.log('Playing click sound');
+          if (sound) {
+            await sound.playFromPositionAsync(0);
+          }
         } catch (error) {
-          console.error('Haptic error, falling back to vibration:', error);
-          // Fallback to basic vibration
-          Vibration.vibrate(50);
+          console.error('Error playing sound:', error);
         }
-      } else {
-        console.log('Haptic feedback disabled in settings');
       }
-    } else {
-      console.log('Haptics not available on web');
+
+      // Add haptic feedback directly
+      if (Platform.OS !== 'web') {
+        console.log('Attempting haptic feedback');
+        try {
+          // Force haptic feedback for testing
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          console.log('Haptic feedback sent');
+        } catch (error) {
+          console.error('Error with direct haptic feedback:', error);
+          // Fallback to basic vibration
+          try {
+            Vibration.vibrate(50);
+            console.log('Vibration fallback triggered');
+          } catch (vibrationError) {
+            console.error('Error with vibration fallback:', vibrationError);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error saving count:', error);
+      // Revert state if save fails
+      setDailyCount(dailyCount);
+      setTotalCount(totalCount);
+      Alert.alert('Error', 'Failed to save count');
     }
-
-    // Update counts
-    const newDailyCount = dailyCount + 1;
-    const newTotalCount = totalCount + 1;
-
-    setDailyCount(newDailyCount);
-    setTotalCount(newTotalCount);
-
-    // Save to storage
-    await AsyncStorage.setItem('dailyCount', newDailyCount.toString());
-    await AsyncStorage.setItem('totalCount', newTotalCount.toString());
   };
 
   const resetCounter = async (type) => {
@@ -142,7 +144,7 @@ export default function CounterPage() {
     const message = type === 'daily' 
       ? 'Are you sure you want to reset your daily count to zero?' 
       : 'Are you sure you want to reset your total count to zero? This cannot be undone.';
-    
+
     Alert.alert(
       title,
       message,

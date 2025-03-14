@@ -1,8 +1,7 @@
-
 import { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import { PlatformPressable } from '@react-navigation/elements';
 import * as Haptics from 'expo-haptics';
-import { Platform, Text, View } from 'react-native';
+import { Platform, Text, View, Vibration } from 'react-native';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -12,18 +11,20 @@ export function HapticTab({ label, color, ...props }: BottomTabBarButtonProps & 
   return (
     <PlatformPressable
       {...props}
-      onPressIn={async (ev) => {
+      onPressIn={(ev) => {
         if (Platform.OS !== 'web') {
           try {
-            const hapticEnabled = await AsyncStorage.getItem('hapticEnabled');
-            console.log('Tab haptic setting:', hapticEnabled);
-            
-            // Only disable if explicitly set to 'false'
-            if (hapticEnabled !== 'false') {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }
+            // Directly trigger haptic without checking settings
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            console.log('Tab haptic triggered directly');
           } catch (err) {
-            console.error('Tab haptic error:', err);
+            console.error('Error with direct tab haptic:', err);
+            // Fallback to vibration
+            try {
+              Vibration.vibrate(20);
+            } catch (vibErr) {
+              console.error('Tab vibration fallback failed:', vibErr);
+            }
           }
         }
         props.onPressIn?.(ev);
