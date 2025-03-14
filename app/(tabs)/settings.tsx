@@ -188,7 +188,7 @@ export default function SettingsScreen() {
         </View>
         
         <ThemedText style={styles.versionText}>
-          Igniting Hope App v1.0.0
+          Igniting Hope App v{require('../../app.json').expo.version}
         </ThemedText>
       </View>
     </ScrollView>
