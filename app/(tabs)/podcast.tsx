@@ -370,10 +370,10 @@ export default function PodcastScreen() {
                 minimumValue={0}
                 maximumValue={1}
                 onValueChange={(value) => setVolume(value)}
-              minimumTrackTintColor="#0a7ea4"
-              maximumTrackTintColor="#ddd"
-              thumbTintColor="#0a7ea4"
-            />
+                minimumTrackTintColor="#0a7ea4"
+                maximumTrackTintColor="#ddd"
+                thumbTintColor="#0a7ea4"
+              />
               <TouchableOpacity onPress={async () => {
                 if (sound) {
                   await sound.pauseAsync();
