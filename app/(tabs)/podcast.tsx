@@ -371,7 +371,7 @@ export default function PodcastScreen() {
                 value={volume}
                 minimumValue={0}
                 maximumValue={1}
-                onValueChange={(value) => setVolume(value)})}
+                onValueChange={(value) => setVolume(value)}
               minimumTrackTintColor="#0a7ea4"
               maximumTrackTintColor="#ddd"
               thumbTintColor="#0a7ea4"
