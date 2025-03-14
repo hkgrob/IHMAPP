@@ -6,10 +6,10 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
 import { 
-  getNotificationSettings, 
-  saveNotificationSettings, 
-  applyNotificationSettings, 
-  requestNotificationPermissions 
+  getSettings, 
+  saveSettings, 
+  applySettings, 
+  requestPermissions 
 } from '../services/notificationService';
 
 export const NotificationSettings = () => {
@@ -17,11 +17,13 @@ export const NotificationSettings = () => {
     enabled: false,
     morningTime: new Date(new Date().setHours(9, 0, 0, 0)),
     eveningTime: new Date(new Date().setHours(18, 0, 0, 0)),
+    secondReminderEnabled: true,
   });
   
   const [showMorningPicker, setShowMorningPicker] = useState(false);
   const [showEveningPicker, setShowEveningPicker] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState('unknown');
+  const [loading, setLoading] = useState(false);
   
   // Load saved settings on component mount
   useEffect(() => {
@@ -36,6 +38,7 @@ export const NotificationSettings = () => {
     try {
       const { status } = await Notifications.getPermissionsAsync();
       setPermissionStatus(status);
+      console.log('Notification permission status:', status);
     } catch (error) {
       console.error('Error checking notification permissions:', error);
     }
@@ -44,8 +47,9 @@ export const NotificationSettings = () => {
   // Load settings
   const loadSettings = async () => {
     try {
-      const savedSettings = await getNotificationSettings();
+      const savedSettings = await getSettings();
       setSettings(savedSettings);
+      console.log('Loaded settings:', savedSettings);
     } catch (error) {
       console.error('Error loading settings:', error);
     }
@@ -54,11 +58,13 @@ export const NotificationSettings = () => {
   // Save and apply new settings
   const updateSettings = async (newSettings) => {
     try {
+      setLoading(true);
       setSettings(newSettings);
-      await saveNotificationSettings(newSettings);
+      await saveSettings(newSettings);
+      console.log('Saved new settings:', newSettings);
       
       if (newSettings.enabled) {
-        const success = await applyNotificationSettings();
+        const success = await applySettings(newSettings);
         if (!success && Platform.OS !== 'web') {
           Alert.alert(
             'Notification Permission',
@@ -66,9 +72,19 @@ export const NotificationSettings = () => {
             [{ text: 'OK' }]
           );
         }
+      } else {
+        // If notifications are disabled, cancel all scheduled notifications
+        await Notifications.cancelAllScheduledNotificationsAsync();
       }
     } catch (error) {
       console.error('Error updating settings:', error);
+      Alert.alert(
+        'Error',
+        'Failed to update notification settings. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setLoading(false);
     }
   };
   
@@ -76,10 +92,10 @@ export const NotificationSettings = () => {
   const toggleNotifications = async (value) => {
     try {
       if (value && Platform.OS !== 'web') {
-        const granted = await requestNotificationPermissions();
+        const granted = await requestPermissions();
         if (!granted) {
           Alert.alert(
-            'Notification Permission',
+            'Notification Permission Required',
             'Please enable notifications in your device settings to receive declaration reminders.',
             [{ text: 'OK' }]
           );
@@ -88,9 +104,24 @@ export const NotificationSettings = () => {
         setPermissionStatus('granted');
       }
       
-      updateSettings({ ...settings, enabled: value });
+      await updateSettings({ ...settings, enabled: value });
+      
+      // Get scheduled notifications for debugging
+      if (Platform.OS !== 'web') {
+        const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+        console.log('Current scheduled notifications:', scheduled.length);
+      }
     } catch (error) {
       console.error('Error toggling notifications:', error);
+    }
+  };
+  
+  // Toggle second reminder (evening)
+  const toggleSecondReminder = async (value) => {
+    try {
+      await updateSettings({ ...settings, secondReminderEnabled: value });
+    } catch (error) {
+      console.error('Error toggling second reminder:', error);
     }
   };
   
@@ -144,6 +175,7 @@ export const NotificationSettings = () => {
           onValueChange={toggleNotifications}
           trackColor={{ false: '#767577', true: '#0a7ea4' }}
           thumbColor="#f4f3f4"
+          disabled={loading}
         />
       </View>
       
@@ -152,6 +184,7 @@ export const NotificationSettings = () => {
           <TouchableOpacity 
             style={styles.settingRow} 
             onPress={() => setShowMorningPicker(true)}
+            disabled={loading}
           >
             <View style={styles.settingLabelContainer}>
               <Ionicons name="sunny-outline" size={22} color="#0a7ea4" style={styles.icon} />
@@ -160,16 +193,33 @@ export const NotificationSettings = () => {
             <ThemedText style={styles.timeText}>{formatTime(settings.morningTime)}</ThemedText>
           </TouchableOpacity>
           
-          <TouchableOpacity 
-            style={styles.settingRow} 
-            onPress={() => setShowEveningPicker(true)}
-          >
+          <View style={styles.settingRow}>
             <View style={styles.settingLabelContainer}>
               <Ionicons name="moon-outline" size={22} color="#0a7ea4" style={styles.icon} />
-              <ThemedText style={styles.settingText}>Evening Reminder</ThemedText>
+              <ThemedText style={styles.settingText}>Enable Evening Reminder</ThemedText>
             </View>
-            <ThemedText style={styles.timeText}>{formatTime(settings.eveningTime)}</ThemedText>
-          </TouchableOpacity>
+            <Switch
+              value={settings.secondReminderEnabled}
+              onValueChange={toggleSecondReminder}
+              trackColor={{ false: '#767577', true: '#0a7ea4' }}
+              thumbColor="#f4f3f4"
+              disabled={loading}
+            />
+          </View>
+          
+          {settings.secondReminderEnabled && (
+            <TouchableOpacity 
+              style={styles.settingRow} 
+              onPress={() => setShowEveningPicker(true)}
+              disabled={loading}
+            >
+              <View style={styles.settingLabelContainer}>
+                <Ionicons name="time-outline" size={22} color="#0a7ea4" style={styles.icon} />
+                <ThemedText style={styles.settingText}>Evening Reminder Time</ThemedText>
+              </View>
+              <ThemedText style={styles.timeText}>{formatTime(settings.eveningTime)}</ThemedText>
+            </TouchableOpacity>
+          )}
           
           {showMorningPicker && (
             <DateTimePicker
@@ -192,7 +242,7 @@ export const NotificationSettings = () => {
           <View style={styles.infoContainer}>
             <Ionicons name="information-circle-outline" size={20} color="#0a7ea4" />
             <ThemedText style={styles.infoText}>
-              You will receive reminders to speak your declarations twice daily at the times set above.
+              You will receive reminders to speak your declarations at the times set above.
             </ThemedText>
           </View>
         </>
@@ -203,6 +253,15 @@ export const NotificationSettings = () => {
           <Ionicons name="warning-outline" size={20} color="#ff6b00" />
           <ThemedText style={styles.warningText}>
             Notifications permission denied. Please enable in device settings.
+          </ThemedText>
+        </View>
+      )}
+      
+      {loading && (
+        <View style={styles.infoContainer}>
+          <Ionicons name="sync-outline" size={20} color="#0a7ea4" />
+          <ThemedText style={styles.infoText}>
+            Updating notification settings...
           </ThemedText>
         </View>
       )}

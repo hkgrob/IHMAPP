@@ -1,4 +1,3 @@
-
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
@@ -10,7 +9,7 @@ import Colors from '@/constants/Colors';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
 import { View, StyleSheet } from 'react-native';
-import { initializeNotifications, applyNotificationSettings } from '@/services/notificationService';
+import { initializeNotifications, applySettings, getSettings } from '@/services/notificationService';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -39,14 +38,15 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
-      
-      // Initialize notifications
-      initializeNotifications();
-      
-      // Apply saved notification settings
-      applyNotificationSettings().catch(error => {
-        console.error('Error applying notification settings:', error);
-      });
+
+      // Initialize notifications and apply saved settings
+      (async () => {
+        await initializeNotifications();
+        const savedSettings = await getSettings();
+        if (savedSettings.enabled) {
+          await applySettings(savedSettings);
+        }
+      })();
     }
   }, [loaded]);
 
