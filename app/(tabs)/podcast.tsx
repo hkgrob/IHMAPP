@@ -308,11 +308,11 @@ export default function PodcastScreen() {
           <ThemedText style={styles.episodeTitle}>{currentEpisodeTitle}</ThemedText>
           <Slider
             style={styles.progressBar}
-            value={position / duration}
+            value={position && duration ? position / duration : 0}
             minimumValue={0}
             maximumValue={1}
             onValueChange={(value) => {
-              if (sound) {
+              if (sound && duration) {
                 sound.setPositionAsync(value * duration);
               }
             }}
@@ -374,13 +374,19 @@ export default function PodcastScreen() {
                 maximumTrackTintColor="#ddd"
                 thumbTintColor="#0a7ea4"
               />
-              <TouchableOpacity onPress={async () => {
-                if (sound) {
-                  await sound.pauseAsync();
-                  setIsPlaying(false);
-                  clearInterval(positionUpdateTimer.current);
-                }
-              }}>
+              <TouchableOpacity 
+                onPress={async () => {
+                  if (sound) {
+                    await sound.unloadAsync();
+                    setIsPlaying(false);
+                    setCurrentEpisodeId(null);
+                    setCurrentEpisodeTitle('');
+                    if (positionUpdateTimer.current) {
+                      clearInterval(positionUpdateTimer.current);
+                    }
+                  }
+                }}
+              >
                 <Ionicons name="close-circle" size={24} color="#0a7ea4" />
               </TouchableOpacity>
             </View>
