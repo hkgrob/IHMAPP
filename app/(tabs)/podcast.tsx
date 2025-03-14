@@ -55,11 +55,7 @@ export default function PodcastScreen() {
 
   const handlePlayEpisode = async (url, episodeId) => {
     try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        staysActiveInBackground: true,
-        playsInSilentModeIOS: true,
-      });
+      // Audio mode setup not needed here
 
       // If clicking the same episode that's playing, toggle pause
       if (episodeId === currentEpisodeId) {
@@ -97,7 +93,7 @@ export default function PodcastScreen() {
 
     } catch (err) {
       console.error('Error playing podcast:', err);
-      alert(`Error playing podcast: ${err.message}`); // More informative error message
+      alert(`Error playing podcast: ${err && err.message ? err.message : 'Could not play audio. Please try again.'}`);
       setIsPlaying(false);
       setCurrentEpisodeId(null);
       if (sound) {
