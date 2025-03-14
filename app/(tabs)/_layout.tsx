@@ -1,6 +1,5 @@
-
 import { Tabs } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { HapticTab } from '@/components/HapticTab';
@@ -22,6 +21,10 @@ export default function TabLayout() {
             borderTopColor: colorScheme === 'dark' ? '#333333' : '#e0e0e0',
           }
         ],
+        tabBarLabelStyle: {
+          fontSize: 11,
+        },
+
       }}>
       <Tabs.Screen
         name="index"
@@ -87,7 +90,8 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    // Theme-aware styling will be applied via screenOptions
     borderTopWidth: 1,
+    height: 80, // Added height to prevent text cutoff
+    paddingBottom: 10, // Added padding to give more space
   },
 });
