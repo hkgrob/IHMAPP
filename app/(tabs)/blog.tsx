@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator, View, Image, Alert, Platform, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -29,7 +28,7 @@ export default function BlogScreen() {
       setLoading(true);
       const blogPosts = await fetchWixBlogPosts();
       setPosts(blogPosts);
-      
+
       // Check if we're showing fallback data
       if (blogPosts.length === 4 && blogPosts[0].id === '1') {
         console.log('Showing fallback content');
@@ -73,7 +72,7 @@ export default function BlogScreen() {
 
       const blogPosts = await fetchWixBlogPosts();
       setPosts(blogPosts);
-      
+
       // Check if we're showing fallback data
       if (blogPosts.length === 4 && blogPosts[0].id === '1') {
         setErrorMessage('Could not connect to blog service. Showing fallback content.');
@@ -110,7 +109,7 @@ export default function BlogScreen() {
       />
 
       <LinearGradient
-        colors={['rgba(10, 126, 164, 0.2)', 'rgba(10, 126, 164, 0)']}
+        colors={['rgba(10, 126, 164, 0.3)', 'rgba(10, 126, 164, 0)']}
         style={styles.headerGradient}
       >
         <View style={styles.headerContainer}>
@@ -173,7 +172,7 @@ export default function BlogScreen() {
                     <Ionicons name="newspaper" size={42} color="#fff" />
                   </LinearGradient>
                 )}
-                
+
                 <View style={styles.blogMeta}>
                   {index < 2 && (
                     <View style={styles.newPostBadge}>
@@ -184,21 +183,21 @@ export default function BlogScreen() {
                     {typeof post.date === 'string' ? post.date : 'No Date'}
                   </ThemedText>
                 </View>
-                
+
                 <ThemedText 
                   style={styles.blogTitle}
                   numberOfLines={2}
                 >
                   {post.title}
                 </ThemedText>
-                
+
                 <ThemedText 
                   style={styles.blogExcerpt}
                   numberOfLines={3}
                 >
                   {post.excerpt}
                 </ThemedText>
-                
+
                 <View style={styles.cardFooter}>
                   <TouchableOpacity style={styles.readMoreButton}>
                     <ThemedText style={styles.readMoreText}>Read more</ThemedText>
@@ -207,7 +206,7 @@ export default function BlogScreen() {
                 </View>
               </TouchableOpacity>
             ))}
-            
+
             {posts.length > 0 && (
               <ThemedText style={styles.footerText}>
                 Visit our website for more articles
