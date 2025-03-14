@@ -54,21 +54,6 @@ export default function BlogPostScreen() {
             </View>
           ) : (
             <View style={styles.postContainer}>
-              {imageUrl ? (
-                <Image 
-                  source={{ uri: imageUrl as string }} 
-                  style={styles.blogImage} 
-                  resizeMode="cover"
-                />
-              ) : (
-                <LinearGradient
-                  colors={['#0a7ea4', '#64b5d9']}
-                  style={styles.blogImagePlaceholder}
-                >
-                  <Ionicons name="newspaper" size={42} color="#fff" />
-                </LinearGradient>
-              )}
-              
               <ThemedText style={styles.blogTitle}>{title as string}</ThemedText>
               <ThemedText style={styles.blogDate}>{date as string}</ThemedText>
               
