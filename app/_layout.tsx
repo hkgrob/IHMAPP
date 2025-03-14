@@ -10,8 +10,7 @@ import Colors from '@/constants/Colors';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
 import { View, StyleSheet } from 'react-native';
-import * as Notifications from 'expo-notifications';
-import { setupNotifications } from '@/services/notificationService';
+import { initializeNotifications, applyNotificationSettings } from '@/services/notificationService';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -41,18 +40,12 @@ export default function RootLayout() {
     if (loaded) {
       SplashScreen.hideAsync();
       
-      // Set up notifications when app loads
-      Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: false,
-        }),
-      });
+      // Initialize notifications
+      initializeNotifications();
       
-      // Initialize notifications based on saved settings
-      setupNotifications().catch(error => {
-        console.error('Error setting up notifications:', error);
+      // Apply saved notification settings
+      applyNotificationSettings().catch(error => {
+        console.error('Error applying notification settings:', error);
       });
     }
   }, [loaded]);
