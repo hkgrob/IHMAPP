@@ -19,13 +19,17 @@ export function HapticTab({ label, color, ...props }: BottomTabBarButtonProps & 
             const hapticEnabled = await AsyncStorage.getItem('hapticEnabled');
             console.log('Tab haptic setting:', hapticEnabled);
             
-            // Apply haptic if enabled or null (default)
-            if (hapticEnabled === 'true' || hapticEnabled === null) {
+            // Apply haptic if NOT explicitly disabled (only 'false' string disables)
+            if (hapticEnabled !== 'false') {
+              console.log('Attempting tab haptic feedback');
               await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              console.log('Tab haptic feedback applied');
+              console.log('Tab haptic feedback applied successfully');
+            } else {
+              console.log('Tab haptics disabled by user settings');
             }
           } catch (err) {
             console.error('Error with tab haptic feedback:', err);
+            // No fallback for tab press - keeps it lightweight
           }
         }
         props.onPressIn?.(ev);

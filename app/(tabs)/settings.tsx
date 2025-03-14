@@ -320,19 +320,38 @@ export default function SettingsScreen() {
     
     // Store as string 'true' or 'false'
     const valueToStore = value ? 'true' : 'false';
-    await AsyncStorage.setItem('hapticEnabled', valueToStore);
-    console.log('Saved haptic setting:', valueToStore);
     
-    // Test haptic when enabled
-    if (value && Platform.OS !== 'web') {
-      try {
-        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        console.log('Haptic test triggered successfully');
-      } catch (error) {
-        console.error('Error with haptic feedback:', error);
-        // Fallback to basic vibration
-        Vibration.vibrate(50);
+    try {
+      await AsyncStorage.setItem('hapticEnabled', valueToStore);
+      console.log('Saved haptic setting:', valueToStore);
+      
+      // Test haptic when enabled and not on web
+      if (value && Platform.OS !== 'web') {
+        console.log('Testing haptic feedback after toggle');
+        
+        try {
+          // Force a stronger haptic for testing to ensure it's noticeable
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          console.log('Haptic test triggered successfully with notification type');
+          
+          // Also try impact type as fallback
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          console.log('Haptic test also succeeded with impact type');
+        } catch (hapticError) {
+          console.error('Error with haptic feedback test:', hapticError);
+          
+          // Try vibration as fallback
+          try {
+            Vibration.vibrate(100);
+            console.log('Fallback vibration triggered during test');
+          } catch (vibError) {
+            console.error('Vibration fallback also failed:', vibError);
+          }
+        }
       }
+    } catch (storageError) {
+      console.error('Error saving haptic setting:', storageError);
+      Alert.alert('Settings Error', 'Failed to save haptic setting');
     }
   };
 

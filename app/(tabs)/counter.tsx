@@ -102,19 +102,31 @@ export default function CounterPage() {
       }
     }
 
-    // Add haptic feedback if enabled (treat anything except explicit 'false' as enabled)
-    if (hapticEnabled !== 'false' && Platform.OS !== 'web') {
-      console.log('Triggering haptic feedback:', { hapticEnabled });
-      try {
-        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        console.log('Haptic feedback triggered successfully');
-      } catch (error) {
-        console.error('Error with haptic feedback:', error);
-        // Fallback to basic vibration
-        Vibration.vibrate(50);
+    // Add haptic feedback if enabled or if setting is not explicitly false
+    if (Platform.OS !== 'web') {
+      console.log('Checking haptic feedback state:', { hapticEnabled });
+      
+      // Only disable haptics if explicitly set to 'false'
+      if (hapticEnabled !== 'false') {
+        try {
+          console.log('Attempting to trigger haptic feedback');
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          console.log('Haptic feedback triggered successfully');
+        } catch (error) {
+          console.error('Error with haptic feedback:', error);
+          // Fallback to basic vibration on supported platforms
+          try {
+            Vibration.vibrate(50);
+            console.log('Fallback vibration triggered');
+          } catch (vibError) {
+            console.error('Vibration fallback also failed:', vibError);
+          }
+        }
+      } else {
+        console.log('Haptic feedback disabled by user settings');
       }
     } else {
-      console.log('Haptic feedback not triggered:', { hapticEnabled, platform: Platform.OS });
+      console.log('Haptics not available on web platform');
     }
 
     // Update counts
