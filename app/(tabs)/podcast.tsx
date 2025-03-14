@@ -51,7 +51,7 @@ export default function PodcastScreen() {
       <View style={styles.podcastItem}>
         <View style={styles.podcastContent}>
           <View style={styles.podcastImagePlaceholder}>
-            <Ionicons name="mic" size={42} color="#fff" />
+            <Ionicons name="mic" size={36} color="#fff" />
           </View>
 
           <View style={styles.podcastInfo}>
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   },
   podcastImagePlaceholder: {
     width: '100%',
-    height: 180,
+    height: 120, // Reduced from 180px
     backgroundColor: '#0a7ea4', // Fallback color
     justifyContent: 'center',
     alignItems: 'center',
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     backgroundImage: 'linear-gradient(to bottom right, #0a7ea4, #2c9fc9, #50c2e8)',
   },
   podcastInfo: {
-    padding: 16,
+    padding: 12,
   },
   podcastTitle: {
     fontSize: 18,
