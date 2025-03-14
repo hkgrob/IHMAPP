@@ -211,6 +211,7 @@ export default function HomeScreen() {
               onPress={handlePress}
               style={[styles.countButton, { backgroundColor: '#0a7ea4' }]}
             >
+              <Ionicons name="ios-checkmark-circle-sharp" size={24} color="white" />
               <Text style={styles.buttonText}>Click to Declare</Text>
             </TouchableOpacity>
 
@@ -301,11 +302,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: 20,
+    flexDirection: 'row',
+    alignItems: 'center'
   },
   buttonText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: '600',
+    marginLeft: 10
   },
   container: {
     flex: 1,
@@ -427,7 +431,9 @@ const styles = StyleSheet.create({
     padding: isSmallScreen ? 10 : 15,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0a7ea4'
+    backgroundColor: '#0a7ea4',
+    flexDirection: 'row',
+    alignItems: 'center'
   },
   buttonText: {
     fontSize: scaleFontSize(18),
