@@ -150,14 +150,28 @@ export default function HomeScreen() {
   }, [sound]);
 
   const handlePress = async () => {
-    setCount(count + 1);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     try {
-      if (sound) {
+      const soundEnabled = await AsyncStorage.getItem('soundEnabled');
+      const hapticEnabled = await AsyncStorage.getItem('hapticEnabled');
+
+      if (soundEnabled !== 'false' && sound) {
         await sound.replayAsync();
       }
+
+      if (hapticEnabled !== 'false' && Platform.OS !== 'web') {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+
+      const storedDailyCount = await AsyncStorage.getItem('dailyCount');
+      const storedTotalCount = await AsyncStorage.getItem('totalCount');
+      
+      const newDailyCount = (parseInt(storedDailyCount || '0', 10) + 1);
+      const newTotalCount = (parseInt(storedTotalCount || '0', 10) + 1);
+
+      await AsyncStorage.setItem('dailyCount', newDailyCount.toString());
+      await AsyncStorage.setItem('totalCount', newTotalCount.toString());
     } catch (error) {
-      console.error("Error playing sound:", error);
+      console.error('Error incrementing counter:', error);
     }
   };
 
@@ -273,6 +287,28 @@ function FeatureButton({ title, description, icon, route, color }) {
 }
 
 const styles = StyleSheet.create({
+  countButton: {
+    backgroundColor: '#0a7ea4',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 20,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
   container: {
     flex: 1,
     width: '100%',
