@@ -1,4 +1,3 @@
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Direct XML feed URL
@@ -16,75 +15,114 @@ export interface BlogPost {
   imageUrl?: string;
 }
 
-// Fetch individual blog post content
-export const fetchBlogContentById = async (id: string, link: string): Promise<string> => {
+// Function to fetch a specific blog post content by ID
+export const fetchBlogContentById = async (postId: string, postUrl: string): Promise<string> => {
   try {
-    // Check for cached content
-    const cachedContent = await AsyncStorage.getItem(`wix_blog_content_${id}`);
-    
-    if (cachedContent) {
-      console.log(`Using cached content for blog post ${id}`);
-      return cachedContent;
+    console.log(`Fetching blog content for post ID: ${postId} and URL: ${postUrl}`);
+
+    // Use a CORS proxy to fetch the blog content
+    const corsProxyUrl = 'https://corsproxy.io/?';
+    const response = await fetch(corsProxyUrl + encodeURIComponent(postUrl), {
+      method: 'GET',
+      headers: {
+        'Accept': 'text/html',
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+      },
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch blog content, status: ${response.status}`);
     }
-    
-    console.log(`Fetching content for blog post ${id} from ${link}`);
-    
-    // Try to fetch the blog post content using a CORS proxy
-    const corsProxies = [
-      'https://corsproxy.io/?',
-      'https://cors-anywhere.herokuapp.com/',
-      'https://api.allorigins.win/raw?url='
+
+    const html = await response.text();
+
+    // More robust HTML parsing to extract the main content
+    // Try different possible content selectors that might be used in the Wix blog
+    const contentRegexes = [
+      /<div class="[^"]*post-content[^"]*">([\s\S]*?)<\/div>/i,
+      /<div data-hook="post-description">([\s\S]*?)<\/div>/i,
+      /<article class="[^"]*blog-post-content[^"]*">([\s\S]*?)<\/article>/i,
+      /<div class="[^"]*blog-content[^"]*">([\s\S]*?)<\/div>/i
     ];
-    
-    let response = null;
-    let htmlContent = '';
-    
-    // Try each proxy until one works
-    for (const proxy of corsProxies) {
-      try {
-        response = await fetch(proxy + encodeURIComponent(link), {
-          method: 'GET',
-          headers: {
-            'Accept': 'text/html, application/xhtml+xml, */*'
-          }
-        });
-        
-        if (response.ok) {
-          htmlContent = await response.text();
-          
-          // Try to extract the main content from the HTML
-          const contentMatch = htmlContent.match(/<article[^>]*>([\s\S]*?)<\/article>/) || 
-                              htmlContent.match(/<div[^>]*class="[^"]*post-content[^"]*"[^>]*>([\s\S]*?)<\/div>/) ||
-                              htmlContent.match(/<div[^>]*class="[^"]*blog-post-content[^"]*"[^>]*>([\s\S]*?)<\/div>/);
-          
-          if (contentMatch && contentMatch[1]) {
-            // Clean up the content (remove HTML tags but keep paragraphs)
-            const cleanContent = contentMatch[1]
-              .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-              .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-              .replace(/<[^>]*>/g, '\n')
-              .replace(/\n+/g, '\n\n')
-              .trim();
-            
-            // Cache the content
-            await AsyncStorage.setItem(`wix_blog_content_${id}`, cleanContent);
-            
-            return cleanContent;
-          }
-          
-          break;
-        }
-      } catch (proxyError) {
-        console.error(`Error with proxy ${proxy}:`, proxyError);
+
+    let content = '';
+
+    // Try each regex pattern until we find a match
+    for (const regex of contentRegexes) {
+      const match = html.match(regex);
+      if (match && match[1]) {
+        content = match[1];
+        break;
       }
     }
-    
-    // If we couldn't extract the content properly, return a placeholder
+
+    // If no match was found with the regexes, try to extract content from a more general approach
+    if (!content) {
+      // Look for the main content area between header and footer
+      const bodyContent = html.split(/<header/i)[1]?.split(/<footer/i)[0];
+      if (bodyContent) {
+        // Extract paragraphs from the content area
+        const paragraphMatches = bodyContent.match(/<p[^>]*>([\s\S]*?)<\/p>/gi);
+        if (paragraphMatches && paragraphMatches.length > 0) {
+          content = paragraphMatches.join(' ');
+        }
+      }
+    }
+
+    if (content) {
+      // Clean up the HTML content
+      let cleanedContent = content
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')  // Remove scripts
+        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')     // Remove styles
+        .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')  // Remove iframes
+        .replace(/<[^>]*>/g, '\n')                                           // Replace HTML tags with newlines
+        .replace(/&nbsp;/g, ' ')                                             // Replace &nbsp; with space
+        .replace(/\n+/g, '\n\n')                                             // Normalize newlines
+        .trim();
+
+      // Decode HTML entities
+      cleanedContent = cleanedContent
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#039;/g, "'")
+        .replace(/&rsquo;/g, "'")
+        .replace(/&ldquo;/g, '"')
+        .replace(/&rdquo;/g, '"')
+        .replace(/&mdash;/g, '—');
+
+      if (cleanedContent.length > 100) {
+        return cleanedContent;
+      }
+    }
+
+    // If content extraction failed, try a fallback approach
+    try {
+      // Direct fetch from API if possible
+      const apiUrl = `https://corsproxy.io/?${encodeURIComponent(`https://www.wixapis.com/blog/v3/posts/${postId}`)}`;
+      const apiResponse = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+
+      if (apiResponse.ok) {
+        const data = await apiResponse.json();
+        if (data.post && data.post.content) {
+          return data.post.content;
+        }
+      }
+    } catch (apiError) {
+      console.error('API fallback failed:', apiError);
+    }
+
     return "We couldn't fetch the full content. Please check the original post on our website.";
-    
   } catch (error) {
     console.error('Error fetching blog content:', error);
-    return "An error occurred while fetching the blog content. Please try again later.";
+    return "We couldn't fetch the full content. Please check the original post on our website.";
   }
 };
 
@@ -104,10 +142,10 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
         return JSON.parse(cachedData);
       }
     }
-    
+
     console.log('Cache expired or not available, fetching fresh data');
     console.log('Fetching blog from XML feed:', BLOG_XML_FEED);
-    
+
     try {
       // Try multiple CORS proxies in case one fails
       const corsProxies = [
@@ -115,10 +153,10 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
         'https://cors-anywhere.herokuapp.com/',
         'https://api.allorigins.win/raw?url='
       ];
-      
+
       let response = null;
       let xmlData = '';
-      
+
       // Try each proxy until one works
       for (const proxy of corsProxies) {
         try {
@@ -129,9 +167,9 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
               'Accept': 'application/xml, text/xml, */*'
             }
           });
-          
+
           console.log('XML feed response status:', response.status);
-          
+
           if (response.ok) {
             xmlData = await response.text();
             console.log('Received XML data length:', xmlData.length);
@@ -142,7 +180,7 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
           // Continue to the next proxy
         }
       }
-      
+
       // If no proxy worked, try a direct fetch as a last resort
       if (!xmlData) {
         console.log('All proxies failed. Trying direct fetch...');
@@ -153,7 +191,7 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
               'Accept': 'application/xml, text/xml, */*'
             }
           });
-          
+
           if (response.ok) {
             xmlData = await response.text();
           }
@@ -161,21 +199,21 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
           console.error('Direct fetch failed:', directError);
         }
       }
-      
+
       if (!xmlData) {
         throw new Error('Could not fetch XML data through any method');
       }
-      
+
       // Parse the RSS XML
       const rssPosts = parseRssForBlogPosts(xmlData);
-      
+
       if (rssPosts.length > 0) {
         console.log(`Successfully parsed ${rssPosts.length} posts from XML feed`);
-        
+
         // Cache the successful data
         await AsyncStorage.setItem('wix_blog_posts', JSON.stringify(rssPosts));
         await AsyncStorage.setItem('wix_blog_cache_time', Date.now().toString());
-        
+
         return rssPosts;
       } else {
         console.log('No blog posts found in the XML feed');
@@ -183,12 +221,12 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
       }
     } catch (xmlError) {
       console.error('XML feed error:', xmlError);
-      
+
       // Try one more approach - scrape the blog page directly
       try {
         console.log('Attempting to scrape blog page directly...');
         const blogPageUrl = 'https://www.ignitinghope.com/blog';
-        
+
         const corsProxyUrl = 'https://corsproxy.io/?';
         const response = await fetch(corsProxyUrl + encodeURIComponent(blogPageUrl), {
           method: 'GET',
@@ -196,14 +234,14 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
             'Accept': 'text/html'
           }
         });
-        
+
         if (response.ok) {
           const htmlData = await response.text();
           console.log('Received HTML data length:', htmlData.length);
-          
+
           // Parse the HTML
           const htmlPosts = parseHtmlForBlogPosts(htmlData);
-          
+
           if (htmlPosts.length > 0) {
             console.log(`Successfully scraped ${htmlPosts.length} posts from HTML`);
             return htmlPosts;
@@ -212,7 +250,7 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
       } catch (scrapeError) {
         console.error('HTML scraping error:', scrapeError);
       }
-      
+
       // If all approaches fail, use fallback data
       console.log('Using fallback blog posts after all fetch methods failed');
       return getFallbackBlogPosts();
@@ -232,37 +270,37 @@ export const fetchWixBlogPosts = async (): Promise<BlogPost[]> => {
 // Simple HTML parser for blog posts
 const parseHtmlForBlogPosts = (html: string): BlogPost[] => {
   const posts: BlogPost[] = [];
-  
+
   try {
     // Look for blog post elements
     const postMatches = html.match(/<article[^>]*>([\s\S]*?)<\/article>/g);
-    
+
     if (postMatches && postMatches.length > 0) {
       console.log(`Found ${postMatches.length} article elements`);
-      
+
       postMatches.forEach((postHtml, index) => {
         // Extract title
         const titleMatch = postHtml.match(/<h2[^>]*>([\s\S]*?)<\/h2>/) || 
                           postHtml.match(/<h3[^>]*>([\s\S]*?)<\/h3>/) ||
                           postHtml.match(/<h1[^>]*>([\s\S]*?)<\/h1>/);
-        
+
         // Extract content/excerpt
         const contentMatch = postHtml.match(/<p[^>]*>([\s\S]*?)<\/p>/);
-        
+
         // Extract date
         const dateMatch = postHtml.match(/datetime="([^"]*)"/) ||
                          postHtml.match(/<time[^>]*>([\s\S]*?)<\/time>/);
-        
+
         // Extract image
         const imageMatch = postHtml.match(/<img[^>]*src="([^"]*)"[^>]*>/);
-        
+
         // Extract link
         const linkMatch = postHtml.match(/<a[^>]*href="([^"]*)"[^>]*>/);
-        
+
         if (titleMatch) {
           const title = stripHtml(titleMatch[1]);
           const excerpt = contentMatch ? stripHtml(contentMatch[1]).substring(0, 150) + '...' : 'No excerpt available';
-          
+
           let dateStr = 'No date';
           if (dateMatch) {
             try {
@@ -276,10 +314,10 @@ const parseHtmlForBlogPosts = (html: string): BlogPost[] => {
               dateStr = dateMatch[1] || 'No date';
             }
           }
-          
+
           const link = linkMatch ? linkMatch[1] : `https://www.ignitinghope.com/blog`;
           const imageUrl = imageMatch ? imageMatch[1] : undefined;
-          
+
           posts.push({
             id: `post-${index}`,
             title,
@@ -296,47 +334,47 @@ const parseHtmlForBlogPosts = (html: string): BlogPost[] => {
   } catch (e) {
     console.error('Error parsing HTML:', e);
   }
-  
+
   return posts;
 };
 
 // XML parser for RSS feed using xml2js
 const parseRssForBlogPosts = (xml: string): BlogPost[] => {
   const posts: BlogPost[] = [];
-  
+
   try {
     // Import xml2js parser
     const xml2js = require('xml2js');
     const parser = new xml2js.Parser({ explicitArray: false });
-    
+
     // Parse the XML data
     parser.parseString(xml, (err: any, result: any) => {
       if (err) {
         console.error('XML parsing error:', err);
         return [];
       }
-      
+
       if (!result || !result.rss || !result.rss.channel || !result.rss.channel.item) {
         console.log('No RSS items found in the XML structure');
         return [];
       }
-      
+
       // Get the items from the RSS feed
       const items = Array.isArray(result.rss.channel.item) 
         ? result.rss.channel.item 
         : [result.rss.channel.item];
-      
+
       console.log(`Found ${items.length} RSS items`);
-      
+
       items.forEach((item: any, index: number) => {
         if (!item) return;
-        
+
         const title = item.title ? stripHtml(item.title) : 'No title';
-        
+
         // Get content from either description or content:encoded
         const content = item['content:encoded'] || item.description || '';
         const excerpt = stripHtml(content).substring(0, 150) + '...';
-        
+
         // Extract date
         let dateStr = 'No date';
         if (item.pubDate) {
@@ -351,17 +389,17 @@ const parseRssForBlogPosts = (xml: string): BlogPost[] => {
             dateStr = item.pubDate || 'No date';
           }
         }
-        
+
         // Extract link
         const link = item.link || `https://www.ignitinghope.com/blog`;
-        
+
         // Try to extract image from content
         let imageUrl;
         const imgMatch = content.match(/<img[^>]*src="([^"]*)"[^>]*>/);
         if (imgMatch) {
           imageUrl = imgMatch[1];
         }
-        
+
         posts.push({
           id: `rss-${index}`,
           title,
@@ -375,7 +413,7 @@ const parseRssForBlogPosts = (xml: string): BlogPost[] => {
   } catch (e) {
     console.error('Error parsing RSS XML:', e);
   }
-  
+
   return posts;
 };
 

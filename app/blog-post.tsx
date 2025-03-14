@@ -68,6 +68,23 @@ export default function BlogPostScreen() {
                 <View style={styles.errorContainer}>
                   <Ionicons name="alert-circle-outline" size={48} color="#0a7ea4" />
                   <ThemedText style={styles.errorText}>{error}</ThemedText>
+                  <TouchableOpacity 
+                    style={[styles.readMoreButton, { marginTop: 20 }]}
+                    onPress={loadBlogContent}
+                  >
+                    <ThemedText style={styles.readMoreText}>Try Again</ThemedText>
+                  </TouchableOpacity>
+                </View>
+              ) : content.includes("We couldn't fetch the full content") ? (
+                <View style={styles.errorContainer}>
+                  <Ionicons name="newspaper-outline" size={48} color="#0a7ea4" />
+                  <ThemedText style={styles.errorText}>{content}</ThemedText>
+                  <TouchableOpacity 
+                    style={[styles.readMoreButton, { marginTop: 20 }]}
+                    onPress={() => Linking.openURL(link as string)}
+                  >
+                    <ThemedText style={styles.readMoreText}>Read Full Article</ThemedText>
+                  </TouchableOpacity>
                 </View>
               ) : (
                 <View style={styles.contentContainer}>
