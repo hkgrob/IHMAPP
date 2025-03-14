@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { StyleSheet, FlatList, TouchableOpacity, View, Image, Linking, ActivityIndicator, RefreshControl, Platform, Dimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,15 +7,20 @@ import { Stack } from 'expo-router';
 import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
 import { fetchPodcastEpisodes } from '../../services/podcastService';
-import * as Audio from 'expo-av';
-
+import { Audio } from 'expo-av';
 
 export default function PodcastScreen() {
   const [podcasts, setPodcasts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-
+  
+  // Audio state
+  const [sound, setSound] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentEpisodeId, setCurrentEpisodeId] = useState(null);
+  const [loadingAudio, setLoadingAudio] = useState(false);
+  
   // Get screen width for responsive layout
   const screenWidth = Dimensions.get('window').width;
 
@@ -36,74 +42,99 @@ export default function PodcastScreen() {
     fetchPodcasts();
   }, [fetchPodcasts]);
 
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchPodcasts();
-  }, [fetchPodcasts]);
-
-  const [sound, setSound] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentEpisodeId, setCurrentEpisodeId] = useState(null);
-
+  // Cleanup sound when component unmounts
   useEffect(() => {
     return () => {
       if (sound) {
+        console.log('Cleaning up sound');
         sound.unloadAsync();
       }
     };
   }, [sound]);
 
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchPodcasts();
+  }, [fetchPodcasts]);
+
   const handlePlayEpisode = async (url, episodeId) => {
     try {
-      // Audio mode setup not needed here
-
-      // If clicking the same episode that's playing, toggle pause
-      if (episodeId === currentEpisodeId) {
-        if (sound && isPlaying) {
+      setLoadingAudio(true);
+      
+      // Same episode - toggle play/pause
+      if (episodeId === currentEpisodeId && sound) {
+        console.log('Toggling play state for current episode');
+        
+        if (isPlaying) {
           await sound.pauseAsync();
           setIsPlaying(false);
-        } else if (sound) {
+        } else {
           await sound.playAsync();
           setIsPlaying(true);
         }
+        setLoadingAudio(false);
         return;
       }
-
-      // Unload previous sound if exists
+      
+      // Unload previous sound
       if (sound) {
+        console.log('Unloading previous sound');
         await sound.unloadAsync();
-        setSound(null);
       }
-
-      // Load and play the new episode
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: url },
-        { shouldPlay: true },
-        (status) => {
-          if (status.isLoaded && status.didJustFinish) {
-            setIsPlaying(false);
-            setCurrentEpisodeId(null);
+      
+      console.log('Loading new sound:', url);
+      
+      // Create and load new sound
+      const soundObject = new Audio.Sound();
+      
+      try {
+        await soundObject.loadAsync({ uri: url });
+        console.log('Sound loaded successfully');
+        
+        // Set up playback status update handler
+        soundObject.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded) {
+            if (status.didJustFinish) {
+              console.log('Playback finished');
+              setIsPlaying(false);
+            }
+          } else if (status.error) {
+            console.error('Playback error:', status.error);
           }
-        }
-      );
-
-      setSound(newSound);
-      setIsPlaying(true);
-      setCurrentEpisodeId(episodeId);
-
+        });
+        
+        // Play the sound
+        await soundObject.playAsync();
+        console.log('Sound playing');
+        
+        setSound(soundObject);
+        setIsPlaying(true);
+        setCurrentEpisodeId(episodeId);
+      } catch (loadError) {
+        console.error('Error loading audio:', loadError);
+        alert(`Unable to load audio: ${loadError.message || 'Unknown error'}`);
+      }
+      
     } catch (err) {
-      console.error('Error playing podcast:', err);
-      alert(`Error playing podcast: ${err && err.message ? err.message : 'Could not play audio. Please try again.'}`);
+      console.error('Error with audio playback:', err);
+      alert(`Playback error: ${err?.message || 'Could not play this episode. Please try again.'}`);
+      
+      // Reset state on error
       setIsPlaying(false);
-      setCurrentEpisodeId(null);
       if (sound) {
         await sound.unloadAsync();
         setSound(null);
       }
+      setCurrentEpisodeId(null);
+    } finally {
+      setLoadingAudio(false);
     }
   };
 
   const renderPodcastItem = ({ item }) => {
+    const isCurrentlyPlaying = currentEpisodeId === item.id && isPlaying;
+    const isLoading = loadingAudio && currentEpisodeId === item.id;
+    
     return (
       <View style={styles.podcastItem}>
         <View style={styles.podcastContent}>
@@ -134,15 +165,25 @@ export default function PodcastScreen() {
             <TouchableOpacity
               style={styles.playButton}
               onPress={() => handlePlayEpisode(item.audioUrl, item.id)}
+              disabled={isLoading}
             >
-              <Ionicons
-                name={currentEpisodeId === item.id && isPlaying ? "pause-circle" : "play-circle"}
-                size={22}
-                color="#0a7ea4"
-              />
-              <ThemedText style={styles.playButtonText}>
-                {currentEpisodeId === item.id && isPlaying ? 'Pause Episode' : 'Play Episode'}
-              </ThemedText>
+              {isLoading ? (
+                <>
+                  <ActivityIndicator size="small" color="#0a7ea4" />
+                  <ThemedText style={styles.playButtonText}>Loading...</ThemedText>
+                </>
+              ) : (
+                <>
+                  <Ionicons
+                    name={isCurrentlyPlaying ? "pause-circle" : "play-circle"}
+                    size={22}
+                    color="#0a7ea4"
+                  />
+                  <ThemedText style={styles.playButtonText}>
+                    {isCurrentlyPlaying ? 'Pause Episode' : 'Play Episode'}
+                  </ThemedText>
+                </>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -177,7 +218,7 @@ export default function PodcastScreen() {
       <Stack.Screen options={{
         headerShown: false,
       }} />
-
+      
       <FlatList
         data={podcasts}
         ListHeaderComponent={() => (
