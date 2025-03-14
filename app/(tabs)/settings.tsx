@@ -446,7 +446,6 @@ const SettingsScreen = () => {
             </>
           ))}
         </ScrollView>
-      </ThemedView>
     </SafeAreaView>
   );
 };
