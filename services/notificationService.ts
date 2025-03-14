@@ -31,12 +31,13 @@ export const initializeNotifications = async (): Promise<boolean> => {
   }
   
   try {
-    // Set notification handler
+    // Set notification handler with improved iOS background handling
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
         shouldPlaySound: true,
-        shouldSetBadge: false,
+        shouldSetBadge: true, // Enable badge for iOS visibility
+        priority: Notifications.AndroidNotificationPriority.HIGH,
       }),
     });
     
@@ -287,6 +288,10 @@ export const scheduleReminder = async (reminder: Reminder): Promise<string | nul
       title: reminder.title || 'Declaration Reminder',
       body: reminder.body || 'Time to speak your declarations!',
       sound: true,
+      // Add priority for iOS to improve delivery reliability
+      priority: Notifications.AndroidNotificationPriority.HIGH,
+      // Add badge for iOS to increase visibility
+      badge: 1,
       data: { 
         id: reminder.id, 
         scheduledFor: triggerDate.toISOString(),
