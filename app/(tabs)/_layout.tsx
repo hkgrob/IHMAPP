@@ -5,6 +5,8 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { HapticTab } from '@/components/HapticTab';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect } from 'react';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -39,6 +41,24 @@ export default function TabLayout() {
             <Ionicons name="stopwatch-outline" size={24} color={color} />
           ),
           tabBarLabel: ({ color }) => <HapticTab label="Clicker" color={color} />,
+        }}
+        listeners={{
+          tabPress: async () => {
+            try {
+              const storedDailyCount = await AsyncStorage.getItem('dailyCount');
+              const storedTotalCount = await AsyncStorage.getItem('totalCount');
+              const storedLastReset = await AsyncStorage.getItem('lastReset');
+              
+              // Force a re-render by setting the values again
+              await AsyncStorage.multiSet([
+                ['dailyCount', storedDailyCount || '0'],
+                ['totalCount', storedTotalCount || '0'],
+                ['lastReset', storedLastReset || new Date().toString()]
+              ]);
+            } catch (error) {
+              console.error('Error refreshing counts:', error);
+            }
+          }
         }}
       />
       <Tabs.Screen
