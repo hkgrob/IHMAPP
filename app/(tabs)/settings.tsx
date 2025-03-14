@@ -462,6 +462,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     width: '100%',
+    paddingTop: Platform.OS === 'ios' ? 0 : 20,
   },
   scrollView: {
     flex: 1,
@@ -471,10 +472,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
-    marginTop: Platform.OS === 'ios' ? 40 : 10,
+    marginTop: Platform.OS === 'ios' ? 10 : 20,
     paddingHorizontal: 16,
-    textAlign: 'center',
+    textAlign: 'left',
     color: '#000',
+    paddingLeft: 20,
   },
   section: {
     marginBottom: 20,
