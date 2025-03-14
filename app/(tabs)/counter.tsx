@@ -59,80 +59,61 @@ export default function CounterPage() {
 
   const loadCounts = async () => {
     try {
-      const storedDailyCount = await AsyncStorage.getItem('dailyCount');
-      const storedTotalCount = await AsyncStorage.getItem('totalCount');
-      const storedLastReset = await AsyncStorage.getItem('lastReset');
+      const counterService = require('@/services/counterService');
+      const { dailyCount: newDailyCount, totalCount: newTotalCount, lastReset } = await counterService.loadCounts();
 
-      console.log('Loading counts:', { storedTotalCount, storedDailyCount, storedLastReset });
+      console.log('Loading counts:', { newDailyCount, newTotalCount, lastReset });
 
-      if (storedTotalCount) setTotalCount(parseInt(storedTotalCount, 10));
-
-      if (storedLastReset) {
-        lastResetDate.current = new Date(storedLastReset);
-        const today = new Date();
-
-        if (today.toDateString() !== lastResetDate.current.toDateString()) {
-          setDailyCount(0);
-          lastResetDate.current = today;
-          await AsyncStorage.setItem('lastReset', today.toString());
-          await AsyncStorage.setItem('dailyCount', '0');
-        } else if (storedDailyCount) {
-          setDailyCount(parseInt(storedDailyCount, 10));
-        }
-      } else {
-        await AsyncStorage.setItem('lastReset', new Date().toString());
-      }
+      setTotalCount(newTotalCount);
+      setDailyCount(newDailyCount);
+      lastResetDate.current = lastReset;
     } catch (error) {
       console.error('Error loading counts:', error);
     }
   };
 
   const incrementCounter = async () => {
-    const soundEnabled = await AsyncStorage.getItem('soundEnabled');
-    const hapticEnabled = await AsyncStorage.getItem('hapticEnabled');
+    try {
+      // Get settings
+      const soundEnabled = await AsyncStorage.getItem('soundEnabled');
+      const hapticEnabled = await AsyncStorage.getItem('hapticEnabled');
 
-    console.log('Settings:', { soundEnabled, hapticEnabled });
+      console.log('Settings:', { soundEnabled, hapticEnabled });
 
-    // Sound feedback
-    if (soundEnabled !== 'false' && sound) {
-      try {
-        await sound.replayAsync();
-        console.log('Sound played successfully');
-      } catch (error) {
-        console.error('Error playing sound:', error);
-      }
-    }
-
-    // Haptic feedback
-    if (Platform.OS !== 'web' && hapticEnabled !== 'false') {
-      try {
-        console.log('Attempting haptic feedback');
-        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        console.log('Haptic feedback triggered');
-      } catch (error) {
-        console.error('Haptic feedback failed:', error);
+      // Sound feedback
+      if (soundEnabled !== 'false' && sound) {
         try {
-          await Vibration.vibrate(50);
-          console.log('Fallback vibration triggered');
-        } catch (vibError) {
-          console.error('Vibration fallback failed:', vibError);
+          await sound.replayAsync();
+          console.log('Sound played successfully');
+        } catch (error) {
+          console.error('Error playing sound:', error);
         }
       }
-    }
 
-    // Update counts
-    const newDailyCount = dailyCount + 1;
-    const newTotalCount = totalCount + 1;
-    setDailyCount(newDailyCount);
-    setTotalCount(newTotalCount);
+      // Haptic feedback
+      if (Platform.OS !== 'web' && hapticEnabled !== 'false') {
+        try {
+          console.log('Attempting haptic feedback');
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          console.log('Haptic feedback triggered');
+        } catch (error) {
+          console.error('Haptic feedback failed:', error);
+          try {
+            await Vibration.vibrate(50);
+            console.log('Fallback vibration triggered');
+          } catch (vibError) {
+            console.error('Vibration fallback failed:', vibError);
+          }
+        }
+      }
 
-    try {
-      await AsyncStorage.multiSet([
-        ['dailyCount', newDailyCount.toString()],
-        ['totalCount', newTotalCount.toString()]
-      ]);
+      // Use counter service to update counts
+      const counterService = require('@/services/counterService');
+      await counterService.incrementCounter();
+
+      // Note: We don't need to update state here because the counterEvents listener will do it
     } catch (error) {
-      console.error('Error saving counts:', error);
+      console.error('Error incrementing counter:', error);
     }
   };
 

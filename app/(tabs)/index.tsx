@@ -94,11 +94,11 @@ const Counter = () => {
       const lastActivityDate = await AsyncStorage.getItem('lastActivityDate');
       let currentStreak = parseInt(await AsyncStorage.getItem('currentStreak') || '0', 10);
       let bestStreak = parseInt(await AsyncStorage.getItem('bestStreak') || '0', 10);
-      
+
       if (!lastActivityDate) {
         // First time using the app
         currentStreak = 1;
-        
+
         // Set first date if not already set
         const firstDateSet = await AsyncStorage.getItem('firstDate');
         if (!firstDateSet) {
@@ -113,7 +113,7 @@ const Counter = () => {
             (today.getMonth() === (lastDate.getMonth() + 1) % 12))
         );
         const isToday = today.toDateString() === lastDate.toDateString();
-        
+
         if (isToday) {
           // Already counted for today, no change to streak
         } else if (isYesterday) {
@@ -124,23 +124,23 @@ const Counter = () => {
           currentStreak = 1;
         }
       }
-      
+
       // Update best streak if needed
       if (currentStreak > bestStreak) {
         bestStreak = currentStreak;
         await AsyncStorage.setItem('bestStreak', bestStreak.toString());
       }
-      
+
       // Save current streak and activity date
       await AsyncStorage.setItem('currentStreak', currentStreak.toString());
       await AsyncStorage.setItem('lastActivityDate', today.toString());
-      
+
       setDailyCount(newDailyCount);
       setTotalCount(newTotalCount);
 
       await AsyncStorage.setItem('dailyCount', newDailyCount.toString());
       await AsyncStorage.setItem('totalCount', newTotalCount.toString());
-      
+
       console.log(`Streak updated: Current streak: ${currentStreak}, Best streak: ${bestStreak}`);
     } catch (error) {
       console.error('Error incrementing counter:', error);
@@ -210,29 +210,10 @@ export default function HomeScreen() {
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
 
-      const storedDailyCount = await AsyncStorage.getItem('dailyCount') || '0';
-      const storedTotalCount = await AsyncStorage.getItem('totalCount') || '0';
-      const storedLastReset = await AsyncStorage.getItem('lastReset');
+      // Use counter service to increment
+      const counterService = require('@/services/counterService');
+      await counterService.incrementCounter();
 
-      const now = new Date();
-      const lastReset = storedLastReset ? new Date(storedLastReset) : now;
-
-      const newDailyCount = parseInt(storedDailyCount, 10) + 1;
-      const newTotalCount = parseInt(storedTotalCount, 10) + 1;
-
-      if (now.toDateString() !== lastReset.toDateString()) {
-        await AsyncStorage.multiSet([
-          ['dailyCount', '1'],
-          ['totalCount', newTotalCount.toString()],
-          ['lastReset', now.toString()]
-        ]);
-      } else {
-        await AsyncStorage.multiSet([
-          ['dailyCount', newDailyCount.toString()],
-          ['totalCount', newTotalCount.toString()],
-          ['lastReset', lastReset.toString()]
-        ]);
-      }
     } catch (error) {
       console.error('Error incrementing counter:', error);
     }
