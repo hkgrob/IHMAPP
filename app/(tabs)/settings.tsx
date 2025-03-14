@@ -12,15 +12,16 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const SettingsScreen = () => {
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [hapticEnabled, setHapticEnabled] = useState(true);
   const [reminderTime, setReminderTime] = useState(new Date());
   const [reminderTime2, setReminderTime2] = useState(new Date());
   const [secondReminderEnabled, setSecondReminderEnabled] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [hapticEnabled, setHapticEnabled] = useState(true);
   const [sound, setSound] = useState(null);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showTimePicker2, setShowTimePicker2] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false); //Retained for compatibility
+
 
   useEffect(() => {
     const initialize = async () => {
