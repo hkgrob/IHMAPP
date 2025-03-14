@@ -211,8 +211,8 @@ export default function HomeScreen() {
               onPress={handlePress}
               style={[styles.countButton, { backgroundColor: '#0a7ea4' }]}
             >
-              <Ionicons name="stopwatch-outline" size={24} color="white" />
-              <Text style={styles.buttonText}>Click to Declare</Text>
+              <Ionicons name="stopwatch-outline" size={32} color="white" />
+              <Text style={[styles.buttonText, { fontSize: 16 }]}>Click to Declare</Text>
             </TouchableOpacity>
 
             <FeatureButton
