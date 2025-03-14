@@ -144,7 +144,7 @@ export default function BlogScreen() {
       >
         {loading && !refreshing ? (
           <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color="#F5A623" />
+            <ActivityIndicator size="large" color="#0a7ea4" />
             <ThemedText style={styles.loadingText}>
               Loading posts...
             </ThemedText>
@@ -166,7 +166,7 @@ export default function BlogScreen() {
                   />
                 ) : (
                   <LinearGradient
-                    colors={['#F5A623', '#F5CE69']}
+                    colors={['#0a7ea4', '#64b5d9']}
                     style={styles.blogImagePlaceholder}
                   >
                     <Ionicons name="newspaper" size={42} color="#fff" />
