@@ -323,7 +323,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F0F0',
   },
   selectedCategory: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#0a7ea4',
+    backgroundImage: 'linear-gradient(to right, #0a7ea4, #2c9fc9, #50c2e8)',
   },
   categoryText: {
     fontSize: 14,
