@@ -1,8 +1,8 @@
 import React from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemedText } from './ThemedText'; // Assuming this component exists
-import NotificationSettings from './NotificationSettings'; // Assuming this component exists
+import { ThemedText } from '../../components/ThemedText';
+import { NotificationSettings } from '../../components/NotificationSettings';
 
 const styles = StyleSheet.create({
   container: {
@@ -38,20 +38,6 @@ const styles = StyleSheet.create({
 });
 
 export default function SettingsScreen() {
-  if (!NotificationSettings) {
-    return (
-      <ScrollView style={styles.container}>
-        <View style={styles.settingsSection}>
-          <View style={styles.errorContainer}>
-            <ThemedText style={styles.errorText}>
-              Unable to load notification settings.
-            </ThemedText>
-          </View>
-        </View>
-      </ScrollView>
-    );
-  }
-
   return (
     <ScrollView style={styles.container}>
       <View style={styles.settingsSection}>
