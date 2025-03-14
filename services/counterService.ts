@@ -9,6 +9,9 @@ export const counterEvents = new EventEmitter();
 // Event names
 export const COUNTER_UPDATED = 'COUNTER_UPDATED';
 
+// Make sure this is exported properly and consistently named
+console.log('Counter service initialized with event emitter');
+
 // Load counts from storage
 export const loadCounts = async () => {
   try {

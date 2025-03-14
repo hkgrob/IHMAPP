@@ -11,6 +11,14 @@ import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
 
+// Assume these are defined elsewhere and accessible globally.  Replace with your actual implementation.
+const counterEvents = {
+  on: (event, listener) => { /* Implement your event listener logic here */ },
+  off: (event, listener) => { /* Implement your event listener removal logic here */ }
+};
+const COUNTER_UPDATED = 'COUNTER_UPDATED'; // Replace with your actual event name
+
+
 export default function CounterPage() {
   const [dailyCount, setDailyCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
@@ -24,7 +32,19 @@ export default function CounterPage() {
     loadCounts();
     loadSound();
 
+    // Subscribe to counter updates from other screens
+    const handleCounterUpdate = (counts) => {
+      console.log('Counter update received:', counts);
+      setDailyCount(counts.dailyCount);
+      setTotalCount(counts.totalCount);
+    };
+
+    // Add event listener
+    counterEvents.on(COUNTER_UPDATED, handleCounterUpdate);
+
+    // Clean up listener when component unmounts
     return () => {
+      counterEvents.off(COUNTER_UPDATED, handleCounterUpdate);
       if (sound) {
         sound.unloadAsync();
       }
@@ -59,7 +79,7 @@ export default function CounterPage() {
 
   const loadCounts = async () => {
     try {
-      const counterService = require('@/services/counterService');
+      const counterService = require('@/services/counterService'); // Assumes this module exists and exports a loadCounts function.
       const { dailyCount: newDailyCount, totalCount: newTotalCount, lastReset } = await counterService.loadCounts();
 
       console.log('Loading counts:', { newDailyCount, newTotalCount, lastReset });
@@ -110,8 +130,9 @@ export default function CounterPage() {
       // Use counter service to update counts
       const counterService = require('@/services/counterService');
       await counterService.incrementCounter();
+      // Emit event to notify other components
+      counterEvents.emit(COUNTER_UPDATED, {dailyCount, totalCount});
 
-      // Note: We don't need to update state here because the counterEvents listener will do it
     } catch (error) {
       console.error('Error incrementing counter:', error);
     }
