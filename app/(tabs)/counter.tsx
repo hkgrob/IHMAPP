@@ -19,7 +19,7 @@ export default function CounterScreen() {
   const [totalCount, setTotalCount] = useState(0);
   const [dailyCount, setDailyCount] = useState(0);
   const [lastReset, setLastReset] = useState('');
-  const [hapticEnabled, setHapticEnabled] = useState(true);
+  const [hapticEnabled, setHapticEnabled] = useState(true); // Initialize to true
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [sound, setSound] = useState(null);
   const iconColor = useThemeColor({}, 'icon');
@@ -31,6 +31,7 @@ export default function CounterScreen() {
     loadHapticSetting();
     loadSoundSetting();
     loadSound();
+    loadCounts(); // Load counts after settings
 
     return () => {
       if (sound) {
@@ -112,54 +113,55 @@ export default function CounterScreen() {
   const loadHapticSetting = async () => {
     try {
       const storedHaptic = await AsyncStorage.getItem('hapticEnabled');
-      if (storedHaptic) setHapticEnabled(storedHaptic === 'true');
+      setHapticEnabled(storedHaptic === 'true'); //Directly sets the state.
     } catch (error) {
       console.error("Error loading haptic setting:", error);
+      // Handle error - perhaps set a default value
+      setHapticEnabled(true); // Default to enabled if loading fails
     }
   };
 
   const loadSoundSetting = async () => {
     try {
       const storedSound = await AsyncStorage.getItem('soundEnabled');
-      if (storedSound) setSoundEnabled(storedSound === 'true');
+      setSoundEnabled(storedSound === 'true');
     } catch (error) {
       console.error("Error loading sound setting:", error);
+      setSoundEnabled(true); //Default to enabled if loading fails.
     }
   };
 
   const incrementCount = async () => {
     try {
       console.log('Increment button pressed');
-      
+
       // Update UI count
       setCount(prevCount => prevCount + 1);
-      
-      // Check current settings from storage before playing
-      const currentSoundSetting = await AsyncStorage.getItem('soundEnabled');
-      const isSoundEnabled = currentSoundSetting !== 'false'; // Default to true if not set
-      
-      const currentHapticSetting = await AsyncStorage.getItem('hapticEnabled');
-      const isHapticEnabled = currentHapticSetting !== 'false'; // Default to true if not set
-      
-      // Play haptic feedback if enabled
-      if (isHapticEnabled && Platform.OS !== 'web') {
-        console.log('Applying haptic feedback - haptic is enabled in settings');
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      } else if (!isHapticEnabled) {
-        console.log('Haptic is disabled in settings - not applying haptic feedback');
+
+
+      // Play haptic feedback if enabled and platform is not web
+      if (hapticEnabled && Platform.OS !== 'web') {
+        try {
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          console.log('Haptic feedback applied successfully');
+        } catch (hapticError) {
+          console.error('Error applying haptic feedback:', hapticError);
+        }
+      } else {
+          console.log('Haptic feedback not applied: Haptic disabled or web platform');
       }
 
-      // Play sound if enabled in settings
-      if (isSoundEnabled && sound) {
-        console.log('Playing sound - sound is enabled in settings');
+      // Play sound if enabled
+      if (soundEnabled && sound) {
+        console.log('Playing sound');
         try {
           await sound.setPositionAsync(0);
           await sound.playAsync();
-        } catch (error) {
-          console.error('Error playing sound:', error);
+        } catch (soundError) {
+          console.error('Error playing sound:', soundError);
         }
       } else {
-        console.log('Sound is disabled in settings - not playing sound');
+        console.log('Sound not played: Sound disabled');
       }
 
       // Update and save daily and total counts
@@ -169,7 +171,7 @@ export default function CounterScreen() {
       setTotalCount(newTotalCount);
       await saveCounts(newDailyCount, newTotalCount);
     } catch (error) {
-      console.error('Error saving counts:', error);
+      console.error('Error incrementing count:', error);
     }
   };
 
