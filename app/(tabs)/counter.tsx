@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TouchableOpacity, Platform, Alert } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Platform, Alert, Dimensions, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -13,7 +13,6 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 
-
 export default function CounterScreen() {
   const [count, setCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
@@ -21,7 +20,8 @@ export default function CounterScreen() {
   const [lastReset, setLastReset] = useState('');
   const iconColor = useThemeColor({}, 'icon');
   const tintColor = useThemeColor({}, 'tint');
-  const textColor = useThemeColor({}, 'text'); // Added for text color
+  const textColor = useThemeColor({}, 'text');
+  const windowWidth = Dimensions.get('window').width;
 
   useEffect(() => {
     loadCounts();
@@ -33,21 +33,36 @@ export default function CounterScreen() {
       const storedDailyCount = await AsyncStorage.getItem('dailyCount');
       const storedLastReset = await AsyncStorage.getItem('lastReset');
 
-      if (storedTotalCount) setTotalCount(parseInt(storedTotalCount));
+      console.log('Loading counts:', { storedTotalCount, storedDailyCount, storedLastReset });
 
-      // Check if we need to reset the daily count (new day)
+      if (storedTotalCount !== null) {
+        setTotalCount(parseInt(storedTotalCount) || 0);
+      } else {
+        setTotalCount(0);
+        await AsyncStorage.setItem('totalCount', '0');
+      }
+
       const today = new Date().toDateString();
-      if (storedLastReset !== today) {
+      if (storedLastReset !== today || storedDailyCount === null) {
         await AsyncStorage.setItem('dailyCount', '0');
         await AsyncStorage.setItem('lastReset', today);
         setDailyCount(0);
         setLastReset(today);
       } else {
-        if (storedDailyCount) setDailyCount(parseInt(storedDailyCount));
+        if (storedDailyCount !== null) {
+          setDailyCount(parseInt(storedDailyCount) || 0);
+        } else {
+          setDailyCount(0);
+          await AsyncStorage.setItem('dailyCount', '0');
+        }
         if (storedLastReset) setLastReset(storedLastReset);
       }
     } catch (error) {
       console.error('Error loading counts', error);
+      setDailyCount(0);
+      setTotalCount(0);
+      await AsyncStorage.setItem('dailyCount', '0');
+      await AsyncStorage.setItem('totalCount', '0');
     }
   };
 
@@ -55,7 +70,7 @@ export default function CounterScreen() {
     try {
       await AsyncStorage.setItem('dailyCount', newDaily.toString());
       await AsyncStorage.setItem('totalCount', newTotal.toString());
-      console.log('Counts saved successfully');
+      console.log('Counts saved successfully:', { newDaily, newTotal });
     } catch (error) {
       console.error('Error saving counts', error);
     }
@@ -64,8 +79,6 @@ export default function CounterScreen() {
   const incrementCount = async () => {
     try {
       console.log('Increment button pressed');
-
-      // Add haptic feedback on iOS (keeping this functionality)
       if (Platform.OS === 'ios') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
@@ -74,9 +87,7 @@ export default function CounterScreen() {
       const newTotalCount = totalCount + 1;
       setDailyCount(newDailyCount);
       setTotalCount(newTotalCount);
-      await AsyncStorage.setItem('dailyCount', newDailyCount.toString());
-      await AsyncStorage.setItem('totalCount', newTotalCount.toString());
-      console.log('Counts saved successfully');
+      await saveCounts(newDailyCount, newTotalCount);
     } catch (error) {
       console.error('Error saving counts:', error);
     }
@@ -84,13 +95,9 @@ export default function CounterScreen() {
 
   const resetDailyCount = async () => {
     try {
-      // Show confirmation dialog
       if (Platform.OS === 'web') {
-        if (!window.confirm('Are you sure you want to reset your daily count?')) {
-          return; // User canceled
-        }
+        if (!window.confirm('Are you sure you want to reset your daily count?')) return;
       } else {
-        // For native platforms, we'll use Alert
         Alert.alert(
           "Reset Daily Count",
           "Are you sure you want to reset your daily count?",
@@ -107,10 +114,8 @@ export default function CounterScreen() {
             }
           ]
         );
-        return; // Exit early for native platforms, actual reset happens in Alert callback
+        return;
       }
-
-      // For web, continue with reset
       await AsyncStorage.setItem('dailyCount', '0');
       setDailyCount(0);
       console.log('Daily count reset successfully');
@@ -121,13 +126,9 @@ export default function CounterScreen() {
 
   const resetTotalCount = async () => {
     try {
-      // Show confirmation dialog
       if (Platform.OS === 'web') {
-        if (!window.confirm('Are you sure you want to reset your total count?')) {
-          return; // User canceled
-        }
+        if (!window.confirm('Are you sure you want to reset your total count?')) return;
       } else {
-        // For native platforms, we'll use Alert
         Alert.alert(
           "Reset Total Count",
           "Are you sure you want to reset your total count? This will clear all your declaration history.",
@@ -144,10 +145,8 @@ export default function CounterScreen() {
             }
           ]
         );
-        return; // Exit early for native platforms, actual reset happens in Alert callback
+        return;
       }
-
-      // For web, continue with reset
       await AsyncStorage.setItem('totalCount', '0');
       setTotalCount(0);
       console.log('Total count reset successfully');
@@ -155,6 +154,10 @@ export default function CounterScreen() {
       console.error('Error resetting total count:', error);
     }
   };
+
+  const isSmallScreen = windowWidth < 350;
+
+  const baseFontSize = 36;
 
   return (
     <ThemedView style={styles.container}>
@@ -165,21 +168,40 @@ export default function CounterScreen() {
         }}
       />
       <ScrollView 
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isSmallScreen && styles.scrollContentSmall
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <ThemedView style={styles.counterContainer}>
-          <ThemedText style={styles.title}>Declaration Counter</ThemedText>
+          <ThemedText style={styles.title} numberOfLines={2} adjustsFontSizeToFit>
+            Declaration Counter
+          </ThemedText>
 
           <ThemedView style={styles.statsContainer}>
-            <ThemedView style={styles.statCard}>
-              <ThemedText style={styles.statLabel}>Daily</ThemedText>
-              <ThemedText style={styles.statValue}>{dailyCount}</ThemedText>
+            <ThemedView style={[styles.statCard, { backgroundColor: 'rgba(144, 238, 144, 0.3)' }]}>
+              <ThemedText style={styles.statLabel} numberOfLines={1}>Daily</ThemedText>
+              <Text 
+                style={[styles.statValue, { fontSize: baseFontSize }]} 
+                adjustsFontSizeToFit
+                minimumFontScale={0.5}
+                maxFontSizeMultiplier={1.2}
+              >
+                {dailyCount.toString()}
+              </Text>
             </ThemedView>
 
-            <ThemedView style={styles.statCard}>
-              <ThemedText style={styles.statLabel}>Total</ThemedText>
-              <ThemedText style={styles.statValue}>{totalCount}</ThemedText>
+            <ThemedView style={[styles.statCard, { backgroundColor: 'rgba(144, 238, 144, 0.3)' }]}>
+              <ThemedText style={styles.statLabel} numberOfLines={1}>Total</ThemedText>
+              <Text 
+                style={[styles.statValue, { fontSize: baseFontSize }]} 
+                adjustsFontSizeToFit
+                minimumFontScale={0.5}
+                maxFontSizeMultiplier={1.2}
+              >
+                {totalCount.toString()}
+              </Text>
             </ThemedView>
           </ThemedView>
 
@@ -187,34 +209,66 @@ export default function CounterScreen() {
             style={[styles.incrementButton, { backgroundColor: tintColor }]}
             onPress={incrementCount}
           >
-            <ThemedText style={styles.buttonText} lightColor="#000000" darkColor="#FFFFFF">
+            <Text 
+              style={[styles.buttonText, { color: '#000000', textAlign: 'center' }]} 
+              numberOfLines={1}
+            >
               Click!
-            </ThemedText>
+            </Text>
           </TouchableOpacity>
 
-          <ThemedView style={styles.resetContainer}>
+          <ThemedView style={[
+            styles.resetContainer,
+            isSmallScreen && styles.resetContainerSmall
+          ]}>
             <TouchableOpacity 
-              style={[styles.resetButton, { borderColor: tintColor }]} 
+              style={[
+                styles.resetButton, 
+                { borderColor: tintColor },
+                isSmallScreen && styles.resetButtonSmall
+              ]} 
               onPress={resetDailyCount}
             >
-              <ThemedText style={[styles.resetText, { color: tintColor }]}>Reset Daily</ThemedText>
+              <ThemedText 
+                style={[
+                  styles.resetText, 
+                  { color: tintColor },
+                  isSmallScreen && styles.resetTextSmall
+                ]}
+                numberOfLines={1}
+              >
+                Reset Daily
+              </ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[styles.resetButton, { borderColor: tintColor }]} 
+              style={[
+                styles.resetButton, 
+                { borderColor: tintColor },
+                isSmallScreen && styles.resetButtonSmall
+              ]} 
               onPress={resetTotalCount}
             >
-              <ThemedText style={[styles.resetText, { color: tintColor }]}>Reset Total</ThemedText>
+              <ThemedText 
+                style={[
+                  styles.resetText, 
+                  { color: tintColor },
+                  isSmallScreen && styles.resetTextSmall
+                ]}
+                numberOfLines={1}
+              >
+                Reset Total
+              </ThemedText>
             </TouchableOpacity>
           </ThemedView>
         </ThemedView>
 
         <View style={styles.tipsContainer}>
           <BlurView intensity={90} tint={Platform.OS === 'ios' ? 'default' : 'light'} style={styles.tipsCard}>
-            <ThemedText style={styles.tipsTitle}>
+            <ThemedText style={styles.tipsTitle} numberOfLines={1}>
               <Ionicons name="bulb-outline" size={18} color="#FFCC00" /> Tip
             </ThemedText>
-            <ThemedText style={styles.tipsText}>
+            <ThemedText style={styles.tipsText} numberOfLines={4}>
               Consistency is key! Aim to speak declarations aloud daily to build new neural pathways.
             </ThemedText>
           </BlurView>
@@ -230,6 +284,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+  },
+  scrollContentSmall: {
+    padding: 10,
   },
   counterContainer: {
     marginTop: 20,
@@ -250,9 +307,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 30,
+    width: '100%',
+    minWidth: 300,
   },
   statCard: {
-    width: '48%',
+    width: 140,
+    height: 120,
+    marginHorizontal: 5,
     padding: 15,
     borderRadius: 10,
     shadowColor: '#000',
@@ -261,31 +322,42 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   statLabel: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
+    textAlign: 'center',
   },
   statValue: {
-    fontSize: 36,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   incrementButton: {
-    padding: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 30,
     borderRadius: 12,
     alignItems: 'center',
     marginBottom: 20,
+    minWidth: 220,
+    minHeight: 60,
+    justifyContent: 'center',
   },
   buttonText: {
-    color: 'white',
+    color: '#000000',
     fontSize: 18,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   resetContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 10,
+  },
+  resetContainerSmall: {
+    flexDirection: 'column',
+    alignItems: 'center',
   },
   resetButton: {
     paddingVertical: 10,
@@ -295,9 +367,16 @@ const styles = StyleSheet.create({
     width: '48%',
     alignItems: 'center',
   },
+  resetButtonSmall: {
+    width: '100%',
+    marginBottom: 10,
+  },
   resetText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  resetTextSmall: {
+    fontSize: 12,
   },
   tipsContainer: {
     marginTop: 30,

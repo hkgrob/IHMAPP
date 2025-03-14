@@ -9,7 +9,6 @@ import { fetchWixBlogPosts, BlogPost } from '@/services/wixBlogService';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import ResponsiveText from '@/components/ResponsiveText';
 
-
 export default function BlogScreen() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +25,6 @@ export default function BlogScreen() {
       const blogPosts = await fetchWixBlogPosts();
       setPosts(blogPosts);
 
-      // Check if we're showing fallback data
       if (blogPosts.length === 4 && blogPosts[0].id === '1') {
         console.log('Showing fallback content');
         setErrorMessage('Could not connect to blog service. Showing fallback content.');
@@ -56,11 +54,9 @@ export default function BlogScreen() {
       setErrorMessage('Refreshing blog posts...');
 
       console.log('Clearing blog cache...');
-      // Clear the cache
       await AsyncStorage.removeItem('wix_blog_posts');
       await AsyncStorage.removeItem('wix_blog_cache_time');
 
-      // Force clear any other cached data
       await AsyncStorage.getAllKeys()
         .then(keys => {
           const blogKeys = keys.filter(k => k.includes('blog') || k.includes('wix'));
@@ -71,14 +67,11 @@ export default function BlogScreen() {
         .catch(err => console.log('Error clearing additional cache:', err));
 
       console.log('Refreshing blog posts with force reload...');
-      // Reload the posts with a short timeout to ensure cache is fully cleared
       setTimeout(async () => {
         try {
           const blogPosts = await fetchWixBlogPosts();
           setPosts(blogPosts);
 
-          console.log(`Received ${blogPosts.length} posts after refresh`);
-          // Show different messages based on whether we got fallback data or real data
           if (blogPosts.length > 0 && blogPosts[0].id !== '1') {
             console.log('Showing fresh content after refresh');
             setErrorMessage(null);
@@ -95,7 +88,7 @@ export default function BlogScreen() {
           setLoading(false);
           setRefreshing(false);
         }
-      }, 1000); // Small delay to ensure cache clearing has completed
+      }, 1000);
     } catch (error) {
       console.error('Failed to refresh blog posts:', error);
       Alert.alert('Error', 'Failed to refresh blog posts. Please try again later.');
@@ -126,7 +119,6 @@ export default function BlogScreen() {
         }} 
       />
 
-      {/* Add visible refresh button at the top of the screen */}
       <TouchableOpacity 
         onPress={handleRefresh} 
         style={styles.visibleRefreshButton}
@@ -173,8 +165,21 @@ export default function BlogScreen() {
                     resizeMode="cover"
                   />
                 )}
-                <ResponsiveText variant="h3" style={styles.blogTitle}>{post.title}</ResponsiveText>
-                <ResponsiveText variant="caption" style={styles.blogDate}>{post.date}</ResponsiveText>
+                <ResponsiveText 
+                  variant="h3" 
+                  style={styles.blogTitle}
+                  numberOfLines={0}
+                  ellipsizeMode="tail"
+                >
+                  {typeof post.title === 'string' ? post.title : 'Untitled'}
+                </ResponsiveText>
+                <ResponsiveText 
+                  variant="caption" 
+                  style={styles.blogDate}
+                  numberOfLines={0}
+                >
+                  {typeof post.date === 'string' ? post.date : 'No Date'}
+                </ResponsiveText>
                 <ResponsiveText variant="body" style={styles.blogExcerpt}>{post.excerpt}</ResponsiveText>
                 <TouchableOpacity 
                   style={styles.readMoreButton}
@@ -207,7 +212,14 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: 16,
     paddingBottom: 40,
+    alignItems: 'stretch',
+    width: '100%',
+  },
+  headerContainer: {
+    width: '100%', // Fixed typo from '100' to '100%'
     alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   headerTitle: {
     fontSize: 24,
@@ -215,6 +227,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 8,
     width: '100%',
+    flexShrink: 1, // Prevent unnecessary wrapping
+    ...(Platform.OS === 'ios' && {
+      lineHeight: 28, // Ensure proper line height on iOS
+      fontFamily: 'System', // Use system font to avoid rendering issues
+    }),
   },
   headerSubtitle: {
     fontSize: 16,
@@ -232,7 +249,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   blogCard: {
-    // backgroundColor: 'white', // Removed hardcoded background color
     borderRadius: 10,
     padding: 16,
     marginBottom: 16,
@@ -241,6 +257,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    width: '100%',
+    maxWidth: '100%',
+    alignSelf: 'stretch',
   },
   blogImage: {
     width: '100%',
@@ -252,16 +271,35 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 8,
+    flexShrink: 1,
+    flexWrap: 'wrap',
+    width: '100%',
+    ...(Platform.OS === 'ios' && {
+      lineHeight: 24,
+      fontFamily: 'System',
+    }),
   },
   blogDate: {
     fontSize: 14,
     opacity: 0.6,
     marginBottom: 8,
+    flexShrink: 1,
+    flexWrap: 'wrap',
+    width: '100%',
+    ...(Platform.OS === 'ios' && {
+      lineHeight: 18,
+      fontFamily: 'System',
+    }),
   },
   blogExcerpt: {
     fontSize: 16,
     lineHeight: 24,
     marginBottom: 16,
+    flexWrap: 'wrap',
+    ...(Platform.OS === 'ios' && {
+      flexShrink: 1,
+      width: '100%',
+    }),
   },
   readMoreButton: {
     flexDirection: 'row',
@@ -283,24 +321,16 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginTop: 8,
   },
-  headerContainer: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  refreshButtonLarge: {
-    backgroundColor: '#0066cc',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+  visibleRefreshButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 16,
-    marginBottom: 8,
+    backgroundColor: '#0066cc',
+    padding: 10,
+    borderRadius: 8,
+    margin: 16,
+    marginTop: 8,
+    marginBottom: 12,
   },
   refreshButtonText: {
     color: '#fff',
@@ -328,15 +358,4 @@ const styles = StyleSheet.create({
     color: '#0066cc',
     marginRight: 4,
   },
-  visibleRefreshButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#0066cc',
-    padding: 10,
-    borderRadius: 8,
-    margin: 16,
-    marginTop: 8,
-    marginBottom: 12,
-  }
 });

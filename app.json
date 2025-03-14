@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Bible Study App",
-    "slug": "bible-study-app",
+    "name": "Igniting Hope App",
+    "slug": "igniting-hope-app",
     "version": "1.0.0",
     "orientation": "default",
     "platforms": [
@@ -11,11 +11,11 @@
     ],
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.hkgrob.biblestudyapp",
+      "bundleIdentifier": "com.ihm.ignitinghopeappy",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -27,25 +27,7 @@
       },
       "package": "com.hkgrob.biblestudyapp"
     },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png",
-      "build": {
-        "babel": {
-          "include": [
-            "attached_assets/**/*"
-          ]
-        }
-      },
-      "copy": [
-        {
-          "from": "attached_assets",
-          "to": "attached_assets"
-        }
-      ],
-      "assetsPath": "./attached_assets"
-    },
+    "web": {},
     "assetBundlePatterns": [
       "assets/**/*",
       "attached_assets/**/*"
@@ -71,15 +53,14 @@
         "origin": false
       },
       "eas": {
-        "projectId": "fcbe5f88-7dba-48d6-98a9-858ccf1c8ee8"
+        "projectId": "979bb147-c34a-4924-9e44-f91015240640"
       }
     },
-    "owner": "hkgrob",
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/fcbe5f88-7dba-48d6-98a9-858ccf1c8ee8"
+      "url": "https://u.expo.dev/979bb147-c34a-4924-9e44-f91015240640"
     }
   }
 }

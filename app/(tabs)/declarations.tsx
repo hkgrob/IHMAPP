@@ -1,54 +1,75 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, View, Text, TouchableOpacity, Alert, Platform } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, ScrollView, View, TextInput, TouchableOpacity, Alert, Platform } from 'react-native';
 import { Stack } from 'expo-router';
-import { BlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
 import { DECLARATION_CATEGORIES } from '../../constants/DeclarationsData';
 import { CustomDeclaration, DeclarationCategory } from '../../types/declarations';
 
+// Storage key constant
+const STORAGE_KEY = 'customDeclarations';
+
 export default function DeclarationsScreen() {
   const [selectedCategory, setSelectedCategory] = useState<DeclarationCategory>(DECLARATION_CATEGORIES[0]);
   const [customDeclarations, setCustomDeclarations] = useState<CustomDeclaration[]>([]);
   const [newDeclaration, setNewDeclaration] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Load custom declarations from storage
   useEffect(() => {
-    loadCustomDeclarations();
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const storedData = await AsyncStorage.getItem(STORAGE_KEY);
+        if (storedData) {
+          setCustomDeclarations(JSON.parse(storedData));
+        }
+      } catch (error) {
+        console.error('Error loading custom declarations:', error);
+        Alert.alert('Error', 'Failed to load your declarations. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
   }, []);
 
-  const loadCustomDeclarations = async () => {
+  // Save declarations with memoized callback
+  const saveCustomDeclarations = useCallback(async (declarations: CustomDeclaration[]) => {
     try {
-      const storedDeclarations = await AsyncStorage.getItem('customDeclarations');
-      if (storedDeclarations) {
-        setCustomDeclarations(JSON.parse(storedDeclarations));
-      }
-    } catch (error) {
-      console.error('Error loading custom declarations:', error);
-    }
-  };
-
-  const saveCustomDeclarations = async (declarations: CustomDeclaration[]) => {
-    try {
-      await AsyncStorage.setItem('customDeclarations', JSON.stringify(declarations));
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(declarations));
     } catch (error) {
       console.error('Error saving custom declarations:', error);
+      Alert.alert('Error', 'Failed to save your declaration. Please try again.');
     }
-  };
+  }, []);
 
-  const addCustomDeclaration = async () => {
-    if (newDeclaration.trim() === '') {
+  // Haptic feedback helper
+  const triggerHapticFeedback = useCallback((style = Haptics.ImpactFeedbackStyle.Light) => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(style);
+    }
+  }, []);
+
+  // Handle category selection
+  const handleCategorySelect = useCallback((category: DeclarationCategory) => {
+    triggerHapticFeedback();
+    setSelectedCategory(category);
+  }, [triggerHapticFeedback]);
+
+  // Add new declaration
+  const addCustomDeclaration = useCallback(() => {
+    if (!newDeclaration.trim()) {
       Alert.alert('Error', 'Please enter a declaration.');
       return;
     }
 
-    if (Platform.OS === 'ios') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }
+    triggerHapticFeedback(Haptics.ImpactFeedbackStyle.Medium);
 
     const newDeclarationObj: CustomDeclaration = {
       id: Date.now().toString(),
@@ -57,47 +78,42 @@ export default function DeclarationsScreen() {
 
     const updatedDeclarations = [...customDeclarations, newDeclarationObj];
     setCustomDeclarations(updatedDeclarations);
-    await saveCustomDeclarations(updatedDeclarations);
+    saveCustomDeclarations(updatedDeclarations);
     setNewDeclaration('');
     setShowAddForm(false);
-  };
+  }, [customDeclarations, newDeclaration, saveCustomDeclarations, triggerHapticFeedback]);
 
-  const deleteCustomDeclaration = async (id: string) => {
-    try {
-      if (Platform.OS === 'ios') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      }
+  // Delete declaration - Fixed implementation
+  const deleteCustomDeclaration = useCallback((id: string) => {
+    triggerHapticFeedback(Haptics.ImpactFeedbackStyle.Medium);
 
-      // Show confirmation dialog
-      const confirmDelete = await new Promise((resolve) => {
-        Alert.alert(
-          'Delete Declaration',
-          'Are you sure you want to delete this declaration?',
-          [
-            { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-            { text: 'Delete', style: 'destructive', onPress: () => resolve(true) }
-          ]
-        );
-      });
+    Alert.alert(
+      'Delete Declaration',
+      'Are you sure you want to delete this declaration?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive', 
+          onPress: () => {
+            console.log("Deleting declaration with ID:", id); // Debug logging
+            const updatedDeclarations = customDeclarations.filter(
+              declaration => declaration.id !== id
+            );
+            setCustomDeclarations(updatedDeclarations);
+            saveCustomDeclarations(updatedDeclarations);
+          } 
+        }
+      ]
+    );
+  }, [customDeclarations, saveCustomDeclarations, triggerHapticFeedback]);
 
-      if (confirmDelete) {
-        const updatedDeclarations = customDeclarations.filter(
-          (declaration) => declaration.id !== id
-        );
-        setCustomDeclarations(updatedDeclarations);
-        await saveCustomDeclarations(updatedDeclarations);
-      }
-    } catch (error) {
-      console.error('Error deleting custom declaration:', error);
-      Alert.alert('Error', 'Could not delete the declaration. Please try again.');
-    }
-  };
-
-  const handleCategorySelect = (category: any) => {
-    if (Platform.OS === 'ios') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    setSelectedCategory(category);
+  // Custom category for user's own declarations
+  const customCategory: DeclarationCategory = {
+    id: 'custom',
+    title: 'My Declarations',
+    source: '',
+    declarations: []
   };
 
   return (
@@ -116,12 +132,20 @@ export default function DeclarationsScreen() {
         alwaysBounceVertical={Platform.OS === 'ios'}
         keyboardShouldPersistTaps="handled"
         scrollIndicatorInsets={{ right: 1 }}
+        style={styles.scrollView}
       >
-        <ThemedText style={styles.title}>Daily Declarations</ThemedText>
-        <ThemedText style={styles.subtitle}>Speak life over yourself</ThemedText>
+        <View style={styles.headerContainer}>
+          <ThemedText style={styles.title}>Daily Declarations</ThemedText>
+          <ThemedText style={styles.subtitle}>Speak life over yourself</ThemedText>
+        </View>
 
         {/* Categories */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryContainer}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          style={styles.categoryContainer}
+          contentContainerStyle={styles.categoryContentContainer}
+        >
           {DECLARATION_CATEGORIES.map((category) => (
             <TouchableOpacity
               key={category.id}
@@ -130,6 +154,8 @@ export default function DeclarationsScreen() {
                 selectedCategory.id === category.id && styles.selectedCategory
               ]}
               onPress={() => handleCategorySelect(category)}
+              accessibilityLabel={`${category.title} category`}
+              accessibilityState={{ selected: selectedCategory.id === category.id }}
             >
               <ThemedText 
                 style={[
@@ -142,13 +168,14 @@ export default function DeclarationsScreen() {
             </TouchableOpacity>
           ))}
 
-          {/* Custom category button */}
           <TouchableOpacity
             style={[
               styles.categoryButton,
               selectedCategory.id === 'custom' && styles.selectedCategory
             ]}
-            onPress={() => handleCategorySelect({ id: 'custom', title: 'My Declarations', source: '', declarations: [] })}
+            onPress={() => handleCategorySelect(customCategory)}
+            accessibilityLabel="My Declarations category"
+            accessibilityState={{ selected: selectedCategory.id === 'custom' }}
           >
             <ThemedText 
               style={[
@@ -156,14 +183,16 @@ export default function DeclarationsScreen() {
                 selectedCategory.id === 'custom' && styles.selectedCategoryText
               ]}
             >
-              My Declarations
+              {customCategory.title}
             </ThemedText>
           </TouchableOpacity>
         </ScrollView>
 
         {/* Declarations */}
         <View style={styles.declarationsContainer}>
-          {selectedCategory.id === 'custom' ? (
+          {isLoading ? (
+            <ThemedText style={styles.emptyMessage}>Loading declarations...</ThemedText>
+          ) : selectedCategory.id === 'custom' ? (
             // Custom declarations section
             <>
               {customDeclarations.length === 0 ? (
@@ -171,7 +200,7 @@ export default function DeclarationsScreen() {
                   You haven't added any custom declarations yet.
                 </ThemedText>
               ) : (
-                customDeclarations.map((declaration, index) => (
+                customDeclarations.map((declaration) => (
                   <View key={declaration.id} style={styles.declarationItem}>
                     <ThemedText style={styles.declarationText}>
                       {declaration.text}
@@ -179,6 +208,7 @@ export default function DeclarationsScreen() {
                     <TouchableOpacity
                       style={styles.deleteButton}
                       onPress={() => deleteCustomDeclaration(declaration.id)}
+                      accessibilityLabel="Delete declaration"
                     >
                       <Ionicons name="trash-outline" size={20} color="red" />
                     </TouchableOpacity>
@@ -186,11 +216,12 @@ export default function DeclarationsScreen() {
                 ))
               )}
 
-              {/* Add new declaration button */}
+              {/* Add new declaration */}
               {!showAddForm ? (
                 <TouchableOpacity
                   style={styles.addButton}
                   onPress={() => setShowAddForm(true)}
+                  accessibilityLabel="Add new declaration"
                 >
                   <Ionicons name="add-circle-outline" size={20} color="#4CAF50" />
                   <ThemedText style={styles.addButtonText}>Add New Declaration</ThemedText>
@@ -203,6 +234,7 @@ export default function DeclarationsScreen() {
                     onChangeText={setNewDeclaration}
                     placeholder="Enter your declaration..."
                     multiline
+                    autoFocus
                   />
                   <View style={styles.formButtons}>
                     <TouchableOpacity
@@ -215,10 +247,20 @@ export default function DeclarationsScreen() {
                       <ThemedText style={styles.formButtonText}>Cancel</ThemedText>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[styles.formButton, styles.saveButton]}
+                      style={[
+                        styles.formButton, 
+                        styles.saveButton,
+                        !newDeclaration.trim() && styles.disabledButton
+                      ]}
                       onPress={addCustomDeclaration}
+                      disabled={!newDeclaration.trim()}
                     >
-                      <ThemedText style={styles.formButtonText}>Save</ThemedText>
+                      <ThemedText style={[
+                        styles.formButtonText, 
+                        !newDeclaration.trim() && styles.disabledButtonText
+                      ]}>
+                        Save
+                      </ThemedText>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -240,41 +282,44 @@ export default function DeclarationsScreen() {
   );
 }
 
-import { TextInput } from 'react-native';
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollView: {
+    width: '100%',
   },
   scrollContent: {
     padding: Platform.OS === 'web' ? 20 : 16,
     paddingTop: Platform.OS === 'ios' ? 60 : Platform.OS === 'web' ? 60 : 40,
     paddingBottom: Platform.OS === 'ios' ? 40 : 20,
   },
+  headerContainer: {
+    alignItems: Platform.OS === 'ios' ? 'center' : 'flex-start',
+  },
   title: {
     fontSize: Platform.OS === 'web' ? 28 : 24,
     fontWeight: 'bold',
     marginBottom: 5,
-    textAlign: Platform.OS === 'ios' ? 'center' : 'left',
   },
   subtitle: {
     fontSize: Platform.OS === 'web' ? 16 : 14,
     marginBottom: 20,
     opacity: 0.7,
-    textAlign: Platform.OS === 'ios' ? 'center' : 'left',
   },
   categoryContainer: {
+    flexDirection: 'row',
+  },
+  categoryContentContainer: {
     paddingVertical: 12,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: Platform.OS === 'ios' ? 'center' : 'flex-start',
+    alignItems: 'center',
   },
   categoryButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 10,
-    marginBottom: Platform.OS === 'ios' ? 8 : 0,
     backgroundColor: '#F0F0F0',
   },
   selectedCategory: {
@@ -290,6 +335,7 @@ const styles = StyleSheet.create({
   declarationsContainer: {
     marginTop: 20,
     width: '100%',
+    flexGrow: 1,
   },
   declarationItem: {
     backgroundColor: '#F9F9F9',
@@ -372,5 +418,13 @@ const styles = StyleSheet.create({
   formButtonText: {
     fontWeight: '500',
     fontSize: 14,
+    color: '#000',
   },
+  disabledButton: {
+    backgroundColor: '#A5D6A7',
+    opacity: 0.7,
+  },
+  disabledButtonText: {
+    opacity: 0.7,
+  }
 });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, Switch, TouchableOpacity, Alert, Linking, Platform, FlatList, View, Modal } from 'react-native';
+import { StyleSheet, ScrollView, Switch, TouchableOpacity, Alert, Linking, Platform, FlatList, View, Modal, Dimensions } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,8 +9,9 @@ import { BlurView } from 'expo-blur';
 import { StatusBar } from 'expo-status-bar';
 import { Audio } from 'expo-av';
 import * as Notifications from 'expo-notifications';
-//import DateTimePickerModal from 'react-native-modal-datetime-picker'; // Removed as it's no longer used
 
+// Get screen dimensions
+const { width, height } = Dimensions.get('window');
 
 export default function SettingsScreen() {
   const colorScheme = useColorScheme();
@@ -30,7 +31,6 @@ export default function SettingsScreen() {
     const setupNotifications = async () => {
       try {
         if (Notifications) {
-          // Request permissions for notifications
           const { status } = await Notifications.requestPermissionsAsync();
           if (status !== 'granted') {
             console.log('Notification permissions not granted');
@@ -88,7 +88,6 @@ export default function SettingsScreen() {
       console.error('Error loading sound in settings:', error);
     }
   };
-
 
   const saveSettings = async (key, value) => {
     try {
@@ -317,7 +316,6 @@ export default function SettingsScreen() {
     }
   };
 
-
   const renderSettingSection = (title, icon, children) => (
     <BlurView 
       intensity={80} 
@@ -494,7 +492,6 @@ export default function SettingsScreen() {
 
             <ScrollableTimePicker isVisible={isTimePickerVisible} onConfirm={handleTimeConfirm} onCancel={hideTimePicker} initialTime={reminderTime} />
             <ScrollableTimePicker isVisible={isTimePickerVisible2} onConfirm={handleTimeConfirm2} onCancel={hideTimePicker2} initialTime={reminderTime2}/>
-
           </>
         ))}
 
@@ -558,27 +555,30 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: width * 0.04, // 4% of screen width for responsive padding
+    paddingVertical: height * 0.01,   // Reduced from 0.02 to 0.01 (~10px on 1000px height screen)
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginTop: 60,
-    marginBottom: 24,
+    marginTop: height * 0.03, // Reduced from 0.07 to 0.03 (~30px on 1000px height screen)
+    marginBottom: height * 0.03,
     textAlign: 'center',
   },
   scrollView: {
     flex: 1,
+    width: '100%', // Ensure ScrollView takes full width
   },
   section: {
     borderRadius: 16,
-    marginBottom: 20,
+    marginBottom: height * 0.025, // Responsive margin
     overflow: 'hidden',
+    width: '100%', // Full width for sections
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: width * 0.04, // Responsive padding
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(150, 150, 150, 0.2)',
   },
@@ -591,12 +591,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: width * 0.04, // Responsive padding
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(150, 150, 150, 0.1)',
+    width: '100%', // Ensure rows take full width
   },
   dangerButton: {
-    padding: 16,
+    padding: width * 0.04,
     alignItems: 'center',
   },
   dangerButtonText: {
@@ -604,7 +605,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   linkButton: {
-    padding: 16,
+    padding: width * 0.04,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(150, 150, 150, 0.1)',
   },
@@ -619,25 +620,27 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   pickerContainer: {
-    width: '80%',
+    width: Math.min(width * 0.85, 400), // Max width of 400px, or 85% of screen
     borderRadius: 16,
-    padding: 20,
+    padding: width * 0.05, // Responsive padding
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
   pickerTitle: {
     fontSize: 18,
     fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: height * 0.025,
   },
   pickerRowContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: height * 0.025,
+    width: '100%', // Ensure full width
   },
   pickerColumn: {
     flex: 1,
     alignItems: 'center',
+    marginHorizontal: width * 0.02, // Responsive spacing between columns
   },
   pickerLabel: {
     fontSize: 14,
@@ -645,11 +648,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   pickerList: {
-    height: 132, 
+    height: height * 0.18, // 18% of screen height for picker
     width: '100%',
   },
   pickerListContent: {
-    paddingVertical: 44, 
+    paddingVertical: height * 0.05, // Responsive padding
   },
   pickerItem: {
     height: 44,
@@ -670,6 +673,7 @@ const styles = StyleSheet.create({
   pickerButtonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    width: '100%',
   },
   pickerButton: {
     flex: 1,

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, ScrollView, Dimensions } from 'react-native';
+import { StyleSheet, View, ScrollView, Platform, StatusBar as RNStatusBar } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -60,61 +60,91 @@ export default function StatsScreen() {
         <BlurView 
           intensity={80} 
           tint={colorScheme === 'dark' ? 'dark' : 'light'} 
-          style={styles.statCard}
+          style={styles.blurContainer}
         >
-          <View style={styles.statIconContainer}>
-            <Ionicons name="time-outline" size={30} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} />
+          <View style={styles.statCard}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="time-outline" size={30} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} />
+            </View>
+            <View style={styles.valueContainer}>
+              <ThemedText style={styles.statValue}>{daysTracked}</ThemedText>
+            </View>
+            <View style={styles.textContainer}>
+              <ThemedText style={styles.statLabel}>Days Tracked</ThemedText>
+            </View>
           </View>
-          <ThemedText style={styles.statValue}>{daysTracked}</ThemedText>
-          <ThemedText style={styles.statLabel}>Days Tracked</ThemedText>
         </BlurView>
 
         <BlurView 
           intensity={80} 
           tint={colorScheme === 'dark' ? 'dark' : 'light'} 
-          style={styles.statCard}
+          style={styles.blurContainer}
         >
-          <View style={styles.statIconContainer}>
-            <Ionicons name="calculator-outline" size={30} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} />
+          <View style={styles.statCard}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="calculator-outline" size={30} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} />
+            </View>
+            <View style={styles.valueContainer}>
+              <ThemedText style={styles.statValue}>{totalCount}</ThemedText>
+            </View>
+            <View style={styles.textContainer}>
+              <ThemedText style={styles.statLabel}>Total Declarations</ThemedText>
+            </View>
           </View>
-          <ThemedText style={styles.statValue}>{totalCount}</ThemedText>
-          <ThemedText style={styles.statLabel}>Total Declarations</ThemedText>
         </BlurView>
 
         <BlurView 
           intensity={80} 
           tint={colorScheme === 'dark' ? 'dark' : 'light'} 
-          style={styles.statCard}
+          style={styles.blurContainer}
         >
-          <View style={styles.statIconContainer}>
-            <Ionicons name="trending-up-outline" size={30} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} />
+          <View style={styles.statCard}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="trending-up-outline" size={30} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} />
+            </View>
+            <View style={styles.valueContainer}>
+              <ThemedText style={styles.statValue}>{dailyAverage.toFixed(1)}</ThemedText>
+            </View>
+            <View style={styles.textContainer}>
+              <ThemedText style={styles.statLabel}>Daily Average</ThemedText>
+            </View>
           </View>
-          <ThemedText style={styles.statValue}>{dailyAverage.toFixed(1)}</ThemedText>
-          <ThemedText style={styles.statLabel}>Daily Average</ThemedText>
         </BlurView>
 
         <BlurView 
           intensity={80} 
           tint={colorScheme === 'dark' ? 'dark' : 'light'} 
-          style={styles.statCard}
+          style={styles.blurContainer}
         >
-          <View style={styles.statIconContainer}>
-            <Ionicons name="flame-outline" size={30} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} />
+          <View style={styles.statCard}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="flame-outline" size={30} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} />
+            </View>
+            <View style={styles.valueContainer}>
+              <ThemedText style={styles.statValue}>{currentStreak}</ThemedText>
+            </View>
+            <View style={styles.textContainer}>
+              <ThemedText style={styles.statLabel}>Current Streak</ThemedText>
+            </View>
           </View>
-          <ThemedText style={styles.statValue}>{currentStreak}</ThemedText>
-          <ThemedText style={styles.statLabel}>Current Streak</ThemedText>
         </BlurView>
 
         <BlurView 
           intensity={80} 
           tint={colorScheme === 'dark' ? 'dark' : 'light'} 
-          style={styles.statCard}
+          style={styles.blurContainer}
         >
-          <View style={styles.statIconContainer}>
-            <Ionicons name="trophy-outline" size={30} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} />
+          <View style={styles.statCard}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="trophy-outline" size={30} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} />
+            </View>
+            <View style={styles.valueContainer}>
+              <ThemedText style={styles.statValue}>{bestStreak}</ThemedText>
+            </View>
+            <View style={styles.textContainer}>
+              <ThemedText style={styles.statLabel}>Best Streak</ThemedText>
+            </View>
           </View>
-          <ThemedText style={styles.statValue}>{bestStreak}</ThemedText>
-          <ThemedText style={styles.statLabel}>Best Streak</ThemedText>
         </BlurView>
       </ScrollView>
     </ThemedView>
@@ -124,11 +154,12 @@ export default function StatsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
     padding: 16,
   },
   header: {
-    marginTop: 60,
-    marginBottom: 24,
+    marginTop: 20,
+    marginBottom: 12,
     alignItems: 'center',
   },
   title: {
@@ -143,29 +174,50 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingBottom: 20,
+    paddingBottom: 40,
+  },
+  blurContainer: {
+    width: '48%',
+    marginBottom: 16,
+    overflow: 'visible', // Ensure BlurView doesn't clip content
   },
   statCard: {
-    width: '48%',
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    padding: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
-    minHeight: 160,
+    minHeight: 180,
+    backgroundColor: 'transparent', // Ensure no conflicting background
   },
   statIconContainer: {
     marginBottom: 12,
   },
-  statValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
+  valueContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 4,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    maxWidth: '100%',
+    width: 'auto',
+    overflow: 'visible',
+  },
+  textContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   statLabel: {
     fontSize: 14,
     textAlign: 'center',
     opacity: 0.8,
+    flexShrink: 1,
+    flexWrap: 'wrap',
+    maxWidth: '100%',
+    paddingHorizontal: 8,
   },
 });
