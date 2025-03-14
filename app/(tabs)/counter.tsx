@@ -263,8 +263,8 @@ export default function CounterScreen() {
           </View>
           <ThemedView style={styles.counterContainer}>
 
-            <ThemedView style={styles.statsContainer}>
-              <ThemedView style={[styles.statCard, { backgroundColor: 'rgba(144, 238, 144, 0.3)' }]}>
+            <View style={styles.statsContainer}>
+              <View style={[styles.statCard, { backgroundColor: 'rgba(144, 238, 144, 0.3)' }]}>
                 <ThemedText style={styles.statLabel} numberOfLines={1}>Daily</ThemedText>
                 <Text 
                   style={[styles.statValue, { fontSize: baseFontSize }]} 
@@ -274,9 +274,9 @@ export default function CounterScreen() {
                 >
                   {dailyCount.toString()}
                 </Text>
-              </ThemedView>
+              </View>
 
-              <ThemedView style={[styles.statCard, { backgroundColor: 'rgba(144, 238, 144, 0.3)' }]}>
+              <View style={[styles.statCard, { backgroundColor: 'rgba(144, 238, 144, 0.3)' }]}>
                 <ThemedText style={styles.statLabel} numberOfLines={1}>Total</ThemedText>
                 <Text 
                   style={[styles.statValue, { fontSize: baseFontSize }]} 
@@ -286,8 +286,8 @@ export default function CounterScreen() {
                 >
                   {totalCount.toString()}
                 </Text>
-              </ThemedView>
-            </ThemedView>
+              </View>
+            </View>
 
             <TouchableOpacity
               style={[styles.incrementButton, { backgroundColor: tintColor }]}
