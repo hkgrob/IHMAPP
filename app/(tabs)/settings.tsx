@@ -187,20 +187,46 @@ const SettingsScreen = () => {
 
   const toggleNotifications = async (value) => {
     try {
-      if (value && (await Notifications.getPermissionsAsync()).status !== 'granted') {
-        const permissionGranted = await registerForPushNotificationsAsync();
-        if (!permissionGranted) return;
-      }
-      setNotificationsEnabled(value);
-      await saveSettings('notificationsEnabled', value);
       if (value) {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert(
+              'Permission Required',
+              'Please enable notifications in your device settings to use this feature.',
+              [{ text: 'OK' }]
+            );
+            return;
+          }
+        }
+
+        await Notifications.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: soundEnabled,
+            shouldSetBadge: false,
+          }),
+        });
+
+        setNotificationsEnabled(true);
+        await saveSettings('notificationsEnabled', true);
         await scheduleNotifications();
       } else {
-        console.log('Canceling all notifications due to toggle off');
+        setNotificationsEnabled(false);
+        await saveSettings('notificationsEnabled', false);
         await Notifications.cancelAllScheduledNotificationsAsync();
       }
     } catch (error) {
       console.error('Error toggling notifications:', error);
+      Alert.alert(
+        'Error',
+        'Failed to update notification settings. Please try again.',
+        [{ text: 'OK' }]
+      );
+      // Revert the toggle state on error
+      setNotificationsEnabled(!value);
     }
   };
 
