@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginVertical: 8, //Reduced margin from 16
+    marginVertical: 12, // Matching the blog page padding
     marginHorizontal: 16,
   },
   listContent: {
