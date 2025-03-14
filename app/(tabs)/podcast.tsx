@@ -65,14 +65,33 @@ export default function PodcastScreen() {
     fetchPodcasts();
   }, [fetchPodcasts]);
 
+  // Format milliseconds to mm:ss format
+  const formatTime = (milliseconds) => {
+    if (!milliseconds) return '00:00';
+    
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   const startPositionUpdateTimer = () => {
     positionUpdateTimer.current = setInterval(async () => {
       if (sound) {
         const status = await sound.getStatusAsync();
         setPosition(status.positionMillis);
+        setDuration(status.durationMillis || 0);
       }
     }, 1000);
   };
+  
+  // Apply volume change to the sound
+  useEffect(() => {
+    if (sound) {
+      sound.setVolumeAsync(volume);
+    }
+  }, [volume, sound]);
 
   const handlePlayEpisode = async (url, episodeId, episodeTitle = '') => {
     try {
@@ -303,13 +322,56 @@ export default function PodcastScreen() {
             maximumTrackTintColor="#ddd"
             thumbTintColor="#0a7ea4"
           />
+          <View style={styles.timeInfo}>
+            <ThemedText style={styles.timeText}>{formatTime(position)}</ThemedText>
+            <ThemedText style={styles.timeText}>{formatTime(duration)}</ThemedText>
+          </View>
           <View style={styles.playerControls}>
-            <Slider
-              style={styles.volumeSlider}
-              value={volume}
-              minimumValue={0}
-              maximumValue={1}
-              onValueChange={(value) => setVolume(value)}
+            <TouchableOpacity 
+              onPress={() => {
+                if (sound && position > 10000) {
+                  sound.setPositionAsync(position - 10000);
+                }
+              }}
+            >
+              <Ionicons name="play-back" size={30} color="#0a7ea4" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              onPress={async () => {
+                if (sound) {
+                  if (isPlaying) {
+                    await sound.pauseAsync();
+                    setIsPlaying(false);
+                  } else {
+                    await sound.playAsync();
+                    setIsPlaying(true);
+                  }
+                }
+              }} 
+              style={styles.mainPlayButton}
+            >
+              <Ionicons name={isPlaying ? "pause-circle" : "play-circle"} size={50} color="#0a7ea4" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              onPress={() => {
+                if (sound && position + 30000 < duration) {
+                  sound.setPositionAsync(position + 30000);
+                }
+              }}
+            >
+              <Ionicons name="play-forward" size={30} color="#0a7ea4" />
+            </TouchableOpacity>
+            
+            <View style={styles.volumeControl}>
+              <Ionicons name="volume-low" size={20} color="#0a7ea4" />
+              <Slider
+                style={styles.volumeSlider}
+                value={volume}
+                minimumValue={0}
+                maximumValue={1}
+                onValueChange={(value) => setVolume(value)})}
               minimumTrackTintColor="#0a7ea4"
               maximumTrackTintColor="#ddd"
               thumbTintColor="#0a7ea4"
@@ -483,6 +545,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   volumeSlider: {
-    width: 100,
+    width: 80,
+  },
+  volumeControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 120,
+  },
+  timeInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 10,
+    marginTop: 5,
+  },
+  timeText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  mainPlayButton: {
+    marginHorizontal: 15,
   }
 });
