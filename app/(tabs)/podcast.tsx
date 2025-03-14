@@ -208,48 +208,47 @@ export default function PodcastScreen() {
           </View>
 
           <View style={styles.podcastInfo}>
-              <ThemedText style={styles.podcastTitle}>{item.title}</ThemedText>
-              <View style={styles.podcastMeta}>
-                <ThemedText style={styles.podcastDate}>
-                  {item.publishDate}
-                </ThemedText>
-                <ThemedText style={styles.podcastDuration}>
-                  • {item.duration}
-                </ThemedText>
-              </View>
+            <ThemedText style={styles.podcastTitle}>{item.title}</ThemedText>
+            <View style={styles.podcastMeta}>
+              <ThemedText style={styles.podcastDate}>
+                {item.publishDate}
+              </ThemedText>
+              <ThemedText style={styles.podcastDuration}>
+                • {item.duration}
+              </ThemedText>
             </View>
-
-            <ThemedText
-              numberOfLines={2}
-              style={styles.podcastDescription}
-            >
-              {item.description}
-            </ThemedText>
-
-            <TouchableOpacity
-              style={styles.playButton}
-              onPress={() => handlePlayEpisode(item.audioUrl, item.id, item.title)}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <ActivityIndicator size="small" color="#0a7ea4" />
-                  <ThemedText style={styles.playButtonText}>Loading...</ThemedText>
-                </>
-              ) : (
-                <>
-                  <Ionicons
-                    name={isCurrentlyPlaying ? "pause-circle" : "play-circle"}
-                    size={22}
-                    color="#0a7ea4"
-                  />
-                  <ThemedText style={styles.playButtonText}>
-                    {isCurrentlyPlaying ? 'Pause Episode' : 'Play Episode'}
-                  </ThemedText>
-                </>
-              )}
-            </TouchableOpacity>
           </View>
+
+          <ThemedText
+            numberOfLines={2}
+            style={styles.podcastDescription}
+          >
+            {item.description}
+          </ThemedText>
+
+          <TouchableOpacity
+            style={styles.playButton}
+            onPress={() => handlePlayEpisode(item.audioUrl, item.id, item.title)}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <ActivityIndicator size="small" color="#0a7ea4" />
+                <ThemedText style={styles.playButtonText}>Loading...</ThemedText>
+              </>
+            ) : (
+              <>
+                <Ionicons
+                  name={isCurrentlyPlaying ? "pause-circle" : "play-circle"}
+                  size={22}
+                  color="#0a7ea4"
+                />
+                <ThemedText style={styles.playButtonText}>
+                  {isCurrentlyPlaying ? 'Pause Episode' : 'Play Episode'}
+                </ThemedText>
+              </>
+            )}
+          </TouchableOpacity>
         </View>
       </View>
     );
