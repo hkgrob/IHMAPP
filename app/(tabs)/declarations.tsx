@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, ScrollView, View, TextInput, TouchableOpacity, Alert, Platform } from 'react-native';
+import { StyleSheet, ScrollView, View, TextInput, TouchableOpacity, Alert, Platform, Text } from 'react-native';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Audio } from 'expo-av'; // Added import for Audio
 import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
 import { DECLARATION_CATEGORIES } from '../../constants/DeclarationsData';
@@ -18,6 +19,7 @@ export default function DeclarationsScreen() {
   const [newDeclaration, setNewDeclaration] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [declarationCount, setDeclarationCount] = useState(0); // Added counter state
 
   // Load custom declarations from storage
   useEffect(() => {
@@ -81,7 +83,8 @@ export default function DeclarationsScreen() {
     saveCustomDeclarations(updatedDeclarations);
     setNewDeclaration('');
     setShowAddForm(false);
-  }, [customDeclarations, newDeclaration, saveCustomDeclarations, triggerHapticFeedback]);
+    setDeclarationCount(declarationCount + 1); // Increment counter
+  }, [customDeclarations, newDeclaration, saveCustomDeclarations, triggerHapticFeedback, declarationCount]);
 
   // Delete declaration - Fixed implementation
   const deleteCustomDeclaration = useCallback((id: string) => {
@@ -92,9 +95,9 @@ export default function DeclarationsScreen() {
       'Are you sure you want to delete this declaration?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive', 
+        {
+          text: 'Delete',
+          style: 'destructive',
           onPress: () => {
             console.log("Deleting declaration with ID:", id); // Debug logging
             const updatedDeclarations = customDeclarations.filter(
@@ -102,11 +105,18 @@ export default function DeclarationsScreen() {
             );
             setCustomDeclarations(updatedDeclarations);
             saveCustomDeclarations(updatedDeclarations);
-          } 
+            setDeclarationCount(declarationCount -1); //Decrement counter on delete
+          }
         }
       ]
     );
-  }, [customDeclarations, saveCustomDeclarations, triggerHapticFeedback]);
+  }, [customDeclarations, saveCustomDeclarations, triggerHapticFeedback, declarationCount]);
+
+  // Increment counter function
+  const incrementCounter = useCallback(() => {
+    setDeclarationCount(declarationCount + 1);
+  }, [declarationCount]);
+
 
   // Custom category for user's own declarations
   const customCategory: DeclarationCategory = {
@@ -125,7 +135,7 @@ export default function DeclarationsScreen() {
         }}
       />
 
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         bounces={true}
@@ -137,12 +147,17 @@ export default function DeclarationsScreen() {
         <View style={styles.headerContainer}>
           <ThemedText style={styles.title}>Daily Declarations</ThemedText>
           <ThemedText style={styles.subtitle}>Speak life over yourself</ThemedText>
+
+          {/* Counter Button */}
+          <TouchableOpacity style={styles.countButton} onPress={incrementCounter}>
+            <Text style={styles.countButtonText}>Declaration Count: {declarationCount}</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Categories */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
           style={styles.categoryContainer}
           contentContainerStyle={styles.categoryContentContainer}
         >
@@ -157,7 +172,7 @@ export default function DeclarationsScreen() {
               accessibilityLabel={`${category.title} category`}
               accessibilityState={{ selected: selectedCategory.id === category.id }}
             >
-              <ThemedText 
+              <ThemedText
                 style={[
                   styles.categoryText,
                   selectedCategory.id === category.id && styles.selectedCategoryText
@@ -177,7 +192,7 @@ export default function DeclarationsScreen() {
             accessibilityLabel="My Declarations category"
             accessibilityState={{ selected: selectedCategory.id === 'custom' }}
           >
-            <ThemedText 
+            <ThemedText
               style={[
                 styles.categoryText,
                 selectedCategory.id === 'custom' && styles.selectedCategoryText
@@ -248,7 +263,7 @@ export default function DeclarationsScreen() {
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[
-                        styles.formButton, 
+                        styles.formButton,
                         styles.saveButton,
                         !newDeclaration.trim() && styles.disabledButton
                       ]}
@@ -256,7 +271,7 @@ export default function DeclarationsScreen() {
                       disabled={!newDeclaration.trim()}
                     >
                       <ThemedText style={[
-                        styles.formButtonText, 
+                        styles.formButtonText,
                         !newDeclaration.trim() && styles.disabledButtonText
                       ]}>
                         Save
@@ -427,5 +442,17 @@ const styles = StyleSheet.create({
   },
   disabledButtonText: {
     opacity: 0.7,
+  },
+  countButton: {
+    backgroundColor: '#0a7ea4',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  countButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
   }
 });
