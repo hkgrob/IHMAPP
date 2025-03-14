@@ -108,15 +108,10 @@ export default function BlogScreen() {
         }} 
       />
 
-      <LinearGradient
-        colors={['rgba(10, 126, 164, 0.5)', 'rgba(10, 126, 164, 0.2)', 'rgba(10, 126, 164, 0)']}
-        style={styles.headerGradient}
-      >
-        <View style={styles.headerContainer}>
-          <ThemedText style={styles.headerTitle}>Igniting Hope Blog</ThemedText>
-          <ThemedText style={styles.headerSubtitle}>Inspiration for your journey</ThemedText>
-        </View>
-      </LinearGradient>
+      <View style={styles.headerContainer}>
+        <ThemedText style={styles.headerTitle}>Igniting Hope Blog</ThemedText>
+        <ThemedText style={styles.headerSubtitle}>Inspiration for your journey</ThemedText>
+      </View>
 
       {errorMessage && (
         <View style={styles.errorContainer}>
@@ -223,12 +218,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  headerGradient: {
-    paddingVertical: 24,
-    width: '100%',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-  },
+  
   scrollView: {
     flex: 1,
   },
@@ -240,6 +230,8 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 24,
+    marginBottom: 8,
   },
   headerTitle: {
     fontSize: 28,
