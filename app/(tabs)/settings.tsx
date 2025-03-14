@@ -1,29 +1,26 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, ScrollView, Switch, TouchableOpacity, Alert, Linking, Platform, View, Modal, Dimensions } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, ScrollView, Switch, TouchableOpacity, Alert, Linking, Platform, View, Button } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { BlurView } from 'expo-blur';
 import { StatusBar } from 'expo-status-bar';
 import { Audio } from 'expo-av';
 import * as Notifications from 'expo-notifications';
 import * as Haptics from 'expo-haptics';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const { width, height } = Dimensions.get('window');
-
-export default function SettingsScreen() {
-  const colorScheme = useColorScheme();
+const SettingsScreen = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [reminderTime, setReminderTime] = useState('8:00 AM');
-  const [reminderTime2, setReminderTime2] = useState('9:00 AM');
+  const [reminderTime, setReminderTime] = useState(new Date());
+  const [reminderTime2, setReminderTime2] = useState(new Date());
   const [secondReminderEnabled, setSecondReminderEnabled] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [hapticEnabled, setHapticEnabled] = useState(true);
   const [sound, setSound] = useState(null);
-  const [isTimePickerVisible, setTimePickerVisible] = useState(false);
-  const [isTimePickerVisible2, setTimePickerVisible2] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showTimePicker2, setShowTimePicker2] = useState(false);
 
   useEffect(() => {
     const initialize = async () => {
@@ -34,23 +31,9 @@ export default function SettingsScreen() {
     initialize();
 
     return () => {
-      if (sound) {
-        sound.unloadAsync();
-      }
+      if (sound) sound.unloadAsync();
     };
   }, []);
-
-  useEffect(() => {
-    const updateNotifications = async () => {
-      if (notificationsEnabled && Platform.OS !== 'web') {
-        const { status } = await Notifications.getPermissionsAsync();
-        if (status === 'granted') {
-          await scheduleNotification();
-        }
-      }
-    };
-    updateNotifications();
-  }, [notificationsEnabled, reminderTime, reminderTime2, secondReminderEnabled]);
 
   const loadSettings = async () => {
     try {
@@ -72,12 +55,17 @@ export default function SettingsScreen() {
         [______, haptEnabled]
       ] = settings;
 
+      const defaultTime = new Date();
+      defaultTime.setHours(8, 0, 0, 0);
+      const defaultTime2 = new Date();
+      defaultTime2.setHours(9, 0, 0, 0);
+
       setNotificationsEnabled(notifEnabled === 'true');
-      setReminderTime(rTime || '8:00 AM');
-      setReminderTime2(rTime2 || '9:00 AM');
+      setReminderTime(rTime ? new Date(parseInt(rTime)) : defaultTime);
+      setReminderTime2(rTime2 ? new Date(parseInt(rTime2)) : defaultTime2);
       setSecondReminderEnabled(secondRemEnabled === 'true');
-      setSoundEnabled(sndEnabled !== 'false'); // Default to true if not set
-      setHapticEnabled(haptEnabled !== 'false'); // Default to true if not set
+      setSoundEnabled(sndEnabled !== 'false');
+      setHapticEnabled(haptEnabled !== 'false');
     } catch (error) {
       console.error("Error loading settings:", error);
     }
@@ -104,21 +92,14 @@ export default function SettingsScreen() {
   };
 
   const registerForPushNotificationsAsync = async () => {
-    if (Platform.OS === 'web') return;
+    if (Platform.OS === 'web') return false;
 
     try {
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-
-      if (finalStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
         Alert.alert(
           'Permission Required',
-          'Please enable notifications in your device settings to receive reminders.',
+          'Please enable notifications in settings.',
           [{ text: 'OK' }]
         );
         return false;
@@ -131,6 +112,17 @@ export default function SettingsScreen() {
           shouldSetBadge: false,
         }),
       });
+
+      // Set up notification channel for Android
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('declaration-reminders', {
+          name: 'Declaration Reminders',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#FF231F7C',
+        });
+      }
+
       return true;
     } catch (error) {
       console.error('Error setting up notifications:', error);
@@ -138,41 +130,42 @@ export default function SettingsScreen() {
     }
   };
 
-  const scheduleNotification = async () => {
+  const scheduleNotifications = useCallback(async () => {
     if (Platform.OS === 'web' || !notificationsEnabled) return;
 
     try {
+      console.log('Canceling all scheduled notifications');
       await Notifications.cancelAllScheduledNotificationsAsync();
 
-      await scheduleReminderAtTime(reminderTime, 'first-reminder');
+      console.log('Scheduling first reminder at:', reminderTime.toLocaleTimeString());
+      await scheduleNotification(reminderTime, 'first-reminder');
 
       if (secondReminderEnabled) {
-        await scheduleReminderAtTime(reminderTime2, 'second-reminder');
+        console.log('Scheduling second reminder at:', reminderTime2.toLocaleTimeString());
+        await scheduleNotification(reminderTime2, 'second-reminder');
       }
+
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      console.log('Scheduled notifications:', scheduled);
     } catch (error) {
       console.error('Error scheduling notifications:', error);
-      if (Platform.OS !== 'web') {
-        Alert.alert('Error', 'Failed to schedule notifications');
-      }
     }
-  };
+  }, [notificationsEnabled, reminderTime, reminderTime2, secondReminderEnabled, soundEnabled]);
 
-  const scheduleReminderAtTime = async (timeString, identifier) => {
+  const scheduleNotification = async (time, identifier) => {
     try {
-      const timePattern = /(\d+):(\d+)\s*(AM|PM)/i;
-      const match = timeString.match(timePattern);
+      const now = new Date();
+      const triggerDate = new Date(now);
+      triggerDate.setHours(time.getHours());
+      triggerDate.setMinutes(time.getMinutes());
+      triggerDate.setSeconds(0);
+      triggerDate.setMilliseconds(0);
 
-      if (!match) return;
+      if (triggerDate < now) {
+        triggerDate.setDate(now.getDate() + 1);
+      }
 
-      let hours = parseInt(match[1], 10);
-      const minutes = parseInt(match[2], 10);
-      const period = match[3].toUpperCase();
-
-      if (period === 'PM' && hours < 12) hours += 12;
-      if (period === 'AM' && hours === 12) hours = 0;
-
-      // Cancel existing notification before scheduling new one
-      await Notifications.cancelScheduledNotificationAsync(identifier);
+      console.log(`Scheduling ${identifier} for:`, triggerDate.toISOString());
 
       await Notifications.scheduleNotificationAsync({
         identifier,
@@ -182,40 +175,28 @@ export default function SettingsScreen() {
           sound: soundEnabled ? 'default' : false,
         },
         trigger: {
-          hour: hours,
-          minute: minutes,
+          channelId: 'declaration-reminders',
+          date: triggerDate,
           repeats: true,
         },
-      }).catch(error => {
-        console.error('Failed to schedule notification:', error);
       });
     } catch (error) {
-      console.error('Error in scheduleReminderAtTime:', error);
+      console.error(`Error scheduling ${identifier}:`, error);
     }
   };
 
   const toggleNotifications = async (value) => {
     try {
-      if (value) {
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        
-        if (existingStatus !== 'granted') {
-          const { status } = await Notifications.requestPermissionsAsync();
-          if (status !== 'granted') {
-            Alert.alert(
-              "Notification Permission",
-              "Please enable notifications for this app in your device settings to receive reminders.",
-              [{ text: "OK" }]
-            );
-            return;
-          }
-        }
+      if (value && (await Notifications.getPermissionsAsync()).status !== 'granted') {
+        const permissionGranted = await registerForPushNotificationsAsync();
+        if (!permissionGranted) return;
       }
-
       setNotificationsEnabled(value);
       await saveSettings('notificationsEnabled', value);
-
-      if (!value) {
+      if (value) {
+        await scheduleNotifications();
+      } else {
+        console.log('Canceling all notifications due to toggle off');
         await Notifications.cancelAllScheduledNotificationsAsync();
       }
     } catch (error) {
@@ -237,44 +218,42 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleTimeConfirm = async (date) => {
-    try {
-      const hours = date.getHours();
-      const minutes = date.getMinutes();
-      const period = hours >= 12 ? 'PM' : 'AM';
-      const formattedHours = hours % 12 === 0 ? 12 : hours % 12;
-      const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
-      const formattedTime = `${formattedHours}:${formattedMinutes} ${period}`;
-
-      setTimePickerVisible(false);
-      setReminderTime(formattedTime);
-      await saveSettings('reminderTime', formattedTime);
-
-      if (notificationsEnabled) {
-        await scheduleNotification();
+  const handleTimeChange = async (event, selectedDate) => {
+    if (event.type === 'dismissed') {
+      setShowTimePicker(false);
+      return;
+    }
+    if (selectedDate) {
+      setReminderTime(selectedDate);
+      await saveSettings('reminderTime', selectedDate.getTime());
+      if (Platform.OS !== 'ios') {
+        setShowTimePicker(false);
       }
-    } catch (error) {
-      console.error('Error in handleTimeConfirm:', error);
+      if (notificationsEnabled) {
+        await scheduleNotifications();
+      }
     }
   };
 
-  const handleTimeConfirm2 = async (date) => {
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const formattedHours = hours % 12 === 0 ? 12 : hours % 12;
-    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
-    const formattedTime = `${formattedHours}:${formattedMinutes} ${period}`;
+  const handleTimeChange2 = async (event, selectedDate) => {
+    if (event.type === 'dismissed') {
+      setShowTimePicker2(false);
+      return;
+    }
+    if (selectedDate) {
+      setReminderTime2(selectedDate);
+      await saveSettings('reminderTime2', selectedDate.getTime());
+      if (Platform.OS !== 'ios') {
+        setShowTimePicker2(false);
+      }
+      if (notificationsEnabled && secondReminderEnabled) {
+        await scheduleNotifications();
+      }
+    }
+  };
 
-    setReminderTime2(formattedTime);
-    await saveSettings('reminderTime2', formattedTime)
-      .then(() => {
-        if (notificationsEnabled && secondReminderEnabled) {
-          // Small delay to ensure state is saved before scheduling
-          setTimeout(() => scheduleNotification(), 300);
-        }
-      });
-    setTimePickerVisible2(false);
+  const formatTime = (date) => {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   const resetAllData = async () => {
@@ -289,12 +268,18 @@ export default function SettingsScreen() {
           onPress: async () => {
             try {
               await AsyncStorage.clear();
+              const defaultTime = new Date();
+              defaultTime.setHours(8, 0, 0, 0);
+              const defaultTime2 = new Date();
+              defaultTime2.setHours(9, 0, 0, 0);
+
               setNotificationsEnabled(false);
-              setReminderTime('8:00 AM');
-              setReminderTime2('9:00 AM');
+              setReminderTime(defaultTime);
+              setReminderTime2(defaultTime2);
               setSecondReminderEnabled(false);
               setSoundEnabled(true);
               setHapticEnabled(true);
+              await Notifications.cancelAllScheduledNotificationsAsync();
               Alert.alert("Success", "All data has been reset.");
             } catch (error) {
               console.error("Error resetting data:", error);
@@ -307,359 +292,219 @@ export default function SettingsScreen() {
   };
 
   const renderSettingSection = (title, icon, children) => (
-    <BlurView 
-      intensity={80} 
-      tint={colorScheme === 'dark' ? 'dark' : 'light'} 
-      style={styles.section}
-    >
+    <ThemedView style={styles.section}>
       <ThemedView style={styles.sectionHeader}>
-        <Ionicons name={icon} size={24} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} />
+        <Ionicons name={icon} size={20} color="#11181C" />
         <ThemedText style={styles.sectionTitle}>{title}</ThemedText>
       </ThemedView>
       {children}
-    </BlurView>
-  );
-
-  const SimpleTimePicker = ({ isVisible, onConfirm, onCancel, initialTime }) => {
-    const [selectedHour, setSelectedHour] = useState(initialTime ? parseInt(initialTime.split(':')[0]) : 8);
-    const [selectedMinute, setSelectedMinute] = useState(initialTime ? parseInt(initialTime.split(':')[1].split(' ')[0]) : 0);
-    const [selectedPeriod, setSelectedPeriod] = useState(initialTime ? initialTime.split(' ')[1] : 'AM');
-
-    const hours = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
-    const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
-    const periods = ['AM', 'PM'];
-
-    const handleConfirm = () => {
-      const date = new Date();
-      let hours24 = selectedHour;
-      if (selectedPeriod === 'PM' && selectedHour < 12) hours24 += 12;
-      if (selectedPeriod === 'AM' && selectedHour === 12) hours24 = 0;
-      date.setHours(hours24);
-      date.setMinutes(parseInt(selectedMinute));
-      date.setSeconds(0);
-      onConfirm(date);
-    };
-
-    if (!isVisible) return null;
-
-    return (
-      <Modal visible={isVisible} transparent={true} animationType="slide">
-        <View style={styles.modalOverlay}>
-          <BlurView intensity={90} tint="light" style={styles.pickerContainer}>
-            <ThemedText style={styles.pickerTitle}>Select Time</ThemedText>
-            <View style={styles.pickerRowContainer}>
-              <View style={styles.pickerColumn}>
-                <ThemedText style={styles.pickerColumnLabel}>Hour</ThemedText>
-                <ScrollView style={styles.simplePickerList}>
-                  {hours.map(hour => (
-                    <TouchableOpacity
-                      key={hour}
-                      style={[styles.pickerItem, selectedHour === parseInt(hour) && styles.selectedItem]}
-                      onPress={() => setSelectedHour(parseInt(hour))}
-                    >
-                      <ThemedText style={[styles.pickerItemText, selectedHour === parseInt(hour) && styles.selectedText]}>
-                        {hour}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-              <View style={styles.pickerColumn}>
-                <ThemedText style={styles.pickerColumnLabel}>Minute</ThemedText>
-                <ScrollView style={styles.simplePickerList}>
-                  {minutes.map(minute => (
-                    <TouchableOpacity
-                      key={minute}
-                      style={[styles.pickerItem, selectedMinute === parseInt(minute) && styles.selectedItem]}
-                      onPress={() => setSelectedMinute(parseInt(minute))}
-                    >
-                      <ThemedText style={[styles.pickerItemText, selectedMinute === parseInt(minute) && styles.selectedText]}>
-                        {minute}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-              <View style={[styles.pickerColumn, styles.periodContainer]}>
-                <ThemedText style={styles.pickerColumnLabel}>Period</ThemedText>
-                <View>
-                  {periods.map(period => (
-                    <TouchableOpacity
-                      key={period}
-                      style={[styles.periodItem, selectedPeriod === period && styles.selectedItem]}
-                      onPress={() => setSelectedPeriod(period)}
-                    >
-                      <ThemedText style={[styles.pickerItemText, selectedPeriod === period && styles.selectedText]}>
-                        {period}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            </View>
-            <View style={styles.pickerButtonContainer}>
-              <TouchableOpacity style={styles.pickerButton} onPress={onCancel}>
-                <ThemedText style={styles.pickerButtonText}>Cancel</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.pickerButton, styles.confirmButton]} onPress={handleConfirm}>
-                <ThemedText style={[styles.pickerButtonText, { color: '#fff' }]}>Confirm</ThemedText>
-              </TouchableOpacity>
-            </View>
-          </BlurView>
-        </View>
-      </Modal>
-    );
-  };
-
-  return (
-    <ThemedView style={styles.container}>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      <ThemedText style={styles.title}>Settings</ThemedText>
-      <ScrollView style={styles.scrollView}>
-        {renderSettingSection("Notifications", "notifications-outline", (
-          <>
-            <ThemedView style={styles.settingRow}>
-              <ThemedText>Enable Reminders</ThemedText>
-              <Switch
-                value={notificationsEnabled}
-                onValueChange={toggleNotifications}
-                trackColor={{ false: '#767577', true: '#0a7ea4' }}
-                thumbColor="#f4f3f4"
-              />
-            </ThemedView>
-            <TouchableOpacity onPress={() => setTimePickerVisible(true)}>
-              <ThemedView style={styles.settingRow}>
-                <ThemedText>Reminder Time 1</ThemedText>
-                <ThemedText>{reminderTime}</ThemedText>
-              </ThemedView>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setTimePickerVisible2(true)}>
-              <ThemedView style={styles.settingRow}>
-                <ThemedText>Reminder Time 2</ThemedText>
-                <ThemedText>{reminderTime2}</ThemedText>
-              </ThemedView>
-            </TouchableOpacity>
-            <ThemedView style={styles.settingRow}>
-              <ThemedText>Enable Reminder 2</ThemedText>
-              <Switch
-                value={secondReminderEnabled}
-                onValueChange={(value) => {
-                  setSecondReminderEnabled(value);
-                  saveSettings('secondReminderEnabled', value);
-                }}
-                trackColor={{ false: '#767577', true: '#0a7ea4' }}
-                thumbColor="#f4f3f4"
-              />
-            </ThemedView>
-            <SimpleTimePicker
-              isVisible={isTimePickerVisible}
-              onConfirm={handleTimeConfirm}
-              onCancel={() => setTimePickerVisible(false)}
-              initialTime={reminderTime}
-            />
-            <SimpleTimePicker
-              isVisible={isTimePickerVisible2}
-              onConfirm={handleTimeConfirm2}
-              onCancel={() => setTimePickerVisible2(false)}
-              initialTime={reminderTime2}
-            />
-          </>
-        ))}
-        {renderSettingSection("Feedback", "options-outline", (
-          <>
-            <ThemedView style={styles.settingRow}>
-              <ThemedText>Sound Effects</ThemedText>
-              <Switch
-                value={soundEnabled}
-                onValueChange={toggleSound}
-                trackColor={{ false: '#767577', true: '#0a7ea4' }}
-                thumbColor="#f4f3f4"
-              />
-            </ThemedView>
-            <ThemedView style={styles.settingRow}>
-              <ThemedText>Haptic Feedback</ThemedText>
-              <Switch
-                value={hapticEnabled}
-                onValueChange={toggleHaptic}
-                trackColor={{ false: '#767577', true: '#0a7ea4' }}
-                thumbColor="#f4f3f4"
-              />
-            </ThemedView>
-          </>
-        ))}
-        {renderSettingSection("Data Management", "server-outline", (
-          <TouchableOpacity style={styles.dangerButton} onPress={resetAllData}>
-            <ThemedText style={styles.dangerButtonText}>Reset All Data</ThemedText>
-          </TouchableOpacity>
-        ))}
-        {renderSettingSection("About", "information-circle-outline", (
-          <>
-            <ThemedView style={styles.settingRow}>
-              <ThemedText>Version</ThemedText>
-              <ThemedText>1.0.0</ThemedText>
-            </ThemedView>
-            <TouchableOpacity
-              style={styles.linkButton}
-              onPress={() => Linking.openURL('https://yourwebsite.com/privacy')}
-            >
-              <ThemedText style={styles.linkButtonText}>Privacy Policy</ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.linkButton}
-              onPress={() => Linking.openURL('https://yourwebsite.com/terms')}
-            >
-              <ThemedText style={styles.linkButtonText}>Terms of Service</ThemedText>
-            </TouchableOpacity>
-          </>
-        ))}
-      </ScrollView>
     </ThemedView>
   );
-}
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar style="dark" />
+      <ThemedView style={styles.container}>
+        <ThemedText style={styles.title}>Settings</ThemedText>
+        <ScrollView style={styles.scrollView}>
+          {renderSettingSection("NOTIFICATIONS", "notifications-outline", (
+            <>
+              <ThemedView style={styles.settingRow}>
+                <ThemedText style={styles.settingText}>ENABLE REMINDERS</ThemedText>
+                <Switch
+                  value={notificationsEnabled}
+                  onValueChange={toggleNotifications}
+                  trackColor={{ false: '#767577', true: '#0a7ea4' }}
+                  thumbColor="#f4f3f4"
+                />
+              </ThemedView>
+              <TouchableOpacity onPress={() => setShowTimePicker(true)}>
+                <ThemedView style={styles.settingRow}>
+                  <ThemedText style={styles.settingText}>REMINDER TIME 1</ThemedText>
+                  <ThemedText style={styles.timeText}>{formatTime(reminderTime)}</ThemedText>
+                </ThemedView>
+              </TouchableOpacity>
+              {showTimePicker && (
+                <View>
+                  <DateTimePicker
+                    value={reminderTime}
+                    mode="time"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={handleTimeChange}
+                  />
+                  {Platform.OS === 'ios' && (
+                    <Button title="Done" onPress={() => setShowTimePicker(false)} />
+                  )}
+                </View>
+              )}
+              <TouchableOpacity onPress={() => setShowTimePicker2(true)}>
+                <ThemedView style={styles.settingRow}>
+                  <ThemedText style={styles.settingText}>REMINDER TIME 2</ThemedText>
+                  <ThemedText style={styles.timeText}>{formatTime(reminderTime2)}</ThemedText>
+                </ThemedView>
+              </TouchableOpacity>
+              {showTimePicker2 && (
+                <View>
+                  <DateTimePicker
+                    value={reminderTime2}
+                    mode="time"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={handleTimeChange2}
+                  />
+                  {Platform.OS === 'ios' && (
+                    <Button title="Done" onPress={() => setShowTimePicker2(false)} />
+                  )}
+                </View>
+              )}
+              <ThemedView style={styles.settingRow}>
+                <ThemedText style={styles.settingText}>ENABLE REMINDER 2</ThemedText>
+                <Switch
+                  value={secondReminderEnabled}
+                  onValueChange={(value) => {
+                    setSecondReminderEnabled(value);
+                    saveSettings('secondReminderEnabled', value);
+                    if (notificationsEnabled && value) {
+                      scheduleNotifications();
+                    }
+                  }}
+                  trackColor={{ false: '#767577', true: '#0a7ea4' }}
+                  thumbColor="#f4f3f4"
+                />
+              </ThemedView>
+            </>
+          ))}
+          {renderSettingSection("FEEDBACK", "options-outline", (
+            <>
+              <ThemedView style={styles.settingRow}>
+                <ThemedText style={styles.settingText}>SOUND EFFECTS</ThemedText>
+                <Switch
+                  value={soundEnabled}
+                  onValueChange={toggleSound}
+                  trackColor={{ false: '#767577', true: '#0a7ea4' }}
+                  thumbColor="#f4f3f4"
+                />
+              </ThemedView>
+              <ThemedView style={styles.settingRow}>
+                <ThemedText style={styles.settingText}>HAPTIC FEEDBACK</ThemedText>
+                <Switch
+                  value={hapticEnabled}
+                  onValueChange={toggleHaptic}
+                  trackColor={{ false: '#767577', true: '#0a7ea4' }}
+                  thumbColor="#f4f3f4"
+                />
+              </ThemedView>
+            </>
+          ))}
+          {renderSettingSection("DATA MANAGEMENT", "server-outline", (
+            <TouchableOpacity style={styles.dangerButton} onPress={resetAllData}>
+              <ThemedText style={styles.dangerButtonText}>Reset All Data</ThemedText>
+            </TouchableOpacity>
+          ))}
+          {renderSettingSection("ABOUT", "information-circle-outline", (
+            <>
+              <ThemedView style={styles.settingRow}>
+                <ThemedText style={styles.settingText}>Version</ThemedText>
+                <ThemedText style={styles.timeText}>1.0.0</ThemedText>
+              </ThemedView>
+              <TouchableOpacity
+                style={styles.linkButton}
+                onPress={() => Linking.openURL('https://yourwebsite.com/privacy')}
+              >
+                <ThemedText style={styles.linkButtonText}>Privacy Policy</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.linkButton}
+                onPress={() => Linking.openURL('https://yourwebsite.com/terms')}
+              >
+                <ThemedText style={styles.linkButtonText}>Terms of Service</ThemedText>
+              </TouchableOpacity>
+            </>
+          ))}
+        </ScrollView>
+      </ThemedView>
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   container: {
     flex: 1,
-    padding: width * 0.04,
+    paddingHorizontal: 0, // Remove horizontal padding to allow full width
+    backgroundColor: '#fff',
   },
-  scrollViewContent: {
-    paddingBottom: height * 0.1,
+  scrollView: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    marginTop: 10,
+    textAlign: 'center',
+    color: '#000',
   },
   section: {
-    marginBottom: height * 0.04,
-    borderRadius: 16,
+    marginBottom: 20,
+    marginHorizontal: 16, // Add margin to prevent sticking to edges
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     overflow: 'hidden',
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: height * 0.015,
-    paddingHorizontal: width * 0.04,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
     backgroundColor: 'rgba(0, 0, 0, 0.1)',
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: 'bold',
     marginLeft: 10,
+    color: '#11181C',
   },
   settingRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: height * 0.018,
-    paddingHorizontal: width * 0.04,
-    borderBottomWidth: 0.5,
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  settingText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#11181C',
   },
   timeText: {
     fontSize: 16,
+    fontWeight: '500',
     color: '#0a7ea4',
   },
-  buttonContainer: {
-    marginTop: height * 0.04,
-  },
-  resetButton: {
+  dangerButton: {
     backgroundColor: '#FF3B30',
-    paddingVertical: height * 0.015,
-    paddingHorizontal: width * 0.04,
+    padding: 15,
     borderRadius: 8,
     alignItems: 'center',
+    margin: 10,
   },
-  resetButtonText: {
+  dangerButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  linkButton: {
+    padding: 15,
   },
-  pickerContainer: {
-    width: Math.min(width * 0.85, 400),
-    maxHeight: height * 0.7,
-    borderRadius: 16,
-    paddingHorizontal: width * 0.05,
-    paddingVertical: height * 0.02,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-  },
-  pickerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: height * 0.025,
-  },
-  pickerRowContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: height * 0.025,
-    width: '100%',
-  },
-  pickerColumn: {
-    flex: 1,
-    alignItems: 'center',
-    marginHorizontal: width * 0.02,
-  },
-  pickerColumnLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  simplePickerList: {
-    height: 150,
-    width: '100%',
-  },
-  pickerItem: {
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 8,
-    marginVertical: 2,
-  },
-  pickerItemText: {
+  linkButtonText: {
+    color: '#0a7ea4',
     fontSize: 16,
-    textAlign: 'center',
-  },
-  selectedItem: {
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-  },
-  selectedText: {
-    fontWeight: '600',
-    color: '#007AFF',
-  },
-  periodContainer: {
-    height: 150,
-    justifyContent: 'center',
-  },
-  periodItem: {
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 8,
-    marginVertical: 10,
-  },
-  pickerButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginTop: 10,
-  },
-  pickerButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 5,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-  },
-  confirmButton: {
-    backgroundColor: '#007AFF',
-  },
-  pickerButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
+
+export default SettingsScreen;
