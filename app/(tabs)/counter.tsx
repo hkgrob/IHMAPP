@@ -246,7 +246,6 @@ export default function CounterScreen() {
       <StatusBar style="auto" />
       <Stack.Screen
         options={{
-          title: 'Declaration Counter',
           headerShown: false,
         }}
       />
@@ -259,10 +258,8 @@ export default function CounterScreen() {
         showsVerticalScrollIndicator={false}
       >
         <ThemedView style={styles.content}> {/* Added content wrapper */}
+          <ThemedText style={styles.pageTitle}>Declaration Counter</ThemedText> {/* Moved title outside */}
           <ThemedView style={styles.counterContainer}>
-            <ThemedText style={styles.title} numberOfLines={2} adjustsFontSizeToFit>
-              Declaration Counter
-            </ThemedText>
 
             <ThemedView style={styles.statsContainer}>
               <ThemedView style={[styles.statCard, { backgroundColor: 'rgba(144, 238, 144, 0.3)' }]}>
@@ -367,8 +364,14 @@ export default function CounterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
+    paddingHorizontal: 16,
+    paddingTop: 0, // Remove extra top padding
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginVertical: 12,
   },
   content: {
     flex: 1,
