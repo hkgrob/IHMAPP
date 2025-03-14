@@ -1,37 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TouchableOpacity, Platform, Alert, Dimensions, Text, StatusBar } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useState, useEffect, useRef } from 'react';
+import { Text, View, StyleSheet, TouchableOpacity, Dimensions, Vibration, Alert, ScrollView, StatusBar } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Header } from '@/components/Header';
-import * as Haptics from 'expo-haptics';
-import { Stack } from 'expo-router';
-import { ScrollView } from 'react-native';
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { BlurView } from 'expo-blur';
-import { Ionicons } from '@expo/vector-icons';
+import Colors from '@/constants/Colors';
 import { Audio } from 'expo-av';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function CounterScreen() {
-  const [count, setCount] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
+const { width } = Dimensions.get('window');
+
+export default function CounterPage() {
   const [dailyCount, setDailyCount] = useState(0);
-  const [lastReset, setLastReset] = useState('');
-  const [hapticEnabled, setHapticEnabled] = useState(true); // Initialize to true
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [sound, setSound] = useState(null);
-  const iconColor = useThemeColor({}, 'icon');
-  const tintColor = useThemeColor({}, 'tint');
-  const textColor = useThemeColor({}, 'text');
-  const windowWidth = Dimensions.get('window').width;
+  const [totalCount, setTotalCount] = useState(0);
+  const [sound, setSound] = useState();
+  const colorScheme = useColorScheme();
+  const buttonColor = colorScheme === 'dark' ? Colors.dark.tint : Colors.light.tint;
+  const lastResetDate = useRef(new Date());
 
   useEffect(() => {
-    loadHapticSetting();
-    loadSoundSetting();
+    loadCounts();
     loadSound();
-    loadCounts(); // Load counts after settings
 
     return () => {
       if (sound) {
@@ -40,474 +29,245 @@ export default function CounterScreen() {
     };
   }, []);
 
-  const loadCounts = async () => {
-    try {
-      const storedTotalCount = await AsyncStorage.getItem('totalCount');
-      const storedDailyCount = await AsyncStorage.getItem('dailyCount');
-      const storedLastReset = await AsyncStorage.getItem('lastReset');
-
-      console.log('Loading counts:', { storedTotalCount, storedDailyCount, storedLastReset });
-
-      if (storedTotalCount !== null) {
-        setTotalCount(parseInt(storedTotalCount) || 0);
-      } else {
-        setTotalCount(0);
-        await AsyncStorage.setItem('totalCount', '0');
-      }
-
-      const today = new Date().toDateString();
-      if (storedLastReset !== today || storedDailyCount === null) {
-        await AsyncStorage.setItem('dailyCount', '0');
-        await AsyncStorage.setItem('lastReset', today);
-        setDailyCount(0);
-        setLastReset(today);
-      } else {
-        if (storedDailyCount !== null) {
-          setDailyCount(parseInt(storedDailyCount) || 0);
-        } else {
-          setDailyCount(0);
-          await AsyncStorage.setItem('dailyCount', '0');
-        }
-        if (storedLastReset) setLastReset(storedLastReset);
-      }
-    } catch (error) {
-      console.error('Error loading counts', error);
-      setDailyCount(0);
-      setTotalCount(0);
-      await AsyncStorage.setItem('dailyCount', '0');
-      await AsyncStorage.setItem('totalCount', '0');
-    }
-  };
-
-  const saveCounts = async (newDaily: number, newTotal: number) => {
-    try {
-      await AsyncStorage.setItem('dailyCount', newDaily.toString());
-      await AsyncStorage.setItem('totalCount', newTotal.toString());
-      console.log('Counts saved successfully:', { newDaily, newTotal });
-    } catch (error) {
-      console.error('Error saving counts', error);
-    }
-  };
-
   const loadSound = async () => {
     try {
-      const soundAsset = require('../../assets/sounds/click.mp3');
-      console.log('Loading sound asset in counter:', soundAsset);
+      console.log('Loading sound asset in counter:', require('@/assets/sounds/click.mp3'));
+      const { sound } = await Audio.Sound.createAsync(require('@/assets/sounds/click.mp3'));
+      setSound(sound);
+      console.log('Sound loaded successfully in counter');
+    } catch (error) {
+      console.error('Error loading sound:', error);
+    }
+  };
 
-      const { sound } = await Audio.Sound.createAsync(
-        soundAsset,
-        { shouldPlay: false }
-      );
+  const loadCounts = async () => {
+    try {
+      const storedDailyCount = await AsyncStorage.getItem('dailyCount');
+      const storedTotalCount = await AsyncStorage.getItem('totalCount');
+      const storedLastReset = await AsyncStorage.getItem('lastReset');
 
+      console.log('Loading counts:', {storedTotalCount, storedDailyCount, storedLastReset});
+
+      if (storedTotalCount) {
+        setTotalCount(parseInt(storedTotalCount, 10));
+      }
+
+      if (storedLastReset) {
+        lastResetDate.current = new Date(storedLastReset);
+        const today = new Date();
+
+        if (today.toDateString() !== lastResetDate.current.toDateString()) {
+          // Reset daily count if it's a new day
+          setDailyCount(0);
+          lastResetDate.current = today;
+          await AsyncStorage.setItem('lastReset', today.toString());
+          await AsyncStorage.setItem('dailyCount', '0');
+        } else if (storedDailyCount) {
+          setDailyCount(parseInt(storedDailyCount, 10));
+        }
+      } else {
+        // First time app is used, store today's date
+        await AsyncStorage.setItem('lastReset', new Date().toString());
+      }
+    } catch (error) {
+      console.error('Error loading counts:', error);
+    }
+  };
+
+  const playSound = async () => {
+    try {
       if (sound) {
-        setSound(sound);
-        console.log('Sound loaded successfully in counter');
-      } else {
-        console.error('Sound object is null or undefined');
+        await sound.replayAsync();
       }
     } catch (error) {
-      console.error('Error loading sound in counter:', error);
+      console.error('Error playing sound:', error);
     }
   };
 
-  const loadHapticSetting = async () => {
+  const incrementCounter = async () => {
     try {
-      const storedHaptic = await AsyncStorage.getItem('hapticEnabled');
-      setHapticEnabled(storedHaptic === 'true'); //Directly sets the state.
-    } catch (error) {
-      console.error("Error loading haptic setting:", error);
-      // Handle error - perhaps set a default value
-      setHapticEnabled(true); // Default to enabled if loading fails
-    }
-  };
+      // Play sound and vibrate
+      playSound();
+      Vibration.vibrate(50);
 
-  const loadSoundSetting = async () => {
-    try {
-      const storedSound = await AsyncStorage.getItem('soundEnabled');
-      setSoundEnabled(storedSound === 'true');
-    } catch (error) {
-      console.error("Error loading sound setting:", error);
-      setSoundEnabled(true); //Default to enabled if loading fails.
-    }
-  };
-
-  const incrementCount = async () => {
-    try {
-      console.log('Increment button pressed');
-
-      // Update UI count
-      setCount(prevCount => prevCount + 1);
-
-
-      // Play haptic feedback if enabled and platform is not web
-      if (hapticEnabled && Platform.OS !== 'web') {
-        try {
-          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          console.log('Haptic feedback applied successfully');
-        } catch (hapticError) {
-          console.error('Error applying haptic feedback:', hapticError);
-        }
-      } else {
-          console.log('Haptic feedback not applied: Haptic disabled or web platform');
-      }
-
-      // Play sound if enabled
-      if (soundEnabled && sound) {
-        console.log('Playing sound');
-        try {
-          await sound.setPositionAsync(0);
-          await sound.playAsync();
-        } catch (soundError) {
-          console.error('Error playing sound:', soundError);
-        }
-      } else {
-        console.log('Sound not played: Sound disabled');
-      }
-
-      // Update and save daily and total counts
+      // Update counts
       const newDailyCount = dailyCount + 1;
       const newTotalCount = totalCount + 1;
+
       setDailyCount(newDailyCount);
       setTotalCount(newTotalCount);
-      await saveCounts(newDailyCount, newTotalCount);
+
+      // Save to storage
+      await AsyncStorage.setItem('dailyCount', newDailyCount.toString());
+      await AsyncStorage.setItem('totalCount', newTotalCount.toString());
     } catch (error) {
-      console.error('Error incrementing count:', error);
+      console.error('Error incrementing counter:', error);
     }
   };
 
-  const resetDailyCount = async () => {
+  const resetCounter = async (type) => {
     try {
-      if (Platform.OS === 'web') {
-        if (!window.confirm('Are you sure you want to reset your daily count?')) return;
-      } else {
-        Alert.alert(
-          "Reset Daily Count",
-          "Are you sure you want to reset your daily count?",
-          [
-            { text: "Cancel", style: "cancel" },
-            { 
-              text: "Reset", 
-              style: "destructive",
-              onPress: async () => {
-                await AsyncStorage.setItem('dailyCount', '0');
-                setDailyCount(0);
-                console.log('Daily count reset successfully');
-              }
-            }
-          ]
-        );
-        return;
+      if (type === 'daily') {
+        await AsyncStorage.setItem('dailyCount', '0');
+        setDailyCount(0);
+        Alert.alert('Success', 'Daily count reset');
+      } else if (type === 'total') {
+        await AsyncStorage.setItem('totalCount', '0');
+        setTotalCount(0);
+        Alert.alert('Success', 'Total count reset');
       }
-      await AsyncStorage.setItem('dailyCount', '0');
-      setDailyCount(0);
-      console.log('Daily count reset successfully');
     } catch (error) {
-      console.error('Error resetting daily count:', error);
+      console.error('Error resetting counter:', error);
+      Alert.alert('Error', 'Could not reset counter');
     }
   };
-
-  const resetTotalCount = async () => {
-    try {
-      if (Platform.OS === 'web') {
-        if (!window.confirm('Are you sure you want to reset your total count?')) return;
-      } else {
-        Alert.alert(
-          "Reset Total Count",
-          "Are you sure you want to reset your total count? This will clear all your declaration history.",
-          [
-            { text: "Cancel", style: "cancel" },
-            { 
-              text: "Reset", 
-              style: "destructive",
-              onPress: async () => {
-                await AsyncStorage.setItem('totalCount', '0');
-                setTotalCount(0);
-                console.log('Total count reset successfully');
-              }
-            }
-          ]
-        );
-        return;
-      }
-      await AsyncStorage.setItem('totalCount', '0');
-      setTotalCount(0);
-      console.log('Total count reset successfully');
-    } catch (error) {
-      console.error('Error resetting total count:', error);
-    }
-  };
-
-  const isSmallScreen = windowWidth < 350;
-
-  const baseFontSize = 36;
 
   return (
-    <ThemedView style={styles.container}>
-      <StatusBar style="auto" />
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
+    <SafeAreaView style={styles.safeArea}>
       <ScrollView 
-        contentContainerStyle={[
-          styles.scrollContent,
-          isSmallScreen && styles.scrollContentSmall,
-          { paddingTop: 0 } // Remove extra top padding
-        ]}
+        contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={false}
       >
-        <ThemedView style={styles.content}> {/* Added content wrapper */}
+        <ThemedView style={styles.container}>
           <ThemedText style={styles.pageTitle}>Declaration Counter</ThemedText>
+
           <ThemedView style={styles.counterContainer}>
+            <View style={styles.statsRow}>
+              <ThemedView style={styles.statCard}>
+                <ThemedText style={styles.statLabel}>Daily</ThemedText>
+                <ThemedText style={styles.statValue}>{dailyCount}</ThemedText>
+              </ThemedView>
 
-            <View style={styles.statsContainer}>
-              <View style={[styles.statCard, { backgroundColor: 'rgba(144, 238, 144, 0.3)' }]}>
-                <ThemedText style={styles.statLabel} numberOfLines={1}>Daily</ThemedText>
-                <Text 
-                  style={[styles.statValue, { fontSize: baseFontSize }]} 
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.5}
-                  maxFontSizeMultiplier={1.2}
-                >
-                  {dailyCount.toString()}
-                </Text>
-              </View>
-
-              <View style={[styles.statCard, { backgroundColor: 'rgba(144, 238, 144, 0.3)' }]}>
-                <ThemedText style={styles.statLabel} numberOfLines={1}>Total</ThemedText>
-                <Text 
-                  style={[styles.statValue, { fontSize: baseFontSize }]} 
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.5}
-                  maxFontSizeMultiplier={1.2}
-                >
-                  {totalCount.toString()}
-                </Text>
-              </View>
+              <ThemedView style={styles.statCard}>
+                <ThemedText style={styles.statLabel}>Total</ThemedText>
+                <ThemedText style={styles.statValue}>{totalCount}</ThemedText>
+              </ThemedView>
             </View>
 
             <TouchableOpacity
-              style={[styles.incrementButton, { backgroundColor: tintColor }]}
-              onPress={incrementCount}
+              style={[styles.countButton, { backgroundColor: buttonColor }]}
+              onPress={incrementCounter}
             >
-              <Text 
-                style={[styles.buttonText, { color: '#000000', textAlign: 'center' }]} 
-                numberOfLines={1}
-              >
-                Click!
-              </Text>
+              <Text style={styles.buttonText}>Click!</Text>
             </TouchableOpacity>
 
-            <ThemedView style={[
-              styles.resetContainer,
-              isSmallScreen && styles.resetContainerSmall
-            ]}>
-              <TouchableOpacity 
-                style={[
-                  styles.resetButton, 
-                  { borderColor: tintColor },
-                  isSmallScreen && styles.resetButtonSmall
-                ]} 
-                onPress={resetDailyCount}
+            <View style={styles.resetContainer}>
+              <TouchableOpacity
+                style={styles.resetButton}
+                onPress={() => resetCounter('daily')}
               >
-                <ThemedText 
-                  style={[
-                    styles.resetText, 
-                    { color: tintColor },
-                    isSmallScreen && styles.resetTextSmall
-                  ]}
-                  numberOfLines={1}
-                >
-                  Reset Daily
-                </ThemedText>
+                <ThemedText style={styles.resetButtonText}>Reset Daily</ThemedText>
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[
-                  styles.resetButton, 
-                  { borderColor: tintColor },
-                  isSmallScreen && styles.resetButtonSmall
-                ]} 
-                onPress={resetTotalCount}
+              <TouchableOpacity
+                style={styles.resetButton}
+                onPress={() => resetCounter('total')}
               >
-                <ThemedText 
-                  style={[
-                    styles.resetText, 
-                    { color: tintColor },
-                    isSmallScreen && styles.resetTextSmall
-                  ]}
-                  numberOfLines={1}
-                >
-                  Reset Total
-                </ThemedText>
+                <ThemedText style={styles.resetButtonText}>Reset Total</ThemedText>
               </TouchableOpacity>
-            </ThemedView>
+            </View>
           </ThemedView>
 
-          <View style={styles.tipsContainer}>
-            <BlurView intensity={90} tint={Platform.OS === 'ios' ? 'default' : 'light'} style={styles.tipsCard}>
-              <ThemedText style={styles.tipsTitle} numberOfLines={1}>
-                <Ionicons name="bulb-outline" size={18} color="#FFCC00" /> Tip
-              </ThemedText>
-              <ThemedText style={styles.tipsText} numberOfLines={4}>
-                Consistency is key! Aim to speak declarations aloud daily to build new neural pathways.
-              </ThemedText>
-            </BlurView>
+          <View style={styles.tipContainer}>
+            <ThemedText style={styles.tipIcon}>💡 Tip</ThemedText>
+            <ThemedText style={styles.tipText}>
+              Consistency is key! Aim to speak declarations at least once daily.
+            </ThemedText>
           </View>
-        </ThemedView> {/* Closed content wrapper */}
+        </ThemedView>
       </ScrollView>
-    </ThemedView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+  },
   container: {
     flex: 1,
+    padding: 16,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
   },
-  
   pageTitle: {
     fontSize: 24,
     fontWeight: 'bold',
+    marginVertical: 16,
     textAlign: 'center',
-    marginVertical: 12,
-  },
-  content: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'center', // Center content horizontally
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    paddingTop: 0,
-    alignItems: 'center', // Center content horizontally
-  },
-  scrollContentSmall: {
-    padding: 10,
-    alignItems: 'center', // Center content horizontally
-
   },
   counterContainer: {
-    marginTop: 20,
-    padding: 20,
-    borderRadius: 12,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
     width: '100%',
-    maxWidth: 450, //Added max width for responsiveness
-    alignItems: 'center', // Center items within the container
+    maxWidth: 400,
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 10,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  statsContainer: {
+  statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 30,
     width: '100%',
-    flexWrap: 'wrap', // Allow wrapping on smaller screens
+    marginBottom: 24,
   },
   statCard: {
-    width: '48%', // Adjust width for better layout
-    height: 120,
-    marginHorizontal: 5,
-    padding: 15,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    width: '48%',
+    padding: 16,
+    borderRadius: 8,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10, //Added margin for better spacing
   },
   statLabel: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
-    marginBottom: 8,
-    textAlign: 'center',
   },
   statValue: {
+    fontSize: 40,
     fontWeight: 'bold',
-    textAlign: 'center',
+    marginTop: 8,
   },
-  incrementButton: {
-    paddingVertical: 20,
-    paddingHorizontal: 30,
-    borderRadius: 12,
+  countButton: {
+    width: '100%',
+    padding: 20,
+    borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 20,
-    minWidth: 220,
-    minHeight: 60,
-    justifyContent: 'center',
-    width: '100%', //Added to make it take up full width
-    maxWidth: 450, //Added to limit max width
+    marginBottom: 24,
   },
   buttonText: {
-    color: '#000000',
-    fontSize: 18,
+    color: 'white',
+    fontSize: 20,
     fontWeight: 'bold',
-    textAlign: 'center',
   },
   resetContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10,
-    width: '100%', //Added to make it take up full width
-  },
-  resetContainerSmall: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    width: '100%', //Added to make it take up full width
+    width: '100%',
   },
   resetButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    borderWidth: 1,
     width: '48%',
+    padding: 12,
+    borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 10, //Added margin for better spacing
+    borderWidth: 1,
+    borderColor: '#ccc',
   },
-  resetButtonSmall: {
-    width: '100%',
+  resetButtonText: {
+    fontSize: 16,
   },
-  resetText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  resetTextSmall: {
-    fontSize: 12,
-  },
-  tipsContainer: {
+  tipContainer: {
     marginTop: 30,
-    marginBottom: 20,
-    alignItems: 'center',
     width: '100%',
+    padding: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
-  tipsCard: {
-    width: '100%',
-    padding: 20,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  tipsTitle: {
-    fontSize: 18,
+  tipIcon: {
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  tipsText: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
+  tipText: {
+    fontSize: 14,
+    lineHeight: 20,
+  }
 });
