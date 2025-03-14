@@ -363,35 +363,35 @@ export default function PodcastScreen() {
             >
               <Ionicons name="play-forward" size={30} color="#0a7ea4" />
             </TouchableOpacity>
-            
-            <View style={styles.volumeControl}>
-              <Ionicons name="volume-low" size={20} color="#0a7ea4" />
-              <Slider
-                style={styles.volumeSlider}
-                value={volume}
-                minimumValue={0}
-                maximumValue={1}
-                onValueChange={(value) => setVolume(value)}
-                minimumTrackTintColor="#0a7ea4"
-                maximumTrackTintColor="#ddd"
-                thumbTintColor="#0a7ea4"
-              />
-              <TouchableOpacity 
-                onPress={async () => {
-                  if (sound) {
-                    await sound.unloadAsync();
-                    setIsPlaying(false);
-                    setCurrentEpisodeId(null);
-                    setCurrentEpisodeTitle('');
-                    if (positionUpdateTimer.current) {
-                      clearInterval(positionUpdateTimer.current);
-                    }
+          </View>
+          
+          <View style={styles.volumeControl}>
+            <Ionicons name="volume-low" size={20} color="#0a7ea4" />
+            <Slider
+              style={styles.volumeSlider}
+              value={volume || 1}
+              minimumValue={0}
+              maximumValue={1}
+              onValueChange={(value) => setVolume(value)}
+              minimumTrackTintColor="#0a7ea4"
+              maximumTrackTintColor="#ddd"
+              thumbTintColor="#0a7ea4"
+            />
+            <TouchableOpacity 
+              onPress={async () => {
+                if (sound) {
+                  await sound.unloadAsync();
+                  setIsPlaying(false);
+                  setCurrentEpisodeId(null);
+                  setCurrentEpisodeTitle('');
+                  if (positionUpdateTimer.current) {
+                    clearInterval(positionUpdateTimer.current);
                   }
-                }}
-              >
-                <Ionicons name="close-circle" size={24} color="#0a7ea4" />
-              </TouchableOpacity>
-            </View>
+                }
+              }}
+            >
+              <Ionicons name="close-circle" size={24} color="#0a7ea4" />
+            </TouchableOpacity>
           </View>
         </View>
       )}
