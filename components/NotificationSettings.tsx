@@ -94,21 +94,26 @@ export const NotificationSettings = () => {
       
       console.log(`Creating reminder for ${defaultTime.toLocaleString()}`);
       
-      // Add reminder to storage only (no scheduling at this point)
+      // Add reminder to storage first without scheduling
       const newReminder = await addReminder(defaultTime);
       if (newReminder) {
         // Update UI with new reminder
         setReminders(prev => [...prev, newReminder]);
         
-        // Now carefully schedule all reminders (only once)
-        console.log('Scheduling notifications with the new reminder');
-        
-        // Add a delay to ensure storage operations are complete
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Give system time to process UI update before scheduling
+        await new Promise(resolve => setTimeout(resolve, 750));
         
         // Schedule all reminders using a single operation
-        // This will handle canceling existing notifications first
+        // This is critical to prevent duplicates
+        console.log('Scheduling notifications with the new reminder');
         await applyAllReminders();
+        
+        // Show a confirmation to the user
+        Alert.alert(
+          'Reminder Added',
+          `A new declaration reminder has been set for ${formatTime(defaultTime)}`,
+          [{ text: 'OK' }]
+        );
         
         // Verify what's actually scheduled (for debugging)
         if (Platform.OS !== 'web') {
