@@ -22,6 +22,14 @@ export default function PodcastScreen() {
     try {
       setError(null);
       const data = await fetchPodcastEpisodes();
+      console.log('Fetched podcast episodes:', data.length);
+      // Log the first episode to debug
+      if (data.length > 0) {
+        console.log('First episode:', {
+          title: data[0].title,
+          url: data[0].audioUrl
+        });
+      }
       setPodcasts(data);
     } catch (err) {
       console.error('Error fetching podcasts:', err);
@@ -103,13 +111,35 @@ export default function PodcastScreen() {
                   autoPlay
                 />
               ) : (
-                <WebView
-                  source={{ uri: `https://mediaplayer.vercel.app/?url=${encodeURIComponent(item.audioUrl)}` }}
-                  style={{ height: 150, width: '100%' }}
-                  javaScriptEnabled={true}
-                  domStorageEnabled={true}
-                  scrollEnabled={false}
-                />
+                <View style={styles.mobilePlayerContainer}>
+                  <ThemedText style={styles.nowPlayingText}>Now Playing: {item.title}</ThemedText>
+                  <WebView
+                    source={{ 
+                      html: `
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                          <style>
+                            body { margin: 0; padding: 0; background-color: #f5f5f7; display: flex; justify-content: center; align-items: center; height: 100vh; }
+                            audio { width: 100%; max-width: 100%; }
+                          </style>
+                        </head>
+                        <body>
+                          <audio controls autoplay style="width: 100%">
+                            <source src="${item.audioUrl}" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                          </audio>
+                        </body>
+                        </html>
+                      `
+                    }}
+                    style={{ height: 80, width: '100%' }}
+                    javaScriptEnabled={true}
+                    domStorageEnabled={true}
+                    scrollEnabled={false}
+                  />
+                </View>
               )}
             </View>
           )}
@@ -298,8 +328,19 @@ const styles = StyleSheet.create({
   },
   embedContainer: {
     width: '100%',
-    height: 150,
     marginTop: 10,
     marginBottom: 10,
+  },
+  mobilePlayerContainer: {
+    backgroundColor: '#f5f5f7',
+    borderRadius: 8,
+    padding: 8,
+    width: '100%',
+  },
+  nowPlayingText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
   }
 });
