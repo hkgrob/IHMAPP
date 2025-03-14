@@ -102,12 +102,12 @@ export default function CounterPage() {
       }
     }
 
-    // Add haptic feedback if enabled (treat null, undefined, or 'true' as enabled)
-    if ((hapticEnabled === 'true' || hapticEnabled === null) && Platform.OS !== 'web') {
-      console.log('Triggering haptic feedback');
+    // Add haptic feedback if enabled (treat anything except explicit 'false' as enabled)
+    if (hapticEnabled !== 'false' && Platform.OS !== 'web') {
+      console.log('Triggering haptic feedback:', { hapticEnabled });
       try {
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        console.log('Haptic feedback triggered');
+        console.log('Haptic feedback triggered successfully');
       } catch (error) {
         console.error('Error with haptic feedback:', error);
         // Fallback to basic vibration

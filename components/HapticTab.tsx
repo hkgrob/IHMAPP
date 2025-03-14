@@ -4,6 +4,7 @@ import { PlatformPressable } from '@react-navigation/elements';
 import * as Haptics from 'expo-haptics';
 import { Platform, Text, View } from 'react-native';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export function HapticTab({ label, color, ...props }: BottomTabBarButtonProps & { label?: string; color?: string }) {
   const textColor = useThemeColor({ light: color }, 'text');
@@ -11,12 +12,21 @@ export function HapticTab({ label, color, ...props }: BottomTabBarButtonProps & 
   return (
     <PlatformPressable
       {...props}
-      onPressIn={(ev) => {
-        if (Platform.OS === 'ios') {
-          // Add a soft haptic feedback when pressing down on the tabs.
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-            .then(() => console.log('Tab haptic feedback applied'))
-            .catch(err => console.error('Error with haptic feedback:', err));
+      onPressIn={async (ev) => {
+        if (Platform.OS !== 'web') {
+          try {
+            // Check if haptic is enabled in settings
+            const hapticEnabled = await AsyncStorage.getItem('hapticEnabled');
+            console.log('Tab haptic setting:', hapticEnabled);
+            
+            // Apply haptic if enabled or null (default)
+            if (hapticEnabled === 'true' || hapticEnabled === null) {
+              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              console.log('Tab haptic feedback applied');
+            }
+          } catch (err) {
+            console.error('Error with tab haptic feedback:', err);
+          }
         }
         props.onPressIn?.(ev);
       }}

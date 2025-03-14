@@ -317,8 +317,11 @@ export default function SettingsScreen() {
   const toggleHaptic = async (value) => {
     setHapticEnabled(value);
     console.log('Setting haptic enabled to:', value);
+    
     // Store as string 'true' or 'false'
-    await saveSettings('hapticEnabled', value.toString());
+    const valueToStore = value ? 'true' : 'false';
+    await AsyncStorage.setItem('hapticEnabled', valueToStore);
+    console.log('Saved haptic setting:', valueToStore);
     
     // Test haptic when enabled
     if (value && Platform.OS !== 'web') {
