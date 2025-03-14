@@ -81,10 +81,12 @@ export const NotificationSettings = () => {
   const toggleNotifications = async (value) => {
     try {
       if (value && Platform.OS !== 'web') {
+        console.log('Requesting notification permissions');
         // Request permissions if enabling
         const permissionGranted = await requestNotificationPermissions();
         
         if (!permissionGranted) {
+          console.log('Notification permission denied');
           Alert.alert(
             'Permission Required',
             'Please enable notifications in your device settings to receive declaration reminders.',
@@ -92,21 +94,32 @@ export const NotificationSettings = () => {
           );
           return;
         }
+        console.log('Notification permission granted');
       }
       
       setEnabled(value);
-      updateSettings({ enabled: value });
+      await updateSettings({ enabled: value });
+      console.log('Notifications enabled:', value);
       
       // Provide haptic feedback
       if (Platform.OS !== 'web') {
-        Haptics.notificationAsync(
-          value 
-            ? Haptics.NotificationFeedbackType.Success 
-            : Haptics.NotificationFeedbackType.Warning
-        );
+        try {
+          await Haptics.notificationAsync(
+            value 
+              ? Haptics.NotificationFeedbackType.Success 
+              : Haptics.NotificationFeedbackType.Warning
+          );
+        } catch (hapticError) {
+          console.error('Haptic feedback failed, but continuing:', hapticError);
+        }
       }
     } catch (error) {
       console.error('Error toggling notifications:', error);
+      Alert.alert(
+        'Error',
+        'There was a problem enabling notifications. Please try again later.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
