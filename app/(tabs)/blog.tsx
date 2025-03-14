@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { fetchWixBlogPosts, BlogPost } from '@/services/wixBlogService';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import ResponsiveText from '@/components/ResponsiveText';
@@ -18,6 +18,7 @@ export default function BlogScreen() {
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const cardBackground = useThemeColor({}, 'cardBackground');
+  const router = useRouter();
 
   useEffect(() => {
     loadPosts();
@@ -44,10 +45,18 @@ export default function BlogScreen() {
     }
   };
 
-  const handleOpenBlog = (url: string) => {
-    Linking.openURL(url).catch(err => {
-      console.error('Failed to open URL:', err);
-      Alert.alert('Error', 'Could not open the blog post.');
+  const handleOpenBlog = (post: BlogPost) => {
+    // Navigate to the blog post screen with the post data
+    router.push({
+      pathname: '/blog-post',
+      params: {
+        id: post.id,
+        title: post.title,
+        excerpt: post.excerpt,
+        date: post.date,
+        imageUrl: post.imageUrl || '',
+        link: post.link
+      }
     });
   };
 
@@ -156,7 +165,7 @@ export default function BlogScreen() {
                   key={post.id} 
                   style={[styles.blogCard, { backgroundColor: cardBackground }]}
                   activeOpacity={0.9}
-                  onPress={() => handleOpenBlog(post.link)}
+                  onPress={() => handleOpenBlog(post)}
                 >
                   {post.imageUrl ? (
                     <Image 
