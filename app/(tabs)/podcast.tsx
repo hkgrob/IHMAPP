@@ -208,16 +208,15 @@ export default function PodcastScreen() {
           </View>
 
           <View style={styles.podcastInfo}>
-            <ThemedText style={styles.podcastTitle}>{item.title}</ThemedText>
-            </View>
-            <View style={styles.podcastMeta}>
-              <ThemedText style={styles.podcastDate}>
-                {item.publishDate}
-              </ThemedText>
+              <ThemedText style={styles.podcastTitle}>{item.title}</ThemedText>
+              <View style={styles.podcastMeta}>
+                <ThemedText style={styles.podcastDate}>
+                  {item.publishDate}
+                </ThemedText>
+                <ThemedText style={styles.podcastDuration}>
+                  • {item.duration}
+                </ThemedText>
               </View>
-              <ThemedText style={styles.podcastDuration}>
-                • {item.duration}
-              </ThemedText>
             </View>
 
             <ThemedText
@@ -325,7 +324,7 @@ export default function PodcastScreen() {
           <View style={styles.timeInfo}>
             <ThemedText style={styles.timeText}>{formatTime(position)}</ThemedText>
             <ThemedText style={styles.timeText}>{formatTime(duration)}</ThemedText>
-          </View>w>
+          </View>
           <View style={styles.playerControls}>
             <TouchableOpacity 
               onPress={() => {
@@ -376,16 +375,16 @@ export default function PodcastScreen() {
               maximumTrackTintColor="#ddd"
               thumbTintColor="#0a7ea4"
             />
-            <TouchableOpacity onPress={async () => {
-              if (sound) {
-                await sound.pauseAsync();
-                setIsPlaying(false);
-                clearInterval(positionUpdateTimer.current);
-              }
-            }}>
+              <TouchableOpacity onPress={async () => {
+                if (sound) {
+                  await sound.pauseAsync();
+                  setIsPlaying(false);
+                  clearInterval(positionUpdateTimer.current);
+                }
+              }}>
                 <Ionicons name="pause-circle" size={24} color="#0a7ea4" />
-            </TouchableOpacity>
-            
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       )}
