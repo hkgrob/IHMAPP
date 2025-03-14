@@ -279,13 +279,17 @@ const styles = StyleSheet.create({
   },
   blogImage: {
     width: '100%',
-    height: 180,
+    height: 200,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
   },
   blogImagePlaceholder: {
     width: '100%',
-    height: 180,
+    height: 200,
     justifyContent: 'center',
     alignItems: 'center',
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
   },
   blogContent: {
     padding: 16,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, ActivityIndicator, View, Image, Platform, SafeAreaView, Linking } from 'react-native';
+import { StyleSheet, ScrollView, ActivityIndicator, View, Image, Platform, SafeAreaView, Linking, ImageBackground } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -69,23 +69,29 @@ export default function BlogPostScreen() {
           ) : (
             <View style={styles.postContainer}>
               {imageUrl ? (
-                <Image 
+                <ImageBackground 
                   source={{ uri: imageUrl as string }} 
-                  style={styles.blogImage} 
+                  style={styles.headerImage}
                   resizeMode="cover"
-                />
+                >
+                  <View style={styles.headerOverlay}>
+                    <ThemedText style={styles.headerTitle}>{title as string}</ThemedText>
+                    <ThemedText style={styles.headerDate}>{date as string}</ThemedText>
+                  </View>
+                </ImageBackground>
               ) : (
                 <LinearGradient
                   colors={['#0a7ea4', '#64b5d9']}
-                  style={styles.blogImagePlaceholder}
+                  style={styles.headerImagePlaceholder}
                 >
                   <Ionicons name="newspaper" size={42} color="#fff" />
+                  <ThemedText style={styles.headerTitle}>{title as string}</ThemedText>
+                  <ThemedText style={styles.headerDate}>{date as string}</ThemedText>
                 </LinearGradient>
               )}
 
-              <ThemedText style={styles.blogTitle}>{title as string}</ThemedText>
-              <ThemedText style={styles.blogDate}>{date as string}</ThemedText>
-              <ThemedText style={styles.blogExcerpt}>{excerpt as string}</ThemedText>
+              <View style={styles.contentContainer}>
+                <ThemedText style={styles.blogExcerpt}>{excerpt as string}</ThemedText>
 
               {Platform.OS === 'web' ? (
                 <View style={styles.webViewContainer}>
@@ -134,6 +140,55 @@ export default function BlogPostScreen() {
                   </ThemedText>
                 </View>
               )}
+              </View></old_str>
+<new_str>              {Platform.OS === 'web' ? (
+                <View style={styles.webViewContainer}>
+                  <WebView
+                    source={{ uri: link as string }}
+                    style={styles.webView}
+                    startInLoadingState={true}
+                    renderLoading={() => (
+                      <View style={styles.webViewLoading}>
+                        <ActivityIndicator size="large" color="#0a7ea4" />
+                      </View>
+                    )}
+                    onError={(e) => {
+                      console.error('WebView error:', e);
+                      setError('Failed to load blog content. Please try again later.');
+                    }}
+                  />
+                </View>
+              ) : Platform.OS === 'ios' || Platform.OS === 'android' ? (
+                <View style={styles.webViewContainer}>
+                  <WebView
+                    source={{ uri: link as string }}
+                    style={styles.webView}
+                    startInLoadingState={true}
+                    renderLoading={() => (
+                      <View style={styles.webViewLoading}>
+                        <ActivityIndicator size="large" color="#0a7ea4" />
+                      </View>
+                    )}
+                    onError={(e) => {
+                      console.error('WebView error:', e);
+                      setError('Failed to load blog content. Please try again later.');
+                    }}
+                  />
+                </View>
+              ) : (
+                <View style={styles.externalLinkContainer}>
+                  <ThemedText style={styles.platformMessage}>
+                    Direct content viewing is not supported on this platform.
+                  </ThemedText>
+                  <ThemedText
+                    style={styles.externalLinkText}
+                    onPress={openExternalLink}
+                  >
+                    Open in browser
+                  </ThemedText>
+                </View>
+              )}
+              </View>
 
               {error && (
                 <View style={styles.errorContainer}>
@@ -176,34 +231,46 @@ const styles = StyleSheet.create({
   postContainer: {
     flex: 1,
   },
-  blogImage: {
+  headerImage: {
     width: '100%',
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 16,
+    height: 250,
   },
-  blogImagePlaceholder: {
+  headerImagePlaceholder: {
     width: '100%',
-    height: 200,
-    borderRadius: 8,
+    height: 250,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    padding: 20,
   },
-  blogTitle: {
+  headerOverlay: {
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    width: '100%',
+    height: '100%',
+    justifyContent: 'flex-end',
+    padding: 20,
+  },
+  headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 8,
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
-  blogDate: {
+  headerDate: {
     fontSize: 14,
-    opacity: 0.7,
-    marginBottom: 16,
+    color: '#FFFFFF',
+    opacity: 0.9,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   blogExcerpt: {
     fontSize: 16,
     lineHeight: 24,
     marginBottom: 20,
+    padding: 16,
   },
   webViewContainer: {
     width: '100%',
