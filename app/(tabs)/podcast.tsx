@@ -39,14 +39,48 @@ export default function PodcastScreen() {
     fetchPodcasts();
   }, [fetchPodcasts]);
 
-  const handlePlayEpisode = (url) => {
-    Linking.openURL(url).catch((err) => {
-      console.error('Error opening podcast URL:', err);
-      alert('Could not open podcast link. Please try again later.');
-    });
-  };
+  const [sound, setSound] = useState(null);
+const [isPlaying, setIsPlaying] = useState(false);
+const [currentEpisodeId, setCurrentEpisodeId] = useState(null);
 
-  const renderPodcastItem = ({ item }) => {
+const handlePlayEpisode = async (url, episodeId) => {
+  try {
+    // If there's already a sound playing, unload it
+    if (sound) {
+      await sound.unloadAsync();
+    }
+
+    // If clicking the same episode that's playing, pause it
+    if (episodeId === currentEpisodeId && isPlaying) {
+      await sound.pauseAsync();
+      setIsPlaying(false);
+      return;
+    }
+
+    // Load and play the new episode
+    const { sound: newSound } = await Audio.Sound.createAsync(
+      { uri: url },
+      { shouldPlay: true }
+    );
+    
+    setSound(newSound);
+    setIsPlaying(true);
+    setCurrentEpisodeId(episodeId);
+
+    // Handle playback finishing
+    newSound.setOnPlaybackStatusUpdate(status => {
+      if (status.didJustFinish) {
+        setIsPlaying(false);
+        setCurrentEpisodeId(null);
+      }
+    });
+  } catch (err) {
+    console.error('Error playing podcast:', err);
+    alert('Could not play podcast. Please try again later.');
+  }
+};
+
+const renderPodcastItem = ({ item }) => {
     return (
       <View style={styles.podcastItem}>
         <View style={styles.podcastContent}>
@@ -76,10 +110,16 @@ export default function PodcastScreen() {
 
             <TouchableOpacity 
               style={styles.playButton}
-              onPress={() => handlePlayEpisode(item.audioUrl)}
+              onPress={() => handlePlayEpisode(item.audioUrl, item.id)}
             >
-              <Ionicons name="play-circle" size={22} color="#0a7ea4" />
-              <ThemedText style={styles.playButtonText}>Play Episode</ThemedText>
+              <Ionicons 
+                name={currentEpisodeId === item.id && isPlaying ? "pause-circle" : "play-circle"} 
+                size={22} 
+                color="#0a7ea4" 
+              />
+              <ThemedText style={styles.playButtonText}>
+                {currentEpisodeId === item.id && isPlaying ? 'Pause Episode' : 'Play Episode'}
+              </ThemedText>
             </TouchableOpacity>
           </View>
         </View>
