@@ -45,38 +45,50 @@ const [currentEpisodeId, setCurrentEpisodeId] = useState(null);
 
 const handlePlayEpisode = async (url, episodeId) => {
   try {
-    // If there's already a sound playing, unload it
-    if (sound) {
-      await sound.unloadAsync();
+    // If clicking the same episode that's playing, toggle pause
+    if (episodeId === currentEpisodeId) {
+      if (sound && isPlaying) {
+        await sound.pauseAsync();
+        setIsPlaying(false);
+      } else if (sound) {
+        await sound.playAsync();
+        setIsPlaying(true);
+      }
+      return;
     }
 
-    // If clicking the same episode that's playing, pause it
-    if (episodeId === currentEpisodeId && isPlaying) {
-      await sound.pauseAsync();
-      setIsPlaying(false);
-      return;
+    // Unload previous sound if exists
+    if (sound) {
+      await sound.unloadAsync();
+      setSound(null);
     }
 
     // Load and play the new episode
     const { sound: newSound } = await Audio.Sound.createAsync(
       { uri: url },
-      { shouldPlay: true }
+      { shouldPlay: true },
+      (status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          setIsPlaying(false);
+          setCurrentEpisodeId(null);
+        }
+      }
     );
     
+    await newSound.playAsync();
     setSound(newSound);
     setIsPlaying(true);
     setCurrentEpisodeId(episodeId);
 
-    // Handle playback finishing
-    newSound.setOnPlaybackStatusUpdate(status => {
-      if (status.didJustFinish) {
-        setIsPlaying(false);
-        setCurrentEpisodeId(null);
-      }
-    });
   } catch (err) {
     console.error('Error playing podcast:', err);
     alert('Could not play podcast. Please try again later.');
+    setIsPlaying(false);
+    setCurrentEpisodeId(null);
+    if (sound) {
+      await sound.unloadAsync();
+      setSound(null);
+    }
   }
 };
 
