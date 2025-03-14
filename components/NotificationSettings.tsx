@@ -10,6 +10,7 @@ import {
   ScrollView,
   ActivityIndicator
 } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { ThemedText } from './ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';

@@ -12,7 +12,8 @@ import { View, StyleSheet } from 'react-native';
 import { 
   initializeNotifications, 
   applyReminders, 
-  ensureDefaultReminder 
+  ensureDefaultReminder,
+  applyAllReminders
 } from '@/services/notificationService';
 
 export {
