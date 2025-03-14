@@ -321,13 +321,13 @@ export default function PodcastScreen() {
             thumbTintColor="#0a7ea4"
           />
           <View style={styles.timeInfo}>
-            <ThemedText style={styles.timeText}>{formatTime(position)}</ThemedText>
-            <ThemedText style={styles.timeText}>{formatTime(duration)}</ThemedText>
+            <ThemedText style={styles.timeText}>{formatTime(position || 0)}</ThemedText>
+            <ThemedText style={styles.timeText}>{formatTime(duration || 0)}</ThemedText>
           </View>
           <View style={styles.playerControls}>
             <TouchableOpacity 
               onPress={() => {
-                if (sound && position > 10000) {
+                if (sound && position && position > 10000) {
                   sound.setPositionAsync(position - 10000);
                 }
               }}
@@ -354,8 +354,10 @@ export default function PodcastScreen() {
             
             <TouchableOpacity 
               onPress={() => {
-                if (sound && position + 30000 < duration) {
+                if (sound && position && duration && position + 30000 < duration) {
                   sound.setPositionAsync(position + 30000);
+                } else if (sound && duration) {
+                  sound.setPositionAsync(duration);
                 }
               }}
             >
