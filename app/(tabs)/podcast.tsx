@@ -209,16 +209,16 @@ export default function PodcastScreen() {
 
           <View style={styles.podcastInfo}>
             <ThemedText style={styles.podcastTitle}>{item.title}</ThemedText>
-
+            </View>
             <View style={styles.podcastMeta}>
               <ThemedText style={styles.podcastDate}>
                 {item.publishDate}
               </ThemedText>
-
+              </View>
               <ThemedText style={styles.podcastDuration}>
                 • {item.duration}
               </ThemedText>
-            </View>w>
+            </View>
 
             <ThemedText
               numberOfLines={2}
