@@ -98,7 +98,7 @@ export default function SettingsScreen() {
   const resetAppData = async () => {
     Alert.alert(
       'Reset All Data',
-      'This will reset all your settings and stored data. This action cannot be undone.',
+      'This will reset all your declarations, counters, streaks, reminders, and settings. This action cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         { 
@@ -106,10 +106,42 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              // Clear all AsyncStorage data
               await AsyncStorage.clear();
+              
+              // Reset critical stats counters specifically
+              await AsyncStorage.multiSet([
+                ['dailyCount', '0'],
+                ['totalCount', '0'],
+                ['lastReset', new Date().toString()],
+                ['currentStreak', '0'],
+                ['bestStreak', '0'],
+                ['lastActivityDate', ''],
+                ['firstDate', '']
+              ]);
+              
+              // Reset UI state
               setSoundEnabled(true);
               setHapticsEnabled(true);
-              Alert.alert('Reset Complete', 'All app data has been reset.');
+              
+              // Notify listeners of counter updates via event emitter
+              try {
+                const { counterEvents, COUNTER_UPDATED } = require('@/services/counterService');
+                if (counterEvents) {
+                  counterEvents.emit(COUNTER_UPDATED, { 
+                    dailyCount: 0, 
+                    totalCount: 0 
+                  });
+                  console.log('Counter event emitter notified of reset');
+                }
+              } catch (emitterError) {
+                console.error('Error notifying counter event listeners:', emitterError);
+              }
+              
+              Alert.alert(
+                'Reset Complete', 
+                'All app data has been reset successfully. All your declarations, counters, streaks and settings have been cleared.'
+              );
             } catch (error) {
               console.error('Error resetting data:', error);
               Alert.alert('Error', 'Failed to reset app data');
