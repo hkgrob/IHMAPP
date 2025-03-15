@@ -1,98 +1,63 @@
-import React from 'react';
-import { ScrollView, View, StyleSheet, Switch, TouchableOpacity, Alert, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { ThemedText } from '../../components/ThemedText';
-import { NotificationSettings } from '../../components/NotificationSettings';
+
+import React, { useState, useEffect } from 'react';
+import {
+  StyleSheet,
+  ScrollView,
+  View,
+  Switch,
+  TouchableOpacity,
+  Alert,
+  Platform,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Colors from '@/constants/Colors';
+import { ThemedText } from '@/components/ThemedText';
+import { ThemedView } from '@/components/ThemedView';
+import { Ionicons } from '@expo/vector-icons';
+import { NotificationSettings } from '@/components/NotificationSettings';
+import * as Haptics from 'expo-haptics';
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f2f2f2',
-  },
-  settingsSection: {
-    padding: 20,
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    marginVertical: 10,
-    marginHorizontal: 10,
-  },
-  settingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  settingSectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginLeft: 10,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  settingLabel: {
-    fontSize: 16,
-  },
-  dangerButton: {
-    backgroundColor: '#ffeeee',
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  dangerText: {
-    color: '#cc0000',
-    fontWeight: '500',
-  },
-  versionText: {
-    textAlign: 'center',
-    marginTop: 20,
-    color: '#999',
-    fontSize: 12,
-  },
-});
+export default function Settings() {
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [hapticsEnabled, setHapticsEnabled] = useState(true);
 
-export default function SettingsScreen() {
-  const [soundEnabled, setSoundEnabled] = React.useState(true);
-  const [hapticsEnabled, setHapticsEnabled] = React.useState(true);
-
-  React.useEffect(() => {
+  useEffect(() => {
     loadSettings();
   }, []);
 
   const loadSettings = async () => {
     try {
-      const soundSetting = await AsyncStorage.getItem('soundEnabled');
-      const hapticsSetting = await AsyncStorage.getItem('hapticsEnabled');
-
-      setSoundEnabled(soundSetting !== 'false');
-      setHapticsEnabled(hapticsSetting !== 'false');
+      const soundValue = await AsyncStorage.getItem('soundEnabled');
+      const hapticsValue = await AsyncStorage.getItem('hapticEnabled');
+      
+      setSoundEnabled(soundValue !== 'false');
+      setHapticsEnabled(hapticsValue !== 'false');
     } catch (error) {
       console.error('Error loading settings:', error);
     }
   };
 
-  const saveSetting = async (key, value) => {
+  const toggleSound = async (value) => {
     try {
-      await AsyncStorage.setItem(key, value.toString());
+      setSoundEnabled(value);
+      await AsyncStorage.setItem('soundEnabled', value.toString());
     } catch (error) {
-      console.error('Error saving setting:', error);
+      console.error('Error saving sound setting:', error);
     }
   };
 
-  const toggleSound = (value) => {
-    setSoundEnabled(value);
-    saveSetting('soundEnabled', value);
-  };
-
-  const toggleHaptics = (value) => {
-    setHapticsEnabled(value);
-    saveSetting('hapticsEnabled', value);
+  const toggleHaptics = async (value) => {
+    try {
+      setHapticsEnabled(value);
+      await AsyncStorage.setItem('hapticEnabled', value.toString());
+      
+      if (value && Platform.OS !== 'web') {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    } catch (error) {
+      console.error('Error saving haptic setting:', error);
+    }
   };
 
   const resetAppData = async () => {
@@ -108,60 +73,72 @@ export default function SettingsScreen() {
             try {
               console.log('Starting app data reset process...');
               
-              // Import the counter service directly to ensure it's available
+              // Force import to be synchronous to ensure availability
               const counterService = require('@/services/counterService');
+              console.log('Loaded counter service:', counterService ? 'success' : 'failed');
+              
+              // Save all keys before clearing for debugging
+              const allKeys = await AsyncStorage.getAllKeys();
+              console.log('Keys to be cleared:', allKeys.join(', '));
               
               // First notify listeners via event emitter before clearing storage
-              // This ensures all components get the reset notification
               try {
-                if (counterService.counterEvents) {
-                  console.log('Notifying counter event listeners of reset');
-                  counterService.counterEvents.emit(counterService.COUNTER_UPDATED, { 
-                    dailyCount: 0, 
-                    totalCount: 0 
-                  });
-                }
+                console.log('Emitting counter reset event...');
+                counterService.counterEvents.emit(counterService.COUNTER_UPDATED, { 
+                  dailyCount: 0, 
+                  totalCount: 0 
+                });
+                console.log('Counter reset event emitted successfully');
               } catch (emitterError) {
-                console.error('Error notifying counter event listeners:', emitterError);
+                console.error('Error emitting counter reset event:', emitterError);
               }
               
-              // Clear all AsyncStorage data
-              await AsyncStorage.clear();
-              console.log('AsyncStorage cleared successfully');
+              // Use a more reliable approach to clear all storage
+              const keysToReset = await AsyncStorage.getAllKeys();
+              if (keysToReset.length > 0) {
+                await AsyncStorage.multiRemove(keysToReset);
+                console.log(`Cleared ${keysToReset.length} keys from AsyncStorage`);
+              }
               
-              // Reset critical stats counters specifically to ensure they're properly reset
-              // Even if a component didn't respond to the event emitter
-              await AsyncStorage.multiSet([
+              // Set critical counters to 0 explicitly
+              const resetValues = [
                 ['dailyCount', '0'],
                 ['totalCount', '0'],
                 ['lastReset', new Date().toString()],
                 ['currentStreak', '0'],
                 ['bestStreak', '0'],
                 ['lastActivityDate', ''],
-                ['firstDate', '']
-              ]);
-              console.log('Critical stats counters reset successfully');
+                ['firstDate', ''],
+                ['soundEnabled', 'true'],
+                ['hapticEnabled', 'true']
+              ];
+              
+              console.log('Setting default values for counters and settings');
+              await AsyncStorage.multiSet(resetValues);
               
               // Reset UI state
               setSoundEnabled(true);
               setHapticsEnabled(true);
               
-              // Send a second notification to ensure all components are updated
+              // Wait a moment to ensure async operations complete
+              await new Promise(resolve => setTimeout(resolve, 300));
+              
+              // Force another reset notification with delay
               setTimeout(() => {
                 try {
-                  console.log('Sending second reset notification');
+                  console.log('Sending final reset notification');
                   counterService.counterEvents.emit(counterService.COUNTER_UPDATED, { 
                     dailyCount: 0, 
                     totalCount: 0 
                   });
+                  
+                  // Force refresh for web
+                  if (Platform.OS === 'web') {
+                    console.log('Reloading web app to apply reset');
+                    window.location.reload();
+                  }
                 } catch (error) {
-                  console.error('Error sending second reset notification:', error);
-                }
-                
-                // Force a reload of the app in web environments
-                if (Platform.OS === 'web') {
-                  console.log('Reloading web app to apply reset');
-                  window.location.reload();
+                  console.error('Error in final reset notification:', error);
                 }
               }, 500);
               
@@ -171,7 +148,7 @@ export default function SettingsScreen() {
               );
             } catch (error) {
               console.error('Error resetting data:', error);
-              Alert.alert('Error', 'Failed to reset app data');
+              Alert.alert('Error', 'Failed to reset app data. Please try again.');
             }
           }
         }
@@ -180,62 +157,161 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.settingsSection}>
-        <View style={styles.settingHeader}>
-          <Ionicons name="notifications-outline" size={24} color="#0a7ea4" />
-          <ThemedText style={styles.settingSectionTitle}>Notifications</ThemedText>
+    <SafeAreaView style={styles.container}>
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.settingsSection}>
+          <View style={styles.settingHeader}>
+            <Ionicons name="options-outline" size={24} color="#0a7ea4" />
+            <ThemedText style={styles.settingSectionTitle}>General Settings</ThemedText>
+          </View>
+
+          <ThemedView style={styles.settingItem}>
+            <View style={styles.settingRow}>
+              <View style={styles.settingLabel}>
+                <Ionicons name="volume-high-outline" size={22} color="#0a7ea4" style={styles.settingIcon} />
+                <ThemedText style={styles.settingText}>Sound</ThemedText>
+              </View>
+              <Switch
+                value={soundEnabled}
+                onValueChange={toggleSound}
+                trackColor={{ false: '#767577', true: '#0a7ea4' }}
+                thumbColor="#f4f3f4"
+              />
+            </View>
+          </ThemedView>
+
+          {Platform.OS !== 'web' && (
+            <ThemedView style={styles.settingItem}>
+              <View style={styles.settingRow}>
+                <View style={styles.settingLabel}>
+                  <Ionicons name="pulse-outline" size={22} color="#0a7ea4" style={styles.settingIcon} />
+                  <ThemedText style={styles.settingText}>Haptic Feedback</ThemedText>
+                </View>
+                <Switch
+                  value={hapticsEnabled}
+                  onValueChange={toggleHaptics}
+                  trackColor={{ false: '#767577', true: '#0a7ea4' }}
+                  thumbColor="#f4f3f4"
+                />
+              </View>
+            </ThemedView>
+          )}
         </View>
+
         <NotificationSettings />
-      </View>
 
-      <View style={styles.settingsSection}>
-        <View style={styles.settingHeader}>
-          <Ionicons name="options-outline" size={24} color="#0a7ea4" />
-          <ThemedText style={styles.settingSectionTitle}>App Settings</ThemedText>
-        </View>
+        <View style={styles.settingsSection}>
+          <View style={styles.settingHeader}>
+            <Ionicons name="alert-triangle-outline" size={24} color="#ff6b00" />
+            <ThemedText style={styles.dangerSectionTitle}>Danger Zone</ThemedText>
+          </View>
 
-        <View style={styles.settingItem}>
-          <ThemedText style={styles.settingLabel}>Sound Effects</ThemedText>
-          <Switch
-            value={soundEnabled}
-            onValueChange={toggleSound}
-            trackColor={{ false: '#767577', true: '#0a7ea4' }}
-            thumbColor="#f4f3f4"
-          />
-        </View>
-
-        <View style={styles.settingItem}>
-          <ThemedText style={styles.settingLabel}>Haptic Feedback</ThemedText>
-          <Switch
-            value={hapticsEnabled}
-            onValueChange={toggleHaptics}
-            trackColor={{ false: '#767577', true: '#0a7ea4' }}
-            thumbColor="#f4f3f4"
-            disabled={Platform.OS === 'web'}
-          />
-        </View>
-
-        <TouchableOpacity 
-          style={styles.dangerButton}
-          onPress={resetAppData}
-        >
-          <ThemedText style={styles.dangerText}>
-            Reset All App Data
+          <ThemedText style={styles.dangerDescription}>
+            The actions below cannot be undone. Please proceed with caution.
           </ThemedText>
-        </TouchableOpacity>
-      </View>
 
-      <View style={styles.settingsSection}>
-        <View style={styles.settingHeader}>
-          <Ionicons name="information-circle-outline" size={24} color="#0a7ea4" />
-          <ThemedText style={styles.settingSectionTitle}>About</ThemedText>
+          <TouchableOpacity 
+            style={styles.dangerButton}
+            onPress={resetAppData}
+          >
+            <ThemedText style={styles.dangerText}>
+              Reset All App Data
+            </ThemedText>
+          </TouchableOpacity>
         </View>
 
-        <ThemedText style={styles.versionText}>
-          Igniting Hope App v{require('../../app.json').expo.version}
-        </ThemedText>
-      </View>
-    </ScrollView>
+        <View style={styles.settingsSection}>
+          <View style={styles.settingHeader}>
+            <Ionicons name="information-circle-outline" size={24} color="#0a7ea4" />
+            <ThemedText style={styles.settingSectionTitle}>About</ThemedText>
+          </View>
+
+          <ThemedText style={styles.versionText}>
+            Igniting Hope App v{require('../../app.json').expo.version}
+          </ThemedText>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5'
+  },
+  scrollView: {
+    flex: 1,
+    padding: 16,
+  },
+  settingsSection: {
+    marginBottom: 24,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  settingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  settingSectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 8,
+    color: '#0a7ea4',
+  },
+  dangerSectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 8,
+    color: '#ff6b00',
+  },
+  settingItem: {
+    marginBottom: 12,
+    borderRadius: 8,
+    padding: 12,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  settingLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  settingIcon: {
+    marginRight: 8,
+  },
+  settingText: {
+    fontSize: 16,
+  },
+  dangerDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+  },
+  dangerButton: {
+    backgroundColor: '#ffedeb',
+    borderWidth: 1,
+    borderColor: '#ff6b00',
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+  },
+  dangerText: {
+    color: '#ff6b00',
+    fontWeight: 'bold',
+  },
+  versionText: {
+    fontSize: 14,
+    color: '#777',
+    textAlign: 'center',
+  }
+});

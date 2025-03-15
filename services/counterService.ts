@@ -144,6 +144,8 @@ export const updateStreakData = async (today = new Date()) => {
 // Reset counter
 export const resetCounter = async (type) => {
   try {
+    console.log(`Resetting counter: ${type}`);
+    
     if (type === 'daily') {
       await AsyncStorage.setItem('dailyCount', '0');
       await AsyncStorage.setItem('lastReset', new Date().toString());
@@ -158,6 +160,7 @@ export const resetCounter = async (type) => {
         totalCount: totalCount 
       });
       
+      console.log(`Daily counter reset successful. Total remains: ${totalCount}`);
       return { dailyCount: 0, totalCount };
     } else if (type === 'total') {
       await AsyncStorage.setItem('totalCount', '0');
@@ -172,7 +175,36 @@ export const resetCounter = async (type) => {
         totalCount: 0 
       });
       
+      console.log(`Total counter reset successful. Daily remains: ${dailyCount}`);
       return { dailyCount, totalCount: 0 };
+    } else if (type === 'all') {
+      // Reset all counter-related data
+      const keysToReset = [
+        'dailyCount', 'totalCount', 'lastReset',
+        'currentStreak', 'bestStreak', 'lastActivityDate', 'firstDate'
+      ];
+      
+      console.log('Resetting all counter data:', keysToReset.join(', '));
+      
+      // Create a multiset array with all zeros
+      const resetValues = keysToReset.map(key => {
+        if (key === 'lastReset') return [key, new Date().toString()];
+        if (key === 'lastActivityDate' || key === 'firstDate') return [key, ''];
+        return [key, '0'];
+      });
+      
+      await AsyncStorage.multiSet(resetValues);
+      
+      // Notify listeners with full reset
+      counterEvents.emit(COUNTER_UPDATED, { 
+        dailyCount: 0, 
+        totalCount: 0,
+        currentStreak: 0,
+        bestStreak: 0
+      });
+      
+      console.log('All counter data reset successful');
+      return { dailyCount: 0, totalCount: 0, currentStreak: 0, bestStreak: 0 };
     }
   } catch (error) {
     console.error('Error resetting counter:', error);
