@@ -294,7 +294,7 @@ export default function HomeScreen() {
                 onPress={() => Linking.openURL('https://ignitinghope.com')}
               >
                 <ThemedText style={styles.linkButtonText}>
-                  Ignitinghope.com
+                  ignitinghope.com
                 </ThemedText>
                 <Ionicons name="arrow-forward" size={20} color="#fff" />
               </TouchableOpacity>
@@ -305,7 +305,7 @@ export default function HomeScreen() {
                 onPress={() => Linking.openURL('https://ignitinghopeacademy.com')}
               >
                 <ThemedText style={styles.linkButtonText}>
-                  IgnitingHopeAcademy.com
+                  ignitingHopeAcademy.com
                 </ThemedText>
                 <Ionicons name="arrow-forward" size={20} color="#fff" />
               </TouchableOpacity>
