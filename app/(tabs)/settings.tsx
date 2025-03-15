@@ -202,7 +202,7 @@ export default function Settings() {
 
         <View style={styles.settingsSection}>
           <View style={styles.settingHeader}>
-            <Ionicons name="alert-triangle-outline" size={24} color="#ff6b00" />
+            <Ionicons name="warning-outline" size={24} color="#ff6b00" />
             <ThemedText style={styles.dangerSectionTitle}>Danger Zone</ThemedText>
           </View>
 
