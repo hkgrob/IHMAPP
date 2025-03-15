@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
   },
   linkButton: {
     flexDirection: 'row',
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#0a7ea4',
     paddingVertical: isSmallScreen ? 12 : 14,
     paddingHorizontal: paddingHorizontal,
     borderRadius: 12,
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   academyButton: {
-    backgroundColor: '#0a7ea4',
+    // Both buttons now use the same color
   },
   linkButtonText: {
     color: '#fff',
