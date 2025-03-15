@@ -1,59 +1,79 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, ScrollView, Platform, StatusBar as RNStatusBar } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import React, { useState, useEffect } from 'react';
+import { ScrollView, View, StyleSheet, TouchableOpacity, RefreshControl, useColorScheme } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
+import { ThemedText } from '@/components/ThemedText';
+import { counterEvents, COUNTER_UPDATED, loadCounts } from '@/services/counterService';
 
 export default function StatsScreen() {
   const colorScheme = useColorScheme();
   const [totalCount, setTotalCount] = useState(0);
-  const [bestStreak, setBestStreak] = useState(0);
-  const [currentStreak, setCurrentStreak] = useState(0);
-  const [dailyAverage, setDailyAverage] = useState(0);
+  const [dailyCount, setDailyCount] = useState(0);
   const [daysTracked, setDaysTracked] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadStats();
-  }, []);
-
-  const loadStats = async () => {
+  // Load counter data and calculate stats
+  const loadStatsData = async () => {
     try {
-      const storedTotalCount = await AsyncStorage.getItem('totalCount');
-      const storedBestStreak = await AsyncStorage.getItem('bestStreak');
-      const storedCurrentStreak = await AsyncStorage.getItem('currentStreak');
-      const storedFirstDate = await AsyncStorage.getItem('firstDate');
+      // Load declaration counts
+      const { dailyCount, totalCount, lastReset } = await loadCounts();
+      setDailyCount(dailyCount);
+      setTotalCount(totalCount);
 
-      if (storedTotalCount) setTotalCount(parseInt(storedTotalCount, 10));
-      if (storedBestStreak) setBestStreak(parseInt(storedBestStreak, 10));
-      if (storedCurrentStreak) setCurrentStreak(parseInt(storedCurrentStreak, 10));
-
-      // Calculate days tracked
-      if (storedFirstDate) {
-        const firstDate = new Date(storedFirstDate);
-        const today = new Date();
-        const diffTime = Math.abs(today - firstDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        setDaysTracked(diffDays + 1); // +1 to include the first day
-
-        // Calculate daily average
-        if (diffDays > 0 && storedTotalCount) {
-          setDailyAverage(parseInt(storedTotalCount, 10) / diffDays);
-        }
-      }
+      // Calculate days tracked (estimated from total declarations with average of 5 per day)
+      // You can modify this logic based on your preferred calculation method
+      const estimatedDays = Math.max(1, Math.ceil(totalCount / 5));
+      setDaysTracked(estimatedDays);
     } catch (error) {
-      console.error("Error loading stats:", error);
+      console.error('Error loading stats data:', error);
     }
   };
 
+  // Load data on initial mount
+  useEffect(() => {
+    loadStatsData();
+
+    // Subscribe to counter updates from other screens
+    const handleCounterUpdate = (counts) => {
+      console.log('Counter update received in stats page:', counts);
+      setDailyCount(counts.dailyCount);
+      setTotalCount(counts.totalCount);
+      
+      // Recalculate days tracked when total changes
+      const estimatedDays = Math.max(1, Math.ceil(counts.totalCount / 5));
+      setDaysTracked(estimatedDays);
+    };
+
+    // Add event listener
+    counterEvents.on(COUNTER_UPDATED, handleCounterUpdate);
+
+    // Clean up listener when component unmounts
+    return () => {
+      counterEvents.off(COUNTER_UPDATED, handleCounterUpdate);
+    };
+  }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadStatsData();
+    setRefreshing(false);
+  };
+
   return (
-    <ThemedView style={styles.container}>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      <View style={styles.header}>
-        <ThemedText style={styles.title}>Your Stats</ThemedText>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={colorScheme === 'dark' ? '#ffffff' : '#000000'}
+        />
+      }
+    >
+      <View style={styles.headerContainer}>
+        <ThemedText style={styles.headerTitle}>Your Progress</ThemedText>
+        <ThemedText style={styles.headerSubtitle}>Track your declaration journey</ThemedText>
       </View>
 
       <ScrollView style={styles.statsContainer} contentContainerStyle={styles.statsContent}>
@@ -100,124 +120,156 @@ export default function StatsScreen() {
         >
           <View style={styles.statCard}>
             <View style={styles.statIconContainer}>
-              <Ionicons name="trending-up-outline" size={30} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} />
+              <Ionicons name="today-outline" size={30} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} />
             </View>
             <View style={styles.valueContainer}>
-              <ThemedText style={styles.statValue}>{dailyAverage.toFixed(1)}</ThemedText>
+              <ThemedText style={styles.statValue}>{dailyCount}</ThemedText>
+            </View>
+            <View style={styles.textContainer}>
+              <ThemedText style={styles.statLabel}>Today's Declarations</ThemedText>
+            </View>
+          </View>
+        </BlurView>
+
+        <BlurView 
+          intensity={80} 
+          tint={colorScheme === 'dark' ? 'dark' : 'light'} 
+          style={styles.blurContainer}
+        >
+          <View style={styles.statCard}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="speedometer-outline" size={30} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} />
+            </View>
+            <View style={styles.valueContainer}>
+              <ThemedText style={styles.statValue}>{totalCount > 0 ? Math.round(totalCount / daysTracked) : 0}</ThemedText>
             </View>
             <View style={styles.textContainer}>
               <ThemedText style={styles.statLabel}>Daily Average</ThemedText>
             </View>
           </View>
         </BlurView>
-
-        <BlurView 
-          intensity={80} 
-          tint={colorScheme === 'dark' ? 'dark' : 'light'} 
-          style={styles.blurContainer}
-        >
-          <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Ionicons name="flame-outline" size={30} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} />
-            </View>
-            <View style={styles.valueContainer}>
-              <ThemedText style={styles.statValue}>{currentStreak}</ThemedText>
-            </View>
-            <View style={styles.textContainer}>
-              <ThemedText style={styles.statLabel}>Current Streak</ThemedText>
-            </View>
-          </View>
-        </BlurView>
-
-        <BlurView 
-          intensity={80} 
-          tint={colorScheme === 'dark' ? 'dark' : 'light'} 
-          style={styles.blurContainer}
-        >
-          <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Ionicons name="trophy-outline" size={30} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} />
-            </View>
-            <View style={styles.valueContainer}>
-              <ThemedText style={styles.statValue}>{bestStreak}</ThemedText>
-            </View>
-            <View style={styles.textContainer}>
-              <ThemedText style={styles.statLabel}>Best Streak</ThemedText>
-            </View>
-          </View>
-        </BlurView>
       </ScrollView>
-    </ThemedView>
+
+      <View style={styles.insightsContainer}>
+        <ThemedText style={styles.insightsTitle}>Insights</ThemedText>
+        <View style={styles.insightCard}>
+          <Ionicons name="bulb-outline" size={24} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} style={styles.insightIcon} />
+          <ThemedText style={styles.insightText}>
+            Consistency is key! Aim to speak declarations daily for the best results.
+          </ThemedText>
+        </View>
+        <View style={styles.insightCard}>
+          <Ionicons name="trending-up-outline" size={24} color={colorScheme === 'dark' ? '#ECEDEE' : '#11181C'} style={styles.insightIcon} />
+          <ThemedText style={styles.insightText}>
+            {totalCount > 100 ? 
+              "Great work! You've made over 100 declarations. Keep building on this foundation." :
+              "Aim for at least 5 declarations each day to build momentum."}
+          </ThemedText>
+        </View>
+      </View>
+
+      <View style={styles.helpContainer}>
+        <TouchableOpacity style={styles.helpButton}>
+          <Ionicons name="help-circle-outline" size={20} color="#0a7ea4" />
+          <ThemedText style={styles.helpButtonText}>Learn More About Declarations</ThemedText>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
     padding: 16,
   },
-  header: {
-    marginTop: 20,
-    marginBottom: 12,
-    alignItems: 'center',
+  headerContainer: {
+    marginBottom: 20,
   },
-  title: {
-    fontSize: 28,
+  headerTitle: {
+    fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 5,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    opacity: 0.7,
   },
   statsContainer: {
-    flex: 1,
+    marginBottom: 20,
   },
   statsContent: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingBottom: 40,
   },
   blurContainer: {
     width: '48%',
-    marginBottom: 16,
-    overflow: 'visible', // Ensure BlurView doesn't clip content
+    marginBottom: 15,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   statCard: {
-    borderRadius: 16,
-    padding: 24,
+    padding: 16,
     alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 180,
-    backgroundColor: 'transparent', // Ensure no conflicting background
   },
   statIconContainer: {
-    marginBottom: 12,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+    backgroundColor: 'rgba(150, 150, 150, 0.1)',
   },
   valueContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: 5,
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    textAlign: 'center',
-    maxWidth: '100%',
-    width: 'auto',
-    overflow: 'visible',
   },
-  textContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  textContainer: {},
   statLabel: {
     fontSize: 14,
-    textAlign: 'center',
     opacity: 0.8,
-    flexShrink: 1,
-    flexWrap: 'wrap',
-    maxWidth: '100%',
-    paddingHorizontal: 8,
+    textAlign: 'center',
+  },
+  insightsContainer: {
+    marginBottom: 20,
+  },
+  insightsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  insightCard: {
+    flexDirection: 'row',
+    padding: 16,
+    backgroundColor: 'rgba(150, 150, 150, 0.1)',
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  insightIcon: {
+    marginRight: 12,
+  },
+  insightText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  helpContainer: {
+    marginBottom: 30,
+    alignItems: 'center',
+  },
+  helpButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+  },
+  helpButtonText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#0a7ea4',
   },
 });
