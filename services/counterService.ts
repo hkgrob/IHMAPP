@@ -50,13 +50,18 @@ export const incrementCounter = async () => {
     const newDailyCount = dailyCount + 1;
     const newTotalCount = totalCount + 1;
     
+    // Current date
+    const today = new Date();
+    
+    // Update streak data
+    await updateStreakData(today);
+    
     // Save to storage
-    const now = new Date();
-    if (now.toDateString() !== lastReset.toDateString()) {
+    if (today.toDateString() !== lastReset.toDateString()) {
       await AsyncStorage.multiSet([
         ['dailyCount', '1'],
         ['totalCount', newTotalCount.toString()],
-        ['lastReset', now.toString()]
+        ['lastReset', today.toString()]
       ]);
     } else {
       await AsyncStorage.multiSet([
@@ -76,6 +81,63 @@ export const incrementCounter = async () => {
   } catch (error) {
     console.error('Error incrementing counter:', error);
     throw error;
+  }
+};
+
+// Update streak tracking
+export const updateStreakData = async (today = new Date()) => {
+  try {
+    // Get current streak data
+    const lastActivityDate = await AsyncStorage.getItem('lastActivityDate');
+    let currentStreak = parseInt(await AsyncStorage.getItem('currentStreak') || '0', 10);
+    let bestStreak = parseInt(await AsyncStorage.getItem('bestStreak') || '0', 10);
+
+    if (!lastActivityDate) {
+      // First time using the app
+      currentStreak = 1;
+      
+      // Set first date if not already set
+      const firstDateSet = await AsyncStorage.getItem('firstDate');
+      if (!firstDateSet) {
+        await AsyncStorage.setItem('firstDate', today.toString());
+      }
+    } else {
+      const lastDate = new Date(lastActivityDate);
+      const isYesterday = (
+        today.getDate() - lastDate.getDate() === 1 ||
+        (today.getDate() === 1 && 
+          lastDate.getDate() === new Date(lastDate.getFullYear(), lastDate.getMonth() + 1, 0).getDate() &&
+          (today.getMonth() === (lastDate.getMonth() + 1) % 12))
+      );
+      const isToday = today.toDateString() === lastDate.toDateString();
+
+      if (isToday) {
+        // Already counted for today, no change to streak
+      } else if (isYesterday) {
+        // Consecutive day, increment streak
+        currentStreak += 1;
+      } else {
+        // Streak broken, reset to 1
+        currentStreak = 1;
+      }
+    }
+
+    // Update best streak if needed
+    if (currentStreak > bestStreak) {
+      bestStreak = currentStreak;
+      await AsyncStorage.setItem('bestStreak', bestStreak.toString());
+    }
+
+    // Save current streak and activity date
+    await AsyncStorage.setItem('currentStreak', currentStreak.toString());
+    await AsyncStorage.setItem('lastActivityDate', today.toString());
+    
+    console.log(`Streak updated: Current streak: ${currentStreak}, Best streak: ${bestStreak}`);
+    
+    return { currentStreak, bestStreak };
+  } catch (error) {
+    console.error('Error updating streak data:', error);
+    return { currentStreak: 0, bestStreak: 0 };
   }
 };
 
