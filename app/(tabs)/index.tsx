@@ -284,19 +284,32 @@ export default function HomeScreen() {
             />
           </View>
 
-          {/* Getting Started Section */}
-          <View style={styles.gettingStartedContainer}>
-            <ThemedText style={styles.sectionTitle}>Visit our website</ThemedText>
-            <TouchableOpacity
-              style={styles.startButton}
-              activeOpacity={0.8}
-              onPress={() => Linking.openURL('https://ignitinghope.com')}
-            >
-              <ThemedText style={styles.startButtonText}>
-                Ignitinghope.com
-              </ThemedText>
-              <Ionicons name="arrow-forward" size={20} color="#fff" />
-            </TouchableOpacity>
+          {/* Websites Section */}
+          <View style={styles.websitesContainer}>
+            <ThemedText style={styles.sectionTitle}>Visit our websites</ThemedText>
+            <View style={styles.linksContainer}>
+              <TouchableOpacity
+                style={styles.linkButton}
+                activeOpacity={0.8}
+                onPress={() => Linking.openURL('https://ignitinghope.com')}
+              >
+                <ThemedText style={styles.linkButtonText}>
+                  Ignitinghope.com
+                </ThemedText>
+                <Ionicons name="arrow-forward" size={20} color="#fff" />
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.linkButton, styles.academyButton]}
+                activeOpacity={0.8}
+                onPress={() => Linking.openURL('https://ignitinghopeacademy.com')}
+              >
+                <ThemedText style={styles.linkButtonText}>
+                  IgnitingHopeAcademy.com
+                </ThemedText>
+                <Ionicons name="arrow-forward" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -426,29 +439,43 @@ const styles = StyleSheet.create({
     fontSize: scaleFontSize(14),
     opacity: 0.7,
   },
-  gettingStartedContainer: {
+  websitesContainer: {
     margin: paddingHorizontal,
     alignItems: 'center',
+    marginBottom: 30,
   },
   sectionTitle: {
     fontSize: scaleFontSize(20),
     fontWeight: 'bold',
-    marginBottom: 15,
+    marginBottom: 20,
     textAlign: 'center',
   },
-  startButton: {
+  linksContainer: {
+    width: '100%',
+    gap: 15,
+  },
+  linkButton: {
     flexDirection: 'row',
     backgroundColor: '#4A90E2',
-    paddingVertical: isSmallScreen ? 8 : 12,
+    paddingVertical: isSmallScreen ? 12 : 14,
     paddingHorizontal: paddingHorizontal,
-    borderRadius: 25,
+    borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  startButtonText: {
+  academyButton: {
+    backgroundColor: '#0a7ea4',
+  },
+  linkButtonText: {
     color: '#fff',
     fontSize: scaleFontSize(16),
     fontWeight: '600',
-    marginRight: 8,
+    marginRight: 10,
   },
   clickerButtonWrapper: {
     marginBottom: 16,
