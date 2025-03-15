@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ScrollView, View, StyleSheet, Switch, TouchableOpacity, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -62,17 +61,15 @@ export default function SettingsScreen() {
   const [soundEnabled, setSoundEnabled] = React.useState(true);
   const [hapticsEnabled, setHapticsEnabled] = React.useState(true);
 
-  // Load settings on mount
   React.useEffect(() => {
     loadSettings();
   }, []);
 
-  // Load settings from storage
   const loadSettings = async () => {
     try {
       const soundSetting = await AsyncStorage.getItem('soundEnabled');
       const hapticsSetting = await AsyncStorage.getItem('hapticsEnabled');
-      
+
       setSoundEnabled(soundSetting !== 'false');
       setHapticsEnabled(hapticsSetting !== 'false');
     } catch (error) {
@@ -80,7 +77,6 @@ export default function SettingsScreen() {
     }
   };
 
-  // Save a setting
   const saveSetting = async (key, value) => {
     try {
       await AsyncStorage.setItem(key, value.toString());
@@ -89,19 +85,16 @@ export default function SettingsScreen() {
     }
   };
 
-  // Toggle sound
   const toggleSound = (value) => {
     setSoundEnabled(value);
     saveSetting('soundEnabled', value);
   };
 
-  // Toggle haptics
   const toggleHaptics = (value) => {
     setHapticsEnabled(value);
     saveSetting('hapticsEnabled', value);
   };
 
-  // Reset app data
   const resetAppData = async () => {
     Alert.alert(
       'Reset All Data',
@@ -114,12 +107,8 @@ export default function SettingsScreen() {
           onPress: async () => {
             try {
               await AsyncStorage.clear();
-              
-              // Reset state
               setSoundEnabled(true);
               setHapticsEnabled(true);
-              
-              // Show success message
               Alert.alert('Reset Complete', 'All app data has been reset.');
             } catch (error) {
               console.error('Error resetting data:', error);
@@ -133,7 +122,6 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Notifications Section */}
       <View style={styles.settingsSection}>
         <View style={styles.settingHeader}>
           <Ionicons name="notifications-outline" size={24} color="#0a7ea4" />
@@ -141,14 +129,13 @@ export default function SettingsScreen() {
         </View>
         <NotificationSettings />
       </View>
-      
-      {/* Sound & Haptics Section */}
+
       <View style={styles.settingsSection}>
         <View style={styles.settingHeader}>
           <Ionicons name="options-outline" size={24} color="#0a7ea4" />
           <ThemedText style={styles.settingSectionTitle}>App Settings</ThemedText>
         </View>
-        
+
         <View style={styles.settingItem}>
           <ThemedText style={styles.settingLabel}>Sound Effects</ThemedText>
           <Switch
@@ -158,7 +145,7 @@ export default function SettingsScreen() {
             thumbColor="#f4f3f4"
           />
         </View>
-        
+
         <View style={styles.settingItem}>
           <ThemedText style={styles.settingLabel}>Haptic Feedback</ThemedText>
           <Switch
@@ -169,7 +156,7 @@ export default function SettingsScreen() {
             disabled={Platform.OS === 'web'}
           />
         </View>
-        
+
         <TouchableOpacity 
           style={styles.dangerButton}
           onPress={resetAppData}
@@ -179,14 +166,13 @@ export default function SettingsScreen() {
           </ThemedText>
         </TouchableOpacity>
       </View>
-      
-      {/* About/Version Section */}
+
       <View style={styles.settingsSection}>
         <View style={styles.settingHeader}>
           <Ionicons name="information-circle-outline" size={24} color="#0a7ea4" />
           <ThemedText style={styles.settingSectionTitle}>About</ThemedText>
         </View>
-        
+
         <ThemedText style={styles.versionText}>
           Igniting Hope App v{require('../../app.json').expo.version}
         </ThemedText>

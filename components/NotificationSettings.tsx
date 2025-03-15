@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -22,11 +21,11 @@ import {
   deleteReminder,
   applyAllReminders,
   requestPermissions,
+  rescheduleNextDay,
   formatTime
 } from '../services/notificationService';
 
 export const NotificationSettings = () => {
-  // State
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -36,12 +35,17 @@ export const NotificationSettings = () => {
     selectedReminderId: string | null;
   }>({ visible: false, selectedReminderId: null });
 
-  // Load reminders on mount
   useEffect(() => {
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+      const reminderId = response.notification.request.content.data?.id;
+      if (reminderId) {
+        rescheduleNextDay(reminderId);
+      }
+    });
     loadData();
+    return () => responseSubscription.remove();
   }, []);
 
-  // Load all data
   const loadData = async () => {
     try {
       setLoading(true);
@@ -55,89 +59,28 @@ export const NotificationSettings = () => {
     }
   };
 
-  // Check notification permissions
   const checkPermissions = async () => {
     if (Platform.OS === 'web') return;
-    
-    try {
-      const { status } = await Notifications.getPermissionsAsync();
-      setPermissionStatus(status);
-    } catch (error) {
-      console.error('Error checking permissions:', error);
-    }
+    const { status } = await Notifications.getPermissionsAsync();
+    setPermissionStatus(status);
   };
 
-  // Load reminders from storage
   const loadReminders = async () => {
-    try {
-      const savedReminders = await getReminders();
-      setReminders(savedReminders);
-    } catch (error) {
-      console.error('Error loading reminders:', error);
-    }
+    const savedReminders = await getReminders();
+    setReminders(savedReminders);
   };
 
-  // Add a new reminder
   const handleAddReminder = async () => {
     try {
       setRefreshing(true);
-      
-      // First cancel any existing notifications to prevent immediate triggering
-      if (Platform.OS !== 'web') {
-        console.log('Cancelling all notifications before adding new reminder');
-        await Notifications.cancelAllScheduledNotificationsAsync();
-        
-        // Give system time to complete cancellation
-        await new Promise(resolve => setTimeout(resolve, 1500));
-      }
-      
-      // Let the service create a reminder with default time (1 hour from now)
       const newReminder = await addReminder();
-      
       if (newReminder) {
-        console.log(`Created new reminder for ${formatTime(newReminder.time)}`);
-        
-        // Wait before updating UI (avoid race conditions)
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Update UI with new reminder
         setReminders(prev => [...prev, newReminder]);
-        
-        // Important: Allow UI update to complete before scheduling
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Schedule all reminders
-        console.log('Scheduling all reminders including the new one');
         await applyAllReminders();
-        
-        // Another delay before showing confirmation
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Show a confirmation to the user
         Alert.alert(
           'Reminder Added',
-          `A new declaration reminder has been set for ${formatTime(newReminder.time)}`,
-          [{ text: 'OK' }]
+          `A new declaration reminder has been set for ${formatTime(newReminder.time)}`
         );
-        
-        // Verify what's actually scheduled (for debugging)
-        if (Platform.OS !== 'web') {
-          // Wait for scheduling to complete
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-          console.log(`After adding: ${scheduled.length} notifications are scheduled`);
-          
-          // Log each scheduled notification for debugging
-          scheduled.forEach((notification, index) => {
-            const triggerDate = notification.trigger.value;
-            if (triggerDate) {
-              console.log(`Notification ${index + 1} (ID: ${notification.identifier}): Scheduled for ${new Date(triggerDate).toLocaleString()}`);
-            } else {
-              console.log(`Notification ${index + 1} (ID: ${notification.identifier}): No trigger date available`);
-            }
-          });
-        }
       }
     } catch (error) {
       console.error('Error adding reminder:', error);
@@ -147,71 +90,52 @@ export const NotificationSettings = () => {
     }
   };
 
-  // Delete a reminder
   const handleDeleteReminder = async (id: string) => {
-    try {
-      setRefreshing(true);
-      
-      // Confirm deletion
-      Alert.alert(
-        'Delete Reminder',
-        'Are you sure you want to delete this reminder?',
-        [
-          { text: 'Cancel', style: 'cancel', onPress: () => setRefreshing(false) },
-          { 
-            text: 'Delete', 
-            style: 'destructive',
-            onPress: async () => {
-              const success = await deleteReminder(id);
-              if (success) {
-                setReminders(prev => prev.filter(r => r.id !== id));
-                await applyAllReminders();
-              }
+    Alert.alert(
+      'Delete Reminder',
+      'Are you sure you want to delete this reminder?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setRefreshing(true);
+              await deleteReminder(id);
+              setReminders(prev => prev.filter(r => r.id !== id));
+              await applyAllReminders();
+            } catch (error) {
+              console.error('Error deleting reminder:', error);
+              Alert.alert('Error', 'Failed to delete reminder');
+            } finally {
               setRefreshing(false);
             }
           }
-        ],
-        { cancelable: false }
-      );
-    } catch (error) {
-      console.error('Error deleting reminder:', error);
-      Alert.alert('Error', 'Failed to delete reminder');
-      setRefreshing(false);
-    }
+        }
+      ]
+    );
   };
 
-  // Toggle a reminder on/off
   const toggleReminder = async (reminder: Reminder) => {
     try {
       setRefreshing(true);
-      
-      // If turning on, check permissions
       if (!reminder.enabled && Platform.OS !== 'web') {
         const granted = await requestPermissions();
         if (!granted) {
           Alert.alert(
             'Permission Required',
-            'Please enable notifications in your device settings to receive reminders.',
-            [{ text: 'OK' }]
+            'Please enable notifications in your device settings.'
           );
           setRefreshing(false);
           return;
         }
       }
-      
-      // Update the reminder
-      const updatedReminder = {
-        ...reminder,
-        enabled: !reminder.enabled
-      };
-      
-      const success = await updateReminder(updatedReminder);
-      if (success) {
-        setReminders(prev => 
-          prev.map(r => r.id === reminder.id ? updatedReminder : r)
-        );
-        await applyAllReminders();
-      }
+
+      const updatedReminder = { ...reminder, enabled: !reminder.enabled };
+      await updateReminder(updatedReminder);
+      setReminders(prev => prev.map(r => r.id === reminder.id ? updatedReminder : r));
+      await applyAllReminders();
     } catch (error) {
       console.error('Error toggling reminder:', error);
       Alert.alert('Error', 'Failed to update reminder');
@@ -220,43 +144,25 @@ export const NotificationSettings = () => {
     }
   };
 
-  // Handle time change from picker
   const handleTimeChange = async (event: any, selectedDate?: Date) => {
-    // Only process if it's a "set" event (user confirmed selection)
     if (!selectedDate || !timePickerState.selectedReminderId || event.type !== 'set') {
-      // If Android and user cancelled, hide the picker
       if (Platform.OS === 'android') {
         setTimePickerState({ visible: false, selectedReminderId: null });
       }
       return;
     }
-    
+
     try {
       setRefreshing(true);
-      
-      // Find the reminder
       const reminder = reminders.find(r => r.id === timePickerState.selectedReminderId);
       if (!reminder) return;
-      
-      // Update the reminder with new time in local state
-      const updatedReminder = {
-        ...reminder,
-        time: selectedDate,
-        _pendingTimeChange: true // Mark as pending for both platforms
-      };
-      
-      // Just update in local state - don't apply yet
-      const success = await updateReminder(updatedReminder);
-      if (success) {
-        setReminders(prev => 
-          prev.map(r => r.id === updatedReminder.id ? updatedReminder : r)
-        );
-      }
-      
-      // Hide time picker on Android (iOS handled by Done button)
+
+      const updatedReminder = { ...reminder, time: selectedDate };
+      await updateReminder(updatedReminder);
+      setReminders(prev => prev.map(r => r.id === updatedReminder.id ? updatedReminder : r));
+
       if (Platform.OS === 'android') {
         setTimePickerState({ visible: false, selectedReminderId: null });
-        // Apply all reminders once picker is closed on Android
         await applyAllReminders();
       }
     } catch (error) {
@@ -266,93 +172,18 @@ export const NotificationSettings = () => {
       setRefreshing(false);
     }
   };
-  
-  // Show time picker for a specific reminder
+
   const showTimePicker = (reminderId: string) => {
-    setTimePickerState({
-      visible: true,
-      selectedReminderId: reminderId
-    });
-  };
-  
-  // Hide time picker and apply changes if needed
-  const hideTimePicker = async () => {
-    try {
-      setRefreshing(true);
-      
-      // Always hide picker first to prevent UI issues
-      setTimePickerState({
-        visible: false,
-        selectedReminderId: null
-      });
-      
-      // Check if we have pending time changes to apply
-      const hasPendingChanges = reminders.some(r => r._pendingTimeChange);
-      
-      if (hasPendingChanges) {
-        console.log('Applying time changes after Done is pressed');
-        
-        // Cancel all scheduled notifications first to prevent duplicates
-        if (Platform.OS !== 'web') {
-          console.log('Cancelling all scheduled notifications before applying time changes');
-          await Notifications.cancelAllScheduledNotificationsAsync();
-          
-          // Wait longer to ensure cancellation completes
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          
-          // Double-check cancellation
-          const afterCancel = await Notifications.getAllScheduledNotificationsAsync();
-          if (afterCancel.length > 0) {
-            console.warn(`${afterCancel.length} notifications remain after cancellation, trying again...`);
-            await Notifications.cancelAllScheduledNotificationsAsync();
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-        }
-        
-        // Update our state reminders first, removing pending flags
-        const updatedReminders = reminders.map(r => {
-          if (r._pendingTimeChange) {
-            const { _pendingTimeChange, ...rest } = r;
-            return rest;
-          }
-          return r;
-        });
-        
-        // Update state before scheduling
-        setReminders(updatedReminders);
-        
-        // Wait for state update to complete
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Now apply all reminders at once
-        console.log('Scheduling all reminders with updated times');
-        await applyAllReminders();
-        
-        // Log scheduled notifications for debugging
-        if (Platform.OS !== 'web') {
-          // Give scheduling time to complete
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-          console.log(`After time adjustment: ${scheduled.length} notifications are scheduled`);
-          
-          // Log each scheduled notification
-          scheduled.forEach((notification, index) => {
-            const triggerDate = notification.trigger.value;
-            if (triggerDate) {
-              console.log(`Notification ${index + 1} (ID: ${notification.identifier}): Scheduled for ${new Date(triggerDate).toLocaleString()}`);
-            }
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error applying reminders on done:', error);
-    } finally {
-      setRefreshing(false);
-    }
+    setTimePickerState({ visible: true, selectedReminderId: reminderId });
   };
 
-  // If web platform, show not supported message
+  const hideTimePicker = async () => {
+    setTimePickerState({ visible: false, selectedReminderId: null });
+    setRefreshing(true);
+    await applyAllReminders();
+    setRefreshing(false);
+  };
+
   if (Platform.OS === 'web') {
     return (
       <View style={styles.container}>
@@ -366,7 +197,6 @@ export const NotificationSettings = () => {
     );
   }
 
-  // Show loading indicator
   if (loading) {
     return (
       <View style={styles.container}>
@@ -391,11 +221,8 @@ export const NotificationSettings = () => {
           </View>
         )}
       </View>
-      
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollViewContent}
-      >
+
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
         {reminders.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="notifications-outline" size={40} color="#999" />
@@ -424,20 +251,14 @@ export const NotificationSettings = () => {
                     Reminder {index + 1}
                   </ThemedText>
                 </View>
-                
                 <TouchableOpacity
                   style={styles.deleteButton}
                   onPress={() => handleDeleteReminder(reminder.id)}
                   disabled={refreshing}
                 >
-                  <Ionicons 
-                    name="trash-outline" 
-                    size={20} 
-                    color="#ff6b00" 
-                  />
+                  <Ionicons name="trash-outline" size={20} color="#ff6b00" />
                 </TouchableOpacity>
               </View>
-              
               <TouchableOpacity
                 style={[
                   styles.timeSelector,
@@ -463,7 +284,7 @@ export const NotificationSettings = () => {
             </View>
           ))
         )}
-        
+
         <TouchableOpacity
           style={styles.addButton}
           onPress={handleAddReminder}
@@ -474,15 +295,15 @@ export const NotificationSettings = () => {
             Add New Reminder
           </ThemedText>
         </TouchableOpacity>
-        
+
         <View style={styles.infoContainer}>
           <Ionicons name="information-circle-outline" size={20} color="#0a7ea4" />
           <ThemedText style={styles.infoText}>
-            You will receive reminders to speak your declarations at the scheduled times.
+            You will receive daily reminders at the scheduled times.
           </ThemedText>
         </View>
       </ScrollView>
-      
+
       {timePickerState.visible && (
         <View style={styles.timePickerContainer}>
           <View style={styles.timePickerHeader}>
@@ -493,7 +314,6 @@ export const NotificationSettings = () => {
               </TouchableOpacity>
             )}
           </View>
-          
           {timePickerState.selectedReminderId && (
             <DateTimePicker
               value={reminders.find(r => r.id === timePickerState.selectedReminderId)?.time instanceof Date
@@ -508,7 +328,7 @@ export const NotificationSettings = () => {
           )}
         </View>
       )}
-      
+
       {refreshing && (
         <View style={styles.refreshingContainer}>
           <ActivityIndicator size="small" color="#0a7ea4" />
