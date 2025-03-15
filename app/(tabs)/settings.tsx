@@ -106,10 +106,31 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              console.log('Starting app data reset process...');
+              
+              // Import the counter service directly to ensure it's available
+              const counterService = require('@/services/counterService');
+              
+              // First notify listeners via event emitter before clearing storage
+              // This ensures all components get the reset notification
+              try {
+                if (counterService.counterEvents) {
+                  console.log('Notifying counter event listeners of reset');
+                  counterService.counterEvents.emit(counterService.COUNTER_UPDATED, { 
+                    dailyCount: 0, 
+                    totalCount: 0 
+                  });
+                }
+              } catch (emitterError) {
+                console.error('Error notifying counter event listeners:', emitterError);
+              }
+              
               // Clear all AsyncStorage data
               await AsyncStorage.clear();
+              console.log('AsyncStorage cleared successfully');
               
-              // Reset critical stats counters specifically
+              // Reset critical stats counters specifically to ensure they're properly reset
+              // Even if a component didn't respond to the event emitter
               await AsyncStorage.multiSet([
                 ['dailyCount', '0'],
                 ['totalCount', '0'],
@@ -119,24 +140,30 @@ export default function SettingsScreen() {
                 ['lastActivityDate', ''],
                 ['firstDate', '']
               ]);
+              console.log('Critical stats counters reset successfully');
               
               // Reset UI state
               setSoundEnabled(true);
               setHapticsEnabled(true);
               
-              // Notify listeners of counter updates via event emitter
-              try {
-                const { counterEvents, COUNTER_UPDATED } = require('@/services/counterService');
-                if (counterEvents) {
-                  counterEvents.emit(COUNTER_UPDATED, { 
+              // Send a second notification to ensure all components are updated
+              setTimeout(() => {
+                try {
+                  console.log('Sending second reset notification');
+                  counterService.counterEvents.emit(counterService.COUNTER_UPDATED, { 
                     dailyCount: 0, 
                     totalCount: 0 
                   });
-                  console.log('Counter event emitter notified of reset');
+                } catch (error) {
+                  console.error('Error sending second reset notification:', error);
                 }
-              } catch (emitterError) {
-                console.error('Error notifying counter event listeners:', emitterError);
-              }
+                
+                // Force a reload of the app in web environments
+                if (Platform.OS === 'web') {
+                  console.log('Reloading web app to apply reset');
+                  window.location.reload();
+                }
+              }, 500);
               
               Alert.alert(
                 'Reset Complete', 
